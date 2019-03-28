@@ -13,7 +13,7 @@ def link_config(filepath):
 		shared=sharedfile.read()
 	with open(localfilename, "r") as localfile:
 		local=localfile.read()
-	output=shared+local
+	output=shared+"\n\n"+local
 
 	if not os.path.exists(os.path.dirname(outputfilename)):
 		try:
