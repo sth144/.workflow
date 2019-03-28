@@ -2,10 +2,12 @@
 config.json
 
 # ignore any contents within local directory
-local/*
-
-# ^ negate local/* rule for README.md
-!local/README.md
+local/configs/*
+!local/configs/sh
+local/configs/sh/*
+local/utils/*
+!local/utils/sh
+local/utils/sh/*
 
 shared/configs/ranger/history
 shared/configs/ranger/bookmarks
