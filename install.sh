@@ -10,10 +10,6 @@ if [ -z "$HOME_DIR" ]; then
 	exit 1
 fi
 
-build_configs() {
-	#TODO
-}
-
 install_configs() {
 	#TODO implement build and copy from build directory
 	#cp -r ./configs/ ~/.config/
