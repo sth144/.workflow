@@ -1,16 +1,23 @@
-# ignore config file
-config.json
+# cache
+.cache/*
+!.cache/.keep
 
-build/*
-!build/README.md
+# log
+.log
+
+# build
+configs/build/*
+!configs/build/README.md
 
 # ignore any contents within local directory
-local/configs/*
-!local/configs/.keep
-local/utils/*
-!local/utils/sh
-local/utils/sh/*
-!local/utils/sh/.keep
+configs/local/*
+!configs/local/.keep
+utils/local/*
+!utils/local/.keep
+!utils/local/sh
+utils/local/sh/*
+!utils/local/sh/.keep
 
-shared/configs/ranger/history
-shared/configs/ranger/bookmarks
+# ranger sensitive files
+configs/shared/ranger/history
+configs/shared/ranger/bookmarks

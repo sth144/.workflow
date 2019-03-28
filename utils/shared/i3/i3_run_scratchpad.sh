@@ -1,8 +1,9 @@
 #!/bin/bash
 
+_DIR=$(dirname $0)
+
 # needed for sed command file path. Tilde expansion happens before variable expansion
-HOME=~
-CONTROLLER="$0../../../utils/sh/window_controller.sh"
+CONTROLLER="$_DIR/../xdotool/window_controller.sh"
 SCRATCHPADS="scratchpads"
 
 # params

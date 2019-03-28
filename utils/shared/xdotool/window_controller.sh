@@ -2,9 +2,10 @@
 
 xdotool=/usr/bin/xdotool
 # store tempfile with key value pairs in user cache
-_DIR=~/.cache
+_DIR=$(dirname $0)
+_CACHEDIR="$_DIR/../../../.cache"
 _TMPFILE="tmp_window_controller.dat"
-_CACHE=$_DIR/$_TMPFILE
+_CACHE=$_CACHEDIR/$_TMPFILE
 
 # debounce time between keystrokes, in seconds
 DEBOUNCE=0.75	
@@ -109,7 +110,7 @@ keystrokes_to() {
 launch() {
 	# params
 	WINDOW_KEY=$1
-	LAUNCH_CMD=$2
+	LAUNCH_CMD=$(echo "$2" | sed 's/_s_/ /g')   # translate spaces in command
 	DELAY=$3
 	SEARCH_RGX=$4	
 	WINDOW_SET=$5	# optional
