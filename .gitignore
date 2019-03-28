@@ -1,6 +1,9 @@
 # ignore config file
 config.json
 
+build/*
+!build/README.md
+
 # ignore any contents within local directory
 local/configs/*
 !local/configs/.keep
