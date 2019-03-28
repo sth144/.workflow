@@ -1,1 +1,11 @@
+# ignore config file
 config.json
+
+# ignore any contents within local directory
+local/*
+
+# ^ negate local/* rule for README.md
+!local/README.md
+
+shared/configs/ranger/history
+shared/configs/ranger/bookmarks
