@@ -3,11 +3,11 @@ config.json
 
 # ignore any contents within local directory
 local/configs/*
-!local/configs/sh/.keep
-local/configs/sh/*
+!local/configs/.keep
 local/utils/*
-!local/utils/sh/.keep
+!local/utils/sh
 local/utils/sh/*
+!local/utils/sh/.keep
 
 shared/configs/ranger/history
 shared/configs/ranger/bookmarks
