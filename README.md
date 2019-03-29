@@ -1,2 +1,2 @@
 # workflow
-A set of dotfiles and utilities used to configure and manage work spaces on Linux systems running i3wm in X environments.
+A set of dotfiles and utilities used to configure desktop environments and automate workflows on Linux systems running i3wm in X environments.
