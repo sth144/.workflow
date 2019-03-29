@@ -3,7 +3,8 @@
 !.cache/.keep
 
 # log
-.log
+.logs/*
+!.logs/.keep
 
 # build
 build/*
@@ -14,9 +15,6 @@ configs/local/*
 !configs/local/.keep
 utils/local/*
 !utils/local/.keep
-!utils/local/sh
-utils/local/sh/*
-!utils/local/sh/.keep
 
 # sensitive ranger files
 configs/shared/ranger/history

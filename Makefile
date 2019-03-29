@@ -12,7 +12,7 @@ build:
 # workflow scripts without using relative paths 
 install: 
 	@echo "installing config build"
-	sleep 3 && ./install_configs.sh install
+	./install_configs.sh install
 
 # restart i3
 refresh:
