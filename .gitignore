@@ -6,8 +6,8 @@
 .log
 
 # build
-configs/build/*
-!configs/build/README.md
+build/*
+!build/.keep
 
 # ignore any contents within local directory
 configs/local/*
@@ -18,6 +18,6 @@ utils/local/*
 utils/local/sh/*
 !utils/local/sh/.keep
 
-# ranger sensitive files
+# sensitive ranger files
 configs/shared/ranger/history
 configs/shared/ranger/bookmarks
