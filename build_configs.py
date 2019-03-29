@@ -64,12 +64,28 @@ def build():
         if file not in all_shared_files:
             local_files_to_copy.append(file)
 
+    shared_files_to_copy = [
+        x for x in shared_files_to_copy if ((x.find(".keep") == -1) and (x.find("README.md") == -1))
+    ]
+    shared_files_to_merge_copy = [
+        x for x in shared_files_to_merge_copy if ((x.find(".keep") == -1) and (x.find("README.md") == -1))
+    ]
+    local_files_to_copy = [
+        x for x in local_files_to_copy if ((x.find(".keep") == -1) and (x.find("README.md") == -1))
+    ]
+    
+    print("building:")
+    for file in shared_files_to_copy:
+        print("shared/" + file)
+    for file in shared_files_to_merge_copy:
+        print("(merge) shared/" + file)
+    for file in local_files_to_copy:
+        print("local/" + file)
+
     for file in shared_files_to_copy:
         copy_config_from("shared", file)
-
     for file in shared_files_to_merge_copy:
         merge_copy_config(file)
-
     for file in local_files_to_copy:
         copy_config_from("local", file)
 

@@ -27,6 +27,9 @@
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
 
+# start a terminal
+#bindsym $mod+Return exec konsole
+
 # kill focused window
 bindsym $mod+Shift+q kill
 
@@ -160,7 +163,7 @@ set $eggshell   #efefef
 ##=============================== initialize desktop environment ======================##
 
 # window compositor
-exec --no-startup-id compton --config ~/.config/compton/compton.conf -b
+exec_always --no-startup-id compton --config ~/.config/compton/compton.conf -b
 # set initial window gaps
 gaps inner 22
 # disable window titles (enables gaps to work properly)
@@ -264,3 +267,21 @@ bindsym $mod+Shift+minus move scratchpad
 # Show the next scratchpad window or hide the focused scratchpad window.
 # If there are multiple scratchpad windows, this command cycles through them.
 bindsym $mod+minus scratchpad show
+
+# modular scratchpads. Create if window doesn't exist, otherwise show
+
+
+# Uncomment if no local config
+#bindsym $mod+Return exec termite -d /home/manager/Projects_sean
+
+##################################################################################
+######################## To be supplied by local config ##########################
+##################################################################################
+
+# display configuration (xrandr)
+# background image (feh)
+# conkys
+# any additional machine-specific keybindings
+# any additional machine-specific scratchpads
+# workspace configurations
+

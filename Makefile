@@ -21,5 +21,5 @@ refresh:
 
 # clear config build directory
 clean:
-	#@echo "cleaning config build output directory"
-	#./build_configs.py clean
+	@echo "cleaning config build output directory"
+	./build_configs.py clean
