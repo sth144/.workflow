@@ -27,9 +27,6 @@
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
 
-# start a terminal
-#bindsym $mod+Return exec konsole
-
 # kill focused window
 bindsym $mod+Shift+q kill
 
@@ -278,10 +275,13 @@ bindsym $mod+minus scratchpad show
 ######################## To be supplied by local config ##########################
 ##################################################################################
 
+# TODO: write template here
 # display configuration (xrandr)
 # background image (feh)
 # conkys
+# workspace names (REQUIRED)
+# workspace configurations 
 # any additional machine-specific keybindings
 # any additional machine-specific scratchpads
-# workspace configurations
+# terminal launch keybinding (REQUIRED)
 
