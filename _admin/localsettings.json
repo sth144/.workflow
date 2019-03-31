@@ -1,0 +1,5 @@
+{
+	"libdir": "ubuntu",
+	"libtracklocalconfigs": ["compton/compton.conf"],
+	"libtracklocalutils": []
+}

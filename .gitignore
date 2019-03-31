@@ -1,3 +1,6 @@
+# base configuration
+admin/localsettings.json
+
 # cache
 .cache/*
 !.cache/.keep
@@ -7,15 +10,22 @@
 !.logs/.keep
 
 # build
-build/*
-!build/.keep
+.build/*
+!.build/.keep
 
 # ignore any contents within local directory
 configs/local/*
 !configs/local/.keep
-utils/local/*
-!utils/local/.keep
+util/local/*
+!util/local/.keep
 
 # sensitive ranger files
 configs/shared/ranger/history
 configs/shared/ranger/bookmarks
+
+# compiled files
+*.pyc
+
+# any node modules
+*node_modules
+*node_modules/*

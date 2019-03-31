@@ -1,33 +1,21 @@
 #!/usr/bin/python
 
 import sys, os, shutil, glob, stat, errno
+from util.shared.fs import path_tools, privelege_tools
 
-basedir=sys.path[0]
-confdir=basedir+"/configs"
-
-def pave_path_to(outputfilepath):
-	if not os.path.exists(os.path.dirname(outputfilepath)):
-		try:
-			os.makedirs(os.path.dirname(outputfilepath))
-		except:
-			if exc.errno != errno.EEXIST:
-				raise
+basedir=sys.path[0]+"/.."
+confdir=basedir+"/conf"
 
 def copy_config_from(fromdir, inputfilename):
     inputfilepath=confdir+"/"+fromdir+"/"+inputfilename
-    outputfilepath=basedir+"/build/"+inputfilename
-    with open(inputfilepath, "r") as inputfile:
-        textcontent=inputfile.read()
-    pave_path_to(outputfilepath)
-    with open(outputfilepath, "w") as outputfile:
-        outputfile.write(textcontent)    
-    st = os.stat(outputfilepath)
-    os.chmod(outputfilepath, st.st_mode | stat.S_IEXEC)
+    outputfilepath=basedir+"/.build/"+inputfilename
+    path_tools.copy_file_from_to(inputfilepath, outputfilepath)
+    privelege_tools.make_executable(outputfilepath)
 
 def merge_copy_config(inputfilename):
     sharedfilepath=confdir+"/shared/"+inputfilename
     localfilepath=confdir+"/local/"+inputfilename
-    mergefilepath=basedir+"/build/"+inputfilename
+    mergefilepath=basedir+"/.build/"+inputfilename
     sharedcontent=""
     localcontent=""
     with open(sharedfilepath, "r") as sharedfile:
@@ -35,11 +23,10 @@ def merge_copy_config(inputfilename):
     with open(localfilepath, "r") as localfile:
         localcontent=localfile.read()
     mergedcontent=sharedcontent+"\n\n"+localcontent
-    pave_path_to(mergefilepath)
+    path_tools.pave_path_to(mergefilepath)
     with open(mergefilepath, "w") as mergefile:
         mergefile.write(mergedcontent)
-    st = os.stat(mergefilepath)
-    os.chmod(mergefilepath, st.st_mode | stat.S_IEXEC)   
+    privelege_tools.make_executable(mergefilepath)
 
 def build():
     all_shared_files=[]
@@ -90,20 +77,21 @@ def build():
         copy_config_from("local", file)
 
 def clean():
-    files = glob.glob(os.path.join(basedir+"/build/*"))
+    files = glob.glob(os.path.join(basedir+"/.build/*"))
     for f in files:
         if os.path.isdir(f):
             shutil.rmtree(f)
         else:
             os.remove(f)
 
-success=False
-if (len(sys.argv) >= 2):
-    if (sys.argv[1] == "clean"):
-        clean()
-        success=True
-    elif (sys.argv[1] == "build"):
-        build()
-        success=True
-if not success:
-    print("must supply a command, options:\n\tclean\n\tbuild")
+if __name__ == "__main__":
+    success=False
+    if (len(sys.argv) >= 2):
+        if (sys.argv[1] == "clean"):
+            clean()
+            success=True
+        elif (sys.argv[1] == "build"):
+            build()
+            success=True
+    if not success:
+        print("must supply a command, options:\n\tclean\n\tbuild")
