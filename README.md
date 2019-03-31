@@ -6,5 +6,6 @@ A set of dotfiles and utilities used to configure desktop environments and autom
 * i3-blocks (utility bar)
 * compton (X Window compositor)
 * ranger (terminal file manager)
-* node.js
+* Python 3.x
+* Node.js
 * npm
