@@ -158,7 +158,7 @@ launch() {
         done
 
         # can't delete temp stat file immediately, need to wait
-        (sleep 1 && rm $WAIT_STAT_FILE) &
+        (sleep $TIMEOUT && rm $WAIT_STAT_FILE) &
 
 		if [ -z "$X_ID" ] && [ ! -z "$SEARCH_RGX" ]; then
 			X_ID=$(get_xid_from_rgx $SEARCH_RGX)
