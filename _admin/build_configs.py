@@ -4,7 +4,7 @@ import sys, os, shutil, glob, stat, errno
 from utils.shared.fs import path_tools, privelege_tools
 
 basedir=sys.path[0]+"/.."
-confdir=basedir+"/config"
+confdir=basedir+"/configs"
 
 def copy_config_from(fromdir, inputfilename):
     inputfilepath=confdir+"/"+fromdir+"/"+inputfilename
@@ -52,13 +52,13 @@ def build():
             local_files_to_copy.append(file)
 
     shared_files_to_copy = [
-        x for x in shared_files_to_copy if ((x.find(".keep") == -1) and (x.find("README.md") == -1))
+        x for x in shared_files_to_copy if (x.find("README.md") == -1)
     ]
     shared_files_to_merge_copy = [
-        x for x in shared_files_to_merge_copy if ((x.find(".keep") == -1) and (x.find("README.md") == -1))
+        x for x in shared_files_to_merge_copy if (x.find("README.md") == -1)
     ]
     local_files_to_copy = [
-        x for x in local_files_to_copy if ((x.find(".keep") == -1) and (x.find("README.md") == -1))
+        x for x in local_files_to_copy if (x.find("README.md") == -1)
     ]
     
     print("building:")
@@ -78,6 +78,8 @@ def build():
 
 def clean():
     files = glob.glob(os.path.join(basedir+"/.build/*"))
+    files += glob.glob(os.path.join(basedir+"/.build/.*"))
+    files = [x for x in files if (x.find(".keep") == -1)]
     for f in files:
         if os.path.isdir(f):
             shutil.rmtree(f)

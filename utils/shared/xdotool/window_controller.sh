@@ -141,11 +141,11 @@ launch() {
 
 		CMD_PID=$(echo $!)
 
-       		 # use a temp file and background command to implement asynchronous timeout
-        	WAIT_STAT_FILE="$_CACHEDIR/timout$$"
-        	touch $WAIT_STAT_FILE
-        	echo "wait" > $WAIT_STAT_FILE
-        	(sleep $TIMEOUT && echo "timeout" > $WAIT_STAT_FILE) &
+        # use a temp file and background command to implement asynchronous timeout
+        WAIT_STAT_FILE="$_CACHEDIR/timout$$"
+        touch $WAIT_STAT_FILE
+        echo "wait" > $WAIT_STAT_FILE
+        (sleep $TIMEOUT && echo "timeout" > $WAIT_STAT_FILE) &
 	
 		# TODO: make delays shorter (timeout should handle most cases)
 		sleep $LOAD_DELAY

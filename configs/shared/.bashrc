@@ -117,8 +117,18 @@ if ! shopt -oq posix; then
 fi
 
 #########################################################################################################
-##################################### Custom Configurations #############################################
+#################################### Custom Configurations (Shared) #####################################
 #########################################################################################################
+
+export BROWSER=/usr/bin/google-chrome-stable
+export EDITOR=/usr/bin/vim
+
+alias barrier='/usr/local/bin/barrier-2.1.2/barrier-2.1.2-startup'
+alias xdotool='/usr/bin/xdotool'
+
+# global sendkey function
+grabwindow() { xdotool windowactivate $(xdotool search --name "$1"); }
+keystroketowindow() { echo $3; grabwindow "$2" && xdotool key "$1"; sleep 1; }
 
 export EDITOR=/usr/bin/vim
 export PYTHONDONTWRITEBYTECODE=True

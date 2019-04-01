@@ -14,6 +14,8 @@ install() {
 	if [ $RESPONSE = "y" ]; then
 	# copy config build to ~ (and  ~/.config dot directory)
 		cp -r $BASE_ABS/.build/. ~/
+
+		# TODO: remove .keep and README's
 	fi
 }
 

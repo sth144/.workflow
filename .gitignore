@@ -16,6 +16,8 @@ admin/localsettings.json
 # ignore any contents within local directory
 configs/local/*
 !configs/local/.keep
+configs/local/.config/*
+!configs/local/.config/.keep
 utils/local/*
 !utils/local/.keep
 

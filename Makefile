@@ -1,4 +1,4 @@
-all: clean build install update_bashrc refresh
+all: clean build install enable_utils update_bashrc refresh
 
 # build configs (merge local and shared into build directory)
 .PHONY: build
@@ -13,6 +13,13 @@ build:
 install: 
 	@echo "installing config build"
 	./_admin/install_configs.sh install
+
+# enable utils
+enable_utils:
+	@echo "enabling utils"
+	find ./utils -type f -iname "*.sh" -exec chmod +x {} \;
+	find ./utils -type f -iname "*.py" -exec chmod +x {} \;
+
 
 # some commands (like "export WORKFLOW_BASE=...") cannot be hardcoded into conf/shared/.bashrc
 # this makefile target will append them to ~/.bashrc
