@@ -12,3 +12,8 @@ A set of dotfiles and utilities used to configure desktop environments and autom
 * Python 3.x
 * Node.js
 * npm
+
+## TODO
+* integrate crontab
+* update READMEs in subdirectories
+* improve build process
