@@ -16,8 +16,8 @@ admin/localsettings.json
 # ignore any contents within local directory
 configs/local/*
 !configs/local/.keep
-util/local/*
-!util/local/.keep
+utils/local/*
+!utils/local/.keep
 
 # sensitive ranger files
 configs/shared/ranger/history

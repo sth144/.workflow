@@ -8,6 +8,6 @@ cat /home/manager/.config/i3/config | grep "bindsym \$mod" \
 	| grep -v "#" | sed -e 's/^[ \t]*//' \
 	| awk '{ s = ""; for (i = 3; i<= NF; i++) s = s $i " "; printf("%-26s\t%-45s\n", $2, substr(s, 1, 45)) }' \
 	>> i3config.txt
-libreoffice --convert-to "pdf" i3config.txt --outdir /home/manager/Projects_sean/utilities/environment/keystroke_references/
+libreoffice --convert-to "pdf" i3config.txt --outdir # TODO
 
 rm i3config.txt

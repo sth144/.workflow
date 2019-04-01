@@ -1,10 +1,10 @@
 #!/usr/bin/python
 
 import sys, os, shutil, glob, stat, errno
-from util.shared.fs import path_tools, privelege_tools
+from utils.shared.fs import path_tools, privelege_tools
 
 basedir=sys.path[0]+"/.."
-confdir=basedir+"/conf"
+confdir=basedir+"/config"
 
 def copy_config_from(fromdir, inputfilename):
     inputfilepath=confdir+"/"+fromdir+"/"+inputfilename
