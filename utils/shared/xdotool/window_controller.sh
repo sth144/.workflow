@@ -142,7 +142,7 @@ launch() {
 		CMD_PID=$(echo $!)
 
         # use a temp file and background command to implement asynchronous timeout
-        WAIT_STAT_FILE="$_CACHEDIR/timout$$"
+        WAIT_STAT_FILE="$_CACHEDIR/timeout$$"
         touch $WAIT_STAT_FILE
         echo "wait" > $WAIT_STAT_FILE
         (sleep $TIMEOUT && echo "timeout" > $WAIT_STAT_FILE) &
@@ -155,8 +155,10 @@ launch() {
 		while [ $(cat $WAIT_STAT_FILE) = "wait" ] && [ -z "$X_ID" ]; do  
 			X_ID=$(get_xid_from_pid $CMD_PID)
             		sleep 0.01
-        	done
-        	rm $WAIT_STAT_FILE
+        done
+
+        # can't delete temp stat file immediately, need to wait
+        (sleep 1 && rm $WAIT_STAT_FILE) &
 
 		if [ -z "$X_ID" ] && [ ! -z "$SEARCH_RGX" ]; then
 			X_ID=$(get_xid_from_rgx $SEARCH_RGX)
