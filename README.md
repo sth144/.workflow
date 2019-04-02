@@ -1,6 +1,17 @@
 # Workflow
 A set of dotfiles and utilities used to configure desktop environments and automate workflows on Linux machines running i3wm with X window systems.
 
+## To Install Configs
+* clone repository 
+* `cd /path/to/directory/.workflow`
+* `$ make build` to merge local and shared configs into .build directory
+    * examine the files in .build/. This set of files will be copied into ~/
+        * note: if files exist in ~/ (or subdirectories like ~/.config/...), whose filenames
+            match those in .build, and whose paths (relative to ~) match those in .build (relative
+            to .build), they will be completely overwritten. No other files will be affected. Be
+            sure to examine the files in .build before installing 
+* `$ make install` to copy configs from .build to home directory
+
 ## Structure
 * Makefile
 * _admin/
