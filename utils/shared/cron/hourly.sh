@@ -1,3 +1,3 @@
 #!/bin/bash
 
-echo "shared hourly"
+echo "shared hourly $WORKFLOW_BASE"
