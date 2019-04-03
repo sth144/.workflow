@@ -203,7 +203,10 @@ bar {
 }
 
 # start dmenu (a program launcher)
-bindsym $mod+d exec dmenu_run -fn "System San Francisco-14"
+#bindsym $mod+d exec dmenu_run -fn "System San Francisco-14"
+# replaced dmenu with rofi launcher
+bindsym $mod+d exec --no-startup-id rofi -show run
+bindsym $mod+g exec --no-startup-id rofi -show window
 
 # reset modular scratchpads
 #TODO
