@@ -168,9 +168,9 @@ for_window [class="^.*"] border pixel 0
 
 # window decoration
 # class                 border     background  text    	 indicator   child_border
-client.focused          $dark_gray $dark_gray  $charcoal $sky_blue   $ocean_blue
-client.focused_inactive $dark_gray $light_gray $charcoal $charcoal   $charcoal
-client.unfocused        $dark_gray $light_gray $charcoal $obsidian   $obsidian
+client.focused          $dark_gray $light_gray $charcoal $sky_blue   $ocean_blue
+client.focused_inactive $dark_gray $dark_gray  $charcoal $charcoal   $charcoal
+client.unfocused        $dark_gray $dark_gray  $charcoal $obsidian   $obsidian
 client.urgent           $obsidian  $light_red  $eggshell $light_red  $light_red
 client.placeholder      $obsidian  $obsidian   $eggshell $obsidian   $obsidian
 client.background       $eggshell
