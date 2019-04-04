@@ -162,7 +162,7 @@ set $eggshell   #efefef
 # window compositor
 exec_always --no-startup-id compton --config ~/.config/compton/compton.conf -b
 # set initial window gaps
-gaps inner 22
+gaps inner 18
 # disable window titles (enables gaps to work properly)
 for_window [class="^.*"] border pixel 0
 
