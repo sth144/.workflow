@@ -1,5 +1,10 @@
 #!/bin/bash
 
+#
+# note: npm package markdown-pdf must be globally installed
+#		$ npm install -g markdown-pdf
+#
+
 # executable parameters
 NOTES_DIR=$1    # directory containing markdown notes
 

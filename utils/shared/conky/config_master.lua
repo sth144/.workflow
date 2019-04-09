@@ -1,5 +1,5 @@
-text_color       = 'd1d1d1'
-background_color = '737373'
+text_color       = '404040'
+background_color = 'cdcdcd'
 
 function cnf ()
 	 local_config = {
