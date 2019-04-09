@@ -35,29 +35,30 @@ separator_block_width=15
 markup=pango
 
 [weather]
-command=~/.config/i3blocks/sh/weather.sh
+command=echo $(curl wttr.in?format="%c_%t_%w_%h" | tr '_' ' ')
+color=#404040
 interval=3600
 
-[keybindings]
-label=
-color=#404040
-command=echo "keybindings: WIN+q"
-interval=once
+#[keybindings]
+#label=
+#color=#404040
+#command=echo "WIN q"
+#interval=once
 
 # Network interface monitoring
 #
 # If the instance is not specified, use the interface used for default route.
 # The address can be forced to IPv4 or IPv6 with -4 or -6 switches.
 [iface]
-label=
+label=⌨️
 #instance=wlan0
-color=#33ff33
+color=#404040
 interval=10
 
 # Date Time
 #
 [time]
-label=
+label=🕒
 color=#404040
 command=date '+%Y-%m-%d %H:%M:%S'
 interval=5
