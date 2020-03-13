@@ -41,6 +41,10 @@ body > *:last-child {
   margin-bottom: 0 !important;
 }
 
+code {
+  font-size: 9px;
+}
+
 a {
   color: #4183C4;
   text-decoration: none;
@@ -192,7 +196,7 @@ dl {
 }
 
 dl dt {
-  font-size: 14px;
+  font-size: 10px;
   font-weight: bold;
   font-style: italic;
   padding: 0;
@@ -387,7 +391,7 @@ pre code {
 .highlight pre {
   background-color: #f8f8f8;
   border: 1px solid #cccccc;
-  font-size: 13px;
+  font-size: 10px;
   line-height: 19px;
   overflow: auto;
   padding: 6px 10px;
@@ -397,7 +401,7 @@ pre code {
 pre {
   background-color: #f8f8f8;
   border: 1px solid #cccccc;
-  font-size: 13px;
+  font-size: 10px;
   line-height: 19px;
   overflow: auto;
   padding: 6px 10px;

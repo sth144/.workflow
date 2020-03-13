@@ -2,7 +2,7 @@
 
 import sys, os, json
 
-from utils.shared.fs import path_tools 
+from src.utils.shared.fs import path_tools
 
 basedir = sys.path[0] + "/.."
 admindir = basedir + "/admin"
@@ -10,10 +10,10 @@ admindir = basedir + "/admin"
 settings_path = admindir + "/localsettings.json"
 settings_exists = os.path.isfile(settings_path)
 
-configs_local_path = basedir + "/configs/local/"
-util_local_path = basedir + "/utils/local/"
+configs_local_path = basedir + "src/configs/local/"
+util_local_path = basedir + "src/utils/local/"
 
-lib_path = basedir + "/_lib/"
+lib_path = basedir + "/lib/"
 
 if settings_exists:
     settings = json.loads(open(settings_path).read())

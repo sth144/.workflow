@@ -10,20 +10,20 @@ admin/localsettings.json
 !.logs/.keep
 
 # build
-.build/*
-!.build/.keep
+dist/*
+!dist/.keep
 
 # ignore any contents within local directory
-configs/local/*
-!configs/local/.keep
-configs/local/.config/*
-!configs/local/.config/.keep
-utils/local/*
-!utils/local/.keep
+src/configs/local/*
+!src/configs/local/.keep
+src/configs/local/.config/*
+!src/configs/local/.config/.keep
+src/utils/local/*
+!src/utils/local/.keep
 
 # sensitive ranger files
-configs/shared/ranger/history
-configs/shared/ranger/bookmarks
+src/configs/shared/ranger/history
+src/configs/shared/ranger/bookmarks
 
 # compiled files
 *.pyc

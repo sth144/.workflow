@@ -1,21 +1,21 @@
 #!/usr/bin/python
 
 import sys, os, shutil, glob, stat, errno
-from utils.shared.fs import path_tools, privelege_tools
+from src.utils.shared.fs import path_tools, privelege_tools
 
 basedir=sys.path[0]+"/.."
-confdir=basedir+"/configs"
+confdir=basedir+"/src/configs"
 
 def copy_config_from(fromdir, inputfilename):
     inputfilepath=confdir+"/"+fromdir+"/"+inputfilename
-    outputfilepath=basedir+"/.build/"+inputfilename
+    outputfilepath=basedir+"/dist/"+inputfilename
     path_tools.copy_file_from_to(inputfilepath, outputfilepath)
     privelege_tools.make_executable(outputfilepath)
 
 def merge_copy_config(inputfilename):
     sharedfilepath=confdir+"/shared/"+inputfilename
     localfilepath=confdir+"/local/"+inputfilename
-    mergefilepath=basedir+"/.build/"+inputfilename
+    mergefilepath=basedir+"/dist/"+inputfilename
     sharedcontent=""
     localcontent=""
     with open(sharedfilepath, "r") as sharedfile:
@@ -60,7 +60,7 @@ def build():
     local_files_to_copy = [
         x for x in local_files_to_copy if (x.find("README.md") == -1)
     ]
-    
+
     print("building:")
     for file in shared_files_to_copy:
         print("shared/" + file)
@@ -77,8 +77,8 @@ def build():
         copy_config_from("local", file)
 
 def clean():
-    files = glob.glob(os.path.join(basedir+"/.build/*"))
-    files += glob.glob(os.path.join(basedir+"/.build/.*"))
+    files = glob.glob(os.path.join(basedir+"/dist/*"))
+    files += glob.glob(os.path.join(basedir+"/dist/.*"))
     files = [x for x in files if (x.find(".keep") == -1)]
     for f in files:
         if os.path.isdir(f):

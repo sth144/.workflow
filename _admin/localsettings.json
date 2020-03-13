@@ -1,5 +1,0 @@
-{
-	"libdir": "arch",
-	"libtracklocalconfigs": ["compton/compton.conf"],
-	"libtracklocalutils": []
-}
