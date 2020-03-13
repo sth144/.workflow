@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import sys, os, shutil, glob, stat, errno
-from src.utils.shared.fs import path_tools, privelege_tools
+from src.utils.shared.fs import path_tools, privilege_tools
 
 basedir=sys.path[0]+"/.."
 confdir=basedir+"/src/configs"
@@ -10,7 +10,7 @@ def copy_config_from(fromdir, inputfilename):
     inputfilepath=confdir+"/"+fromdir+"/"+inputfilename
     outputfilepath=basedir+"/dist/"+inputfilename
     path_tools.copy_file_from_to(inputfilepath, outputfilepath)
-    privelege_tools.make_executable(outputfilepath)
+    privilege_tools.make_executable(outputfilepath)
 
 def merge_copy_config(inputfilename):
     sharedfilepath=confdir+"/shared/"+inputfilename
@@ -26,7 +26,7 @@ def merge_copy_config(inputfilename):
     path_tools.pave_path_to(mergefilepath)
     with open(mergefilepath, "w") as mergefile:
         mergefile.write(mergedcontent)
-    privelege_tools.make_executable(mergefilepath)
+    privilege_tools.make_executable(mergefilepath)
 
 def build():
     all_shared_files=[]

@@ -3,7 +3,7 @@
 xdotool=/usr/bin/xdotool
 # store tempfile with key value pairs in user cache
 _DIR=$(dirname $0)
-_CACHEDIR="$_DIR/../../../.cache"
+_CACHEDIR="$_DIR/../../../../.cache"
 _TMPFILE="tmp_window_controller.dat"
 _CACHE=$_CACHEDIR/$_TMPFILE
 
@@ -14,7 +14,7 @@ DEBOUNCE=0.75
 TIMEOUT=3
 
 get_xid_from_pid() {
-	# params	
+	# params
 	CMD_PID=$1
 
 	# this will not work for complex multiprocess apps like chrome
@@ -30,7 +30,7 @@ get_xid_from_rgx() {
 
 get_pid_from_xid() {
 	# params
-	WINDOW_XID=$1	
+	WINDOW_XID=$1
 
 	$xdotool getwindowpid $WINDOW_XID | tail -1 	#TODO: handle multiples?
 }
@@ -45,7 +45,7 @@ get_xid_from_key() {
 get_pid_from_key() {
 	# params
 	WINDOW_KEY=$1
-	
+
 	cache_print | grep "^$WINDOW_KEY " | awk '{print $2}' | tail -1	#TODO: handle multiples?
 }
 
@@ -86,7 +86,7 @@ register_window() {
 	if [ -z "$RECONFD_PID" ] || [ -z "$WINDOW_XID" ]; then
 		RECONFD_PID="NULL"
 		WINDOW_XID="NULL"
-	fi	
+	fi
 
 	if [ $(key_exists $WINDOW_KEY) = "true" ]; then
 		# overwrite expired entry, reconfirm pid
@@ -129,11 +129,11 @@ launch() {
 	WINDOW_KEY=$1
 	LAUNCH_CMD=$(echo "$2" | sed 's/_s_/ /g')   # translate spaces in command
 	LOAD_DELAY=$3
-	SEARCH_RGX=$4	
+	SEARCH_RGX=$4
 	WINDOW_SET=$5	# optional
 
 	if [ $(window_exists $WINDOW_KEY) = "true" ]; then
-		echo "Error: window with key $WINDOW_KEY already exists" >&2 
+		echo "Error: window with key $WINDOW_KEY already exists" >&2
 	else
 		# launch app
 		$LAUNCH_CMD &
@@ -146,13 +146,13 @@ launch() {
         touch $WAIT_STAT_FILE
         echo "wait" > $WAIT_STAT_FILE
         (sleep $TIMEOUT && echo "timeout" > $WAIT_STAT_FILE) &
-	
+
 		# TODO: make delays shorter (timeout should handle most cases)
 		sleep $LOAD_DELAY
-		
+
 	        X_ID=""
 	        # search for window using pid until window exists or timeout occurs
-		while [ $(cat $WAIT_STAT_FILE) = "wait" ] && [ -z "$X_ID" ]; do  
+		while [ $(cat $WAIT_STAT_FILE) = "wait" ] && [ -z "$X_ID" ]; do
 			X_ID=$(get_xid_from_pid $CMD_PID)
             		sleep 0.01
         done
@@ -187,7 +187,7 @@ attach() {
 cache_delete() {
 	# params
 	WINDOW_KEY=$1
-	
+
 	echo "$(cache_print | grep -v "^$WINDOW_KEY ")" > $_CACHE
 }
 
@@ -220,7 +220,7 @@ kill_one() {
 kill_set() {
 	#params
 	SET_KEY=$1
-	
+
 	WINDOW_KEYS=($(cache_print |grep " $SET_KEY" | awk '{print $1}'))
 	for WINDOW_KEY in "${WINDOW_KEYS[@]}"; do
 		kill_one "$WINDOW_KEY"
