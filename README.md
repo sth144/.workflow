@@ -4,13 +4,13 @@ A set of dotfiles and utilities used to configure desktop environments and autom
 ## To Install Configs
 * clone repository
 * `cd /path/to/directory/.workflow`
-* `$ make build` to merge local and shared configs into dist directory
-    * examine the files in dist/. This set of files will be copied into ~/
+* `$ make build` to merge local and shared configs into stage directory
+    * examine the files in stage/. This set of files will be copied into ~/
         * note: if files exist in ~/ (or subdirectories like ~/.config/...), whose filenames
-            match those in dist, and whose paths (relative to ~) match those in dist (relative
-            to dist), they will be completely overwritten. No other files will be affected. Be
-            sure to examine the files in dist before installing
-* `$ make install` to copy configs from dist to home directory
+            match those in stage, and whose paths (relative to ~) match those in stage (relative
+            to stage), they will be completely overwritten. No other files will be affected. Be
+            sure to examine the files in stage before installing
+* `$ make install` to copy configs from stage to home directory
 
 ## Structure
 * Makefile
@@ -34,7 +34,7 @@ A set of dotfiles and utilities used to configure desktop environments and autom
             * utility scripts specific to local machine, not tracked by Git
         * shared/
             * utility scripts which can be used on any Linux machine
-* dist/
+* stage/
     * staging for compiled config files, after build, install script copies from this directory to ~/
 * .cache/
     * temp files used by utils scripts

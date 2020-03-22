@@ -8,14 +8,14 @@ confdir=basedir+"/src/configs"
 
 def copy_config_from(fromdir, inputfilename):
     inputfilepath=confdir+"/"+fromdir+"/"+inputfilename
-    outputfilepath=basedir+"/dist/"+inputfilename
+    outputfilepath=basedir+"/stage/"+inputfilename
     path_tools.copy_file_from_to(inputfilepath, outputfilepath)
     privilege_tools.make_executable(outputfilepath)
 
 def merge_copy_config(inputfilename):
     sharedfilepath=confdir+"/shared/"+inputfilename
     localfilepath=confdir+"/local/"+inputfilename
-    mergefilepath=basedir+"/dist/"+inputfilename
+    mergefilepath=basedir+"/stage/"+inputfilename
     sharedcontent=""
     localcontent=""
     with open(sharedfilepath, "r") as sharedfile:
@@ -77,8 +77,8 @@ def build():
         copy_config_from("local", file)
 
 def clean():
-    files = glob.glob(os.path.join(basedir+"/dist/*"))
-    files += glob.glob(os.path.join(basedir+"/dist/.*"))
+    files = glob.glob(os.path.join(basedir+"/stage/*"))
+    files += glob.glob(os.path.join(basedir+"/stage/.*"))
     files = [x for x in files if (x.find(".keep") == -1)]
     for f in files:
         if os.path.isdir(f):

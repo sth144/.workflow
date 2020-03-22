@@ -10,8 +10,8 @@ admin/localsettings.json
 !.logs/.keep
 
 # build
-dist/*
-!dist/.keep
+stage/*
+!stage/.keep
 
 # ignore any contents within local directory
 src/configs/local/*
