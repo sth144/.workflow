@@ -150,11 +150,11 @@ launch() {
 		# TODO: make delays shorter (timeout should handle most cases)
 		sleep $LOAD_DELAY
 
-	        X_ID=""
+		X_ID=""
 	        # search for window using pid until window exists or timeout occurs
 		while [ $(cat $WAIT_STAT_FILE) = "wait" ] && [ -z "$X_ID" ]; do
 			X_ID=$(get_xid_from_pid $CMD_PID)
-            		sleep 0.01
+			sleep 0.01
         done
 
         # can't delete temp stat file immediately, need to wait

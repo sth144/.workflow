@@ -80,6 +80,19 @@ bindsym $mod+a focus parent
 # focus the child container
 #bindsym $mod+d focus child
 
+# Define names for default workspaces for which we configure key bindings later on.
+# We use variables to avoid repeating the names in multiple places.
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+set $ws5 "5"
+set $ws6 "6"
+set $ws7 "7"
+set $ws8 "8"
+set $ws9 "9"
+set $ws10 "10"
+
 # switch to workspace
 bindsym $mod+1 workspace $ws1
 bindsym $mod+2 workspace $ws2
@@ -162,7 +175,7 @@ set $eggshell   #efefef
 # window compositor
 exec_always --no-startup-id compton --config ~/.config/compton/compton.conf -b
 # set initial window gaps
-gaps inner 18
+gaps inner 10
 # disable window titles (enables gaps to work properly)
 for_window [class="^.*"] border pixel 0
 # NOTE: as of 29 Feb, 2020, this line requires using this fork of i3-gaps:
@@ -273,10 +286,10 @@ bindsym $mod+minus exec --no-startup-id i3-msg scratchpad show && i3-msg move po
 
 # modular scratchpads. Create if window doesn't exist, otherwise show
 bindsym $mod+t exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_run_scratchpad.sh \
-	trello "/usr/bin/google-chrome-stable --app=https://trello.com/b/cK9nA9nR/to-do" 1 ".*trello.*" 1680 1074
+	trello "/usr/bin/google-chrome-stable --app=https://trello.com/b/cK9nA9nR/to-do" 1 ".*trello.*" 1912 1104
 
 # Uncomment if no local config
-#bindsym $mod+Return exec termite -d /home/manager/Projects_sean
+bindsym $mod+Return exec i3-sensible-terminal
 
 ##################################################################################
 ######################## To be supplied by local config ##########################
@@ -290,5 +303,7 @@ bindsym $mod+t exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_
 # workspace configurations 
 # any additional machine-specific keybindings
 # any additional machine-specific scratchpads
+#   - calculator
+#   - ranger
 # terminal launch keybinding (REQUIRED)
 

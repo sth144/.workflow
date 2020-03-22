@@ -56,4 +56,5 @@ A set of dotfiles and utilities used to configure desktop environments and autom
 * integrate crontab
 * update READMEs in subdirectories
 * improve build process
-* investigate merge conflicts with grive
+* refactor to install utils so that scripts don't rely on .workflow/src code
+* refactor to use ~/.cache/ instead of .workflow/cache

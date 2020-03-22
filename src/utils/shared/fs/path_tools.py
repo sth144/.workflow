@@ -14,5 +14,6 @@ def copy_file_from_to(inpath, outpath):
     pave_path_to(outpath)
     with open(inpath, "r") as fromfile:
         textcontent = fromfile.read()
-        with open(outpath, "w") as tofile:
-            tofile.write(textcontent)
+        if (not os.path.isdir(outpath)):
+            with open(outpath, "w") as tofile:
+                tofile.write(textcontent)
