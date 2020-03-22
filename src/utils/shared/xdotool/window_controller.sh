@@ -3,7 +3,7 @@
 xdotool=/usr/bin/xdotool
 # store tempfile with key value pairs in user cache
 _DIR=$(dirname $0)
-_CACHEDIR="$_DIR/../../../../.cache"
+_CACHEDIR="$_DIR/../../../../cache"
 _TMPFILE="tmp_window_controller.dat"
 _CACHE=$_CACHEDIR/$_TMPFILE
 

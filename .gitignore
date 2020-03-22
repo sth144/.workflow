@@ -2,12 +2,12 @@
 admin/localsettings.json
 
 # cache
-.cache/*
-!.cache/.keep
+cache/*
+!cache/.keep
 
 # log
-.logs/*
-!.logs/.keep
+log/*
+!log/.keep
 
 # build
 stage/*
