@@ -2,38 +2,39 @@
 A set of dotfiles and utilities used to configure desktop environments and automate workflows on Linux machines running i3wm with X window systems.
 
 ## To Install Configs
-* clone repository 
+* clone repository
 * `cd /path/to/directory/.workflow`
-* `$ make build` to merge local and shared configs into .build directory
-    * examine the files in .build/. This set of files will be copied into ~/
+* `$ make build` to merge local and shared configs into dist directory
+    * examine the files in dist/. This set of files will be copied into ~/
         * note: if files exist in ~/ (or subdirectories like ~/.config/...), whose filenames
-            match those in .build, and whose paths (relative to ~) match those in .build (relative
-            to .build), they will be completely overwritten. No other files will be affected. Be
-            sure to examine the files in .build before installing 
-* `$ make install` to copy configs from .build to home directory
+            match those in dist, and whose paths (relative to ~) match those in dist (relative
+            to dist), they will be completely overwritten. No other files will be affected. Be
+            sure to examine the files in dist before installing
+* `$ make install` to copy configs from dist to home directory
 
 ## Structure
 * Makefile
-* _admin/
+* admin/
     * installation scripts called by Makefile
-* _lib/
+* lib/
     * inactive config files for reference, notes
-* configs/
-    * local/
-        * configurations specific to local machine, not tracked by Git.
-        * if a file exists in both local/ and shared/, the local file will
-            be concatenated to the shared file during build process
-    * shared/
-        * configurations which can be used by any Linux machine with required
-            dependencies installed. 
-        * note: some configs are incomplete, and will require a partial config
-            with the same filename under local/ to work properly when installed
-* utils/
-    * local/
-        * utility scripts specific to local machine, not tracked by Git
-    * shared/
-        * utility scripts which can be used on any Linux machine
-* .build/
+* src/
+    * configs/
+        * local/
+            * configurations specific to local machine, not tracked by Git.
+            * if a file exists in both local/ and shared/, the local file will
+                be concatenated to the shared file during build process
+        * shared/
+            * configurations which can be used by any Linux machine with required
+                dependencies installed.
+            * note: some configs are incomplete, and will require a partial config
+                with the same filename under local/ to work properly when installed
+    * utils/
+        * local/
+            * utility scripts specific to local machine, not tracked by Git
+        * shared/
+            * utility scripts which can be used on any Linux machine
+* dist/
     * staging for compiled config files, after build, install script copies from this directory to ~/
 * .cache/
     * temp files used by utils scripts

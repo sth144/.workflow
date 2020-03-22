@@ -2,7 +2,7 @@ all: build install
 
 # build configs (merge local and shared into build directory)
 .PHONY: build
-build: clean 
+build: clean
 	@echo "building configs"
 	./admin/build_configs.py build
 
@@ -12,7 +12,7 @@ install: enable_utils copy update_bashrc refresh
 # copy config build to ~/.config dot directory
 # add .workflow base directory to path in ~/.bashrc
 # this allows scripts in other locations, as well as within .workflow, to call
-# workflow scripts without using relative paths 
+# workflow scripts without using relative paths
 copy:
 	@echo "copying dotfiles to home directory"
 	./admin/install_configs.sh install
@@ -20,8 +20,8 @@ copy:
 # enable utils
 enable_utils:
 	@echo "enabling utils"
-	find ./utils -type f -iname "*.sh" -exec chmod +x {} \;
-	find ./utils -type f -iname "*.py" -exec chmod +x {} \;
+	find ./src/utils -type f -iname "*.sh" -exec chmod +x {} \;
+	find ./src/utils -type f -iname "*.py" -exec chmod +x {} \;
 
 
 # some commands (like "export WORKFLOW_BASE=...") cannot be hardcoded into conf/shared/.bashrc
