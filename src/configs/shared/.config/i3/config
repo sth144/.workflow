@@ -165,6 +165,9 @@ exec_always --no-startup-id compton --config ~/.config/compton/compton.conf -b
 gaps inner 18
 # disable window titles (enables gaps to work properly)
 for_window [class="^.*"] border pixel 0
+# NOTE: as of 29 Feb, 2020, this line requires using this fork of i3-gaps:
+#  	https://github.com/resloved/i3.git
+border_radius 4
 
 # window decoration
 # class                 border     background  text    	 indicator   child_border
@@ -269,6 +272,8 @@ bindsym $mod+Shift+minus move scratchpad
 bindsym $mod+minus exec --no-startup-id i3-msg scratchpad show && i3-msg move position center
 
 # modular scratchpads. Create if window doesn't exist, otherwise show
+bindsym $mod+t exec --no-startup-id ~/Projects/.workflow/utils/shared/i3/i3_run_scratchpad.sh \
+	trello "/usr/bin/google-chrome-stable --app=https://trello.com/b/cK9nA9nR/to-do" 1 ".*trello.*" 1680 1074
 
 # Uncomment if no local config
 #bindsym $mod+Return exec termite -d /home/manager/Projects_sean
