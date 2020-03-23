@@ -178,9 +178,6 @@ exec_always --no-startup-id compton --config ~/.config/compton/compton.conf -b
 gaps inner 10
 # disable window titles (enables gaps to work properly)
 for_window [class="^.*"] border pixel 0
-# NOTE: as of 29 Feb, 2020, this line requires using this fork of i3-gaps:
-#  	https://github.com/resloved/i3.git
-border_radius 4
 
 # window decoration
 # class                 border     background  text    	 indicator   child_border

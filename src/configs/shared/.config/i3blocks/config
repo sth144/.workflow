@@ -31,7 +31,7 @@
 # The top properties below are applied to every block, but can be overridden.
 # Each block command defaults to the script name to avoid boilerplate.
 command=/usr/lib/i3blocks/$BLOCK_NAME
-separator_block_width=20
+separator_block_width=26
 markup=pango
 
 [weather]
@@ -39,26 +39,21 @@ command=echo $(curl wttr.in?format="%c_%t_%w_%h" | tr '_' ' ')
 color=#404040
 interval=3600
 
-#[keybindings]
-#label=
-#color=#404040
-#command=echo "WIN q"
-#interval=once
+[network]
+label=📶
+command=hostname -I
+interval=3600
 
-# Network interface monitoring
-#
-# If the instance is not specified, use the interface used for default route.
-# The address can be forced to IPv4 or IPv6 with -4 or -6 switches.
-[iface]
-label=⌨️
-#instance=wlan0
-color=#404040
-interval=10
-
-# Date Time
-#
 [time]
 label=🕒
 color=#404040
 command=date '+%Y-%m-%d %H:%M:%S'
-interval=5
+interval=1
+
+[user]
+label=👤
+color=#404040
+command=whoami
+interval=3600
+
+# NOTE: there MUST be a newline at the end of file
