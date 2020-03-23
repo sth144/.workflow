@@ -65,6 +65,7 @@ window_exists() {
 	WINDOW_KEY=$1
 
 	RESULT="false"
+
 	QUERY_PID=$(get_pid_from_key $WINDOW_KEY)
 	if [ ! -z "$QUERY_PID" ] && [ "$QUERY_PID" != "NULL" ]; then
 		QUERY_XID=$($xdotool search --pid $QUERY_PID)
@@ -132,6 +133,7 @@ launch() {
 	SEARCH_RGX=$4
 	WINDOW_SET=$5	# optional
 
+
 	if [ $(window_exists $WINDOW_KEY) = "true" ]; then
 		echo "Error: window with key $WINDOW_KEY already exists" >&2
 	else
@@ -151,7 +153,8 @@ launch() {
 		sleep $LOAD_DELAY
 
 		X_ID=""
-	        # search for window using pid until window exists or timeout occurs
+
+		# search for window using pid until window exists or timeout occurs
 		while [ $(cat $WAIT_STAT_FILE) = "wait" ] && [ -z "$X_ID" ]; do
 			X_ID=$(get_xid_from_pid $CMD_PID)
 			sleep 0.01
@@ -165,6 +168,28 @@ launch() {
 		fi
 		register_window $WINDOW_KEY $X_ID $WINDOW_SET
 	fi
+}
+
+remove() {
+	# params
+	WINDOW_KEY=$1
+	LAUNCH_CMD=$2
+	LOAD_DELAY=$3
+	SEARCH_RGX=$4
+	WINDOW_SET=$5	# optional
+
+	# remove existing entry
+
+
+	sed -i "s/$WINDOW_KEY .*//g" $_CACHE
+
+echo "SLEEPING"
+	sleep 5
+echo "SLEPT"
+
+echo "CALLING LAUNCH launch $WINDOW_KEY \"$LAUNCH_CMD\" $LOAD_DELAY $SEARCH_RGX $WINDOW_SET"
+
+	launch $WINDOW_KEY "$LAUNCH_CMD" $LOAD_DELAY $SEARCH_RGX $WINDOW_SET
 }
 
 attach() {

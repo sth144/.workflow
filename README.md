@@ -58,3 +58,4 @@ A set of dotfiles and utilities used to configure desktop environments and autom
 * improve build process
 * refactor to install utils so that scripts don't rely on .workflow/src code
 * refactor to use ~/.cache/ instead of .workflow/cache
+* make termite a dependency and move scratchpads to shared i3 config

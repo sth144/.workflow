@@ -161,9 +161,9 @@ bindsym $mod+r mode "resize"
 set $mod mod4
 
 # define a color scheme
-set $dark_gray  #999999
-set $light_gray #cdcdcd
-set $charcoal   #404040
+set $med_gray   #cccccc
+set $light_gray #eeeeee
+set $charcoal   #505050
 set $sky_blue   #2e9ef4
 set $ocean_blue #285577
 set $obsidian   #292d2e
@@ -184,9 +184,9 @@ border_radius 4
 
 # window decoration
 # class                 border     background  text    	 indicator   child_border
-client.focused          $dark_gray $light_gray $charcoal $sky_blue   $ocean_blue
-client.focused_inactive $dark_gray $dark_gray  $charcoal $charcoal   $charcoal
-client.unfocused        $dark_gray $dark_gray  $charcoal $obsidian   $obsidian
+client.focused          $med_gray $light_gray $charcoal $sky_blue   $ocean_blue
+client.focused_inactive $med_gray $med_gray  $charcoal $charcoal   $charcoal
+client.unfocused        $med_gray $med_gray  $charcoal $obsidian   $obsidian
 client.urgent           $obsidian  $light_red  $eggshell $light_red  $light_red
 client.placeholder      $obsidian  $obsidian   $eggshell $obsidian   $obsidian
 client.background       $eggshell
@@ -209,7 +209,7 @@ bar {
 		
 		# workspace icons widget
 		# class		   border  backgr. text
-           	focused_workspace  $dark_gray  $dark_gray  $charcoal
+           	focused_workspace  $med_gray  $med_gray  $charcoal
            	active_workspace   $light_gray $light_gray $charcoal
            	inactive_workspace $light_gray $light_gray $charcoal
          	urgent_workspace   $light_red  $charcoal   $eggshell	
@@ -287,9 +287,15 @@ bindsym $mod+minus exec --no-startup-id i3-msg scratchpad show && i3-msg move po
 # modular scratchpads. Create if window doesn't exist, otherwise show
 bindsym $mod+t exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_run_scratchpad.sh \
 	trello "/usr/bin/google-chrome-stable --app=https://trello.com/b/cK9nA9nR/to-do" 1 ".*trello.*" 1912 1104
+bindsym $mod+u exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_run_scratchpad.sh \
+	dropdown "termite" 0.1 ".*sthinds.*" 712 712
+bindsym $mod+c exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_run_scratchpad.sh \
+	calculator "termite --title='Calculator' -e 'bc'" 0.1 ".*Calculator.*" 480 474
+bindsym $mod+i exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_run_scratchpad.sh \
+	ranger "termite --title='Ranger' -e 'ranger'" 0.1 ".*Ranger.*" 1320 874
 
 # Uncomment if no local config
-bindsym $mod+Return exec i3-sensible-terminal
+bindsym $mod+Return exec termite
 
 ##################################################################################
 ######################## To be supplied by local config ##########################

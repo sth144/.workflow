@@ -19,6 +19,12 @@ WINDOW_EXISTS="$($CONTROLLER window_exists $WINDOW_KEY)"
 LAUNCH_NEW="true"
 if [ $WINDOW_EXISTS = "true" ]; then
 	LAUNCH_NEW="false"
+	WINDOW_ID=$($CONTROLLER get_xid_from_key $WINDOW_KEY)
+	WINDOW_INFO=$(xwininfo -id $WINDOW_ID)
+	if (( $? == 1 )); then 
+		LAUNCH_NEW="true"
+		$CONTROLLER cache_delete $WINDOW_KEY
+	fi
 fi
 
 if [ $LAUNCH_NEW = "true" ]; then
