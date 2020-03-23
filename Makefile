@@ -39,3 +39,8 @@ refresh:
 clean:
 	@echo "cleaning config build output directory"
 	./admin/build_configs.py clean
+
+.PHONY: backup
+backup:
+	@echo "backing up local configs and utils"
+	./admin/backup_local.py

@@ -8,6 +8,9 @@ cache/*
 # log
 log/*
 !log/.keep
+# backup
+backup/*
+!backup/.keep
 
 # build
 stage/*

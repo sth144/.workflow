@@ -58,3 +58,10 @@ A set of dotfiles and utilities used to configure desktop environments and autom
 * refactor to install utils so that scripts don't rely on .workflow/src code
 * refactor to use ~/.cache/ instead of .workflow/cache
 * make sure .bashrc works on multiple distros
+* fix connections conky
+* conky for disc D
+* conky disc temp
+* fix network conky
+* organize scratchpad bindings and brainstorm others
+    * picocluster scratchpad for local
+*  
