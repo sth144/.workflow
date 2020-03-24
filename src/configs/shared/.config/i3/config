@@ -290,6 +290,8 @@ bindsym $mod+c exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_
 	calculator "termite --title='Calculator' -e 'bc'" 0.1 ".*Calculator.*" 480 474
 bindsym $mod+i exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_run_scratchpad.sh \
 	ranger "termite --title='Ranger' -e 'ranger'" 0.1 ".*Ranger.*" 1320 874
+bindsym $mod+b exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_run_scratchpad.sh \
+    barrier "barrier" 0.1 ".*Barrier.*" 640 480
 
 # Uncomment if no local config
 bindsym $mod+Return exec termite

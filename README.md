@@ -43,6 +43,8 @@ A set of dotfiles and utilities used to configure desktop environments and autom
 
 ## Dependencies
 * i3-gaps    (window manager)
+    * NOTE: as of 29 Feb, 2020, this line requires using this fork of i3-gaps:
+    * https://github.com/resloved/i3.git
 * i3-blocks  (utility bar)
 * compton    (X Window compositor)
 * ranger     (terminal file manager)
@@ -51,17 +53,11 @@ A set of dotfiles and utilities used to configure desktop environments and autom
 * Python 3.x
 * Node.js
 * npm
+* barrier    (keyboard/mouse share)
 
 ## TODO
 * integrate crontab
-* improve build process
 * refactor to install utils so that scripts don't rely on .workflow/src code
 * refactor to use ~/.cache/ instead of .workflow/cache
 * make sure .bashrc works on multiple distros
-* fix connections conky
-* conky for disc D
-* conky disc temp
-* fix network conky
 * organize scratchpad bindings and brainstorm others
-    * picocluster scratchpad for local
-*  

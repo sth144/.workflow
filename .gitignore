@@ -34,3 +34,5 @@ src/configs/shared/ranger/bookmarks
 # any node modules
 *node_modules
 *node_modules/*
+
+.vscode
