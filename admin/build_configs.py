@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys, os, shutil, glob, stat, errno
 from src.utils.shared.fs import path_tools, privilege_tools

@@ -282,15 +282,15 @@ bindsym $mod+Shift+minus move scratchpad
 bindsym $mod+minus exec --no-startup-id i3-msg scratchpad show && i3-msg move position center
 
 # modular scratchpads. Create if window doesn't exist, otherwise show
-bindsym $mod+t exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_run_scratchpad.sh \
+bindsym $mod+t exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
 	trello "/usr/bin/google-chrome-stable --app=https://trello.com/b/cK9nA9nR/to-do" 1 ".*trello.*" 1912 1104
-bindsym $mod+u exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_run_scratchpad.sh \
+bindsym $mod+u exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
 	dropdown "termite" 0.1 ".*sthinds.*" 712 712
-bindsym $mod+c exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_run_scratchpad.sh \
+bindsym $mod+c exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
 	calculator "termite --title='Calculator' -e 'bc'" 0.1 ".*Calculator.*" 480 474
-bindsym $mod+i exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_run_scratchpad.sh \
+bindsym $mod+i exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
 	ranger "termite --title='Ranger' -e 'ranger'" 0.1 ".*Ranger.*" 1320 874
-bindsym $mod+b exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_run_scratchpad.sh \
+bindsym $mod+b exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
     barrier "barrier" 0.1 ".*Barrier.*" 640 480
 
 # Uncomment if no local config
@@ -298,10 +298,10 @@ bindsym $mod+Return exec termite
 
 # volume control
 mode "volume" {
-    bindsym Up   exec --no-startup-id ~/Projects/.workflow/src/utils/shared/pactl/volume_controller.sh inc_volume
-    bindsym Down exec --no-startup-id ~/Projects/.workflow/src/utils/shared/pactl/volume_controller.sh dec_volume
-    bindsym l    exec --no-startup-id ~/Projects/.workflow/src/utils/shared/pactl/volume_controller.sh inc_volume
-    bindsym k    exec --no-startup-id ~/Projects/.workflow/src/utils/shared/pactl/volume_controller.sh dec_volume
+    bindsym Up   exec --no-startup-id ~/.util/pactl/volume_controller.sh inc_volume
+    bindsym Down exec --no-startup-id ~/.util/pactl/volume_controller.sh dec_volume
+    bindsym l    exec --no-startup-id ~/.util/pactl/volume_controller.sh inc_volume
+    bindsym k    exec --no-startup-id ~/.util/pactl/volume_controller.sh dec_volume
 
     # back to normal: Enter or Escape or $mod+r
     bindsym Return mode "default"

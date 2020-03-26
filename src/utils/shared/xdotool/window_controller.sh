@@ -3,8 +3,8 @@
 xdotool=/usr/bin/xdotool
 # store tempfile with key value pairs in user cache
 _DIR=$(dirname $0)
-_CACHEDIR="$_DIR/../../../../cache"
-_TMPFILE="tmp_window_controller.dat"
+_CACHEDIR=/home/sthinds/.cache/.workflow
+_TMPFILE=tmp_window_controller.dat
 _CACHE=$_CACHEDIR/$_TMPFILE
 
 # debounce time between keystrokes, in seconds
@@ -144,7 +144,7 @@ launch() {
 		CMD_PID=$(echo $!)
 
         # use a temp file and background command to implement asynchronous timeout
-        WAIT_STAT_FILE="$_CACHEDIR/timeout$$"
+        WAIT_STAT_FILE=$_CACHEDIR/timeout$$
         touch $WAIT_STAT_FILE
         echo "wait" > $WAIT_STAT_FILE
         (sleep $TIMEOUT && echo "timeout" > $WAIT_STAT_FILE) &

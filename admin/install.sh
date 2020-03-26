@@ -11,12 +11,15 @@ install() {
 	find "$BASE_ABS/stage" -type f | sed 's/.*stage/\~/g' | grep -v ".keep"
 	read -p "Proceed? (y/n) " RESPONSE
 
-	if [ $RESPONSE = "y" ]; then
-	# copy config build and utils to ~ 
+	if [ $RESPONSE = "y" ]; 
+	then
+		# copy config build and utils to ~ 
 		cp -r $BASE_ABS/stage/. ~/
 
         rm ~/.keep
 	fi
+
+	mkdir -p ~/.cache/.workflow
 }
 
 refresh() {
