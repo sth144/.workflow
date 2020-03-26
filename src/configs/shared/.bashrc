@@ -114,3 +114,6 @@ export PYTHONDONTWRITEBYTECODE=True
 
 # this enables syntax highlighting in Termite
 export TERM=xterm-256color
+
+export NVM_DIR=~/.nvm 
+source ~/.nvm/nvm.sh

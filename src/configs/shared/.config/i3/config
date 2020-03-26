@@ -296,6 +296,21 @@ bindsym $mod+b exec --no-startup-id ~/Projects/.workflow/src/utils/shared/i3/i3_
 # Uncomment if no local config
 bindsym $mod+Return exec termite
 
+# volume control
+mode "volume" {
+    bindsym $mod+Up   exec --no-startup-id ~/Projects/.workflow/src/utils/shared/pactl/volume_controller.sh inc_volume 10 >> ~/Projects/.workflow/log/debug
+    bindsym $mod+Down exec --no-startup-id ~/Projects/.workflow/src/utils/shared/pactl/volume_controller.sh dec_volume 10 >> ~/Projects/.workflow/log/debug
+    bindsym $mod+l    exec --no-startup-id ~/Projects/.workflow/src/utils/shared/pactl/volume_controller.sh inc_volume 10 >> ~/Projects/.workflow/log/debug
+    bindsym $mod+k    exec --no-startup-id ~/Projects/.workflow/src/utils/shared/pactl/volume_controller.sh dec_volume 10 >> ~/Projects/.workflow/log/debug
+
+    # back to normal: Enter or Escape or $mod+r
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+    bindsym $mod+Control+v mode "default"
+}
+
+bindsym $mod+Control+v mode "volume"
+
 ##################################################################################
 ######################## To be supplied by local config ##########################
 ##################################################################################

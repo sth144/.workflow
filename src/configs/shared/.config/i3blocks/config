@@ -31,18 +31,20 @@
 # The top properties below are applied to every block, but can be overridden.
 # Each block command defaults to the script name to avoid boilerplate.
 command=/usr/lib/i3blocks/$BLOCK_NAME
-separator_block_width=26
+separator_block_width=12
+separator=false
 markup=pango
 
 [weather]
 command=echo $(curl wttr.in?format="%c_%t_%w_%h" | tr '_' ' ')
-color=#404040
-interval=3600
+color=#7a7a7a
+interval=600
 
 [network]
 label=📶
 command=hostname -I
-interval=3600
+color=#de8107
+interval=600
 
 [time]
 label=🕒
@@ -50,10 +52,17 @@ color=#404040
 command=date '+%a %d %b, %Y %H:%M:%S'
 interval=1
 
+[volume]
+label=🔊
+color=#5da0c2
+interval=2
+command=echo "$(~/Projects/.workflow/src/utils/shared/pactl/volume_controller.sh get_volume)%"
+
 [user]
 label=👤
-color=#404040
+color=#185dccc
 command=whoami
-interval=3600
+interval=600
+
 
 # NOTE: there MUST be a newline at the end of file

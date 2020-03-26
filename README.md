@@ -58,6 +58,12 @@ A set of dotfiles and utilities used to configure desktop environments and autom
 ## TODO
 * integrate crontab
 * refactor to install utils so that scripts don't rely on .workflow/src code
-* refactor to use ~/.cache/ instead of .workflow/cache
-* make sure .bashrc works on multiple distros
+* refactor to use ~/.cache/ instead of .workflow/cache (same for log)
+* make sure .bashrc (and other stuff...) works on multiple distros
 * organize scratchpad bindings and brainstorm others
+    * htop
+    * pocketcasts
+    * spotify
+    * volume control
+* i3 blocks scripts directory
+* deal with annoying __init__.py files everywhere
