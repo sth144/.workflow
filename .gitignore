@@ -1,13 +1,5 @@
 # base configuration
 admin/localsettings.json
-
-# cache
-cache/*
-!cache/.keep
-
-# log
-log/*
-!log/.keep
 # backup
 backup/*
 !backup/.keep
