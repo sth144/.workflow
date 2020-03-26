@@ -8,14 +8,14 @@ BASE_ABS=$(cd "$(dirname $0)/.." && pwd)
 
 install() {
 	echo "WARNING: If the following files exist, they will be overwritten"
-	find "$BASE_ABS/stage" -type f | sed 's/.*stage/\~/g'
+	find "$BASE_ABS/stage" -type f | sed 's/.*stage/\~/g' | grep -v ".keep"
 	read -p "Proceed? (y/n) " RESPONSE
 
 	if [ $RESPONSE = "y" ]; then
-	# copy config build to ~ (and  ~/.config dot directory)
+	# copy config build and utils to ~ 
 		cp -r $BASE_ABS/stage/. ~/
 
-		# TODO: remove .keep and README's
+        rm ~/.keep
 	fi
 }
 

@@ -1,28 +1,32 @@
-all: build install
+all: stage install
 
 # build configs (merge local and shared into build directory)
-.PHONY: build
-build: clean
-	@echo "building configs"
+.PHONY: stage
+stage: clean
+	@echo "building and staging configs"
 	./admin/build_configs.py build
+	@echo "staging utils (with preference for local utils)"
+	cp -r ./src/utils/shared/. ./stage/.util
+	cp -r ./src/utils/local/. ./stage/.util
 
-install: enable_utils copy update_bashrc refresh
-	@echo "installing config build"
+.PHONY: install
+install: copy_staged_to_home enable_utils update_bashrc refresh
+	@echo "installing configs and utils"
 
 # copy config build to ~/.config dot directory
 # add .workflow base directory to path in ~/.bashrc
 # this allows scripts in other locations, as well as within .workflow, to call
 # workflow scripts without using relative paths
-copy:
-	@echo "copying dotfiles to home directory"
-	./admin/install_configs.sh install
+# copy utils to ~/.util directory
+copy_staged_to_home:
+	@echo "copying dotfiles and utils to home directory"
+	./admin/install.sh install
 
 # enable utils
 enable_utils:
-	@echo "enabling utils"
-	find ./src/utils -type f -iname "*.sh" -exec chmod +x {} \;
-	find ./src/utils -type f -iname "*.py" -exec chmod +x {} \;
-
+	@echo "enabling utils in ~/.util"
+	find ~/.util -type f -iname "*.sh" -exec chmod +x {} \;
+	find ~/.util -type f -iname "*.py" -exec chmod +x {} \;
 
 # some commands (like "export WORKFLOW_BASE=...") cannot be hardcoded into conf/shared/.bashrc
 # this makefile target will append them to ~/.bashrc
@@ -33,7 +37,7 @@ update_bashrc:
 # restart i3
 refresh:
 	@echo "refreshing i3wm"
-	./admin/install_configs.sh refresh &
+	./admin/install.sh refresh &
 
 # clear config build directory
 clean:
