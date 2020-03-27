@@ -55,10 +55,10 @@ bindsym $mod+Shift+Up move up
 bindsym $mod+Shift+Right move right
 
 # split in horizontal orientation
-bindsym $mod+h split h
+bindsym $mod+Shift+h split h
 
 # split in vertical orientation
-bindsym $mod+v split v
+bindsym $mod+Shift+v split v
 
 # enter fullscreen mode for the focused container
 bindsym $mod+f fullscreen toggle
@@ -123,33 +123,6 @@ bindsym $mod+Shift+c reload
 bindsym $mod+Shift+r restart
 # exit i3 (logs you out of your X session)
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -B 'Yes, exit i3' 'i3-msg exit'"
-
-# resize window (you can also use the mouse for that)
-mode "resize" {
-        # These bindings trigger as soon as you enter the resize mode
-
-        # Pressing left will shrink the window’s width.
-        # Pressing right will grow the window’s width.
-        # Pressing up will shrink the window’s height.
-        # Pressing down will grow the window’s height.
-        bindsym j resize shrink width 10 px or 10 ppt
-        bindsym k resize grow height 10 px or 10 ppt
-        bindsym l resize shrink height 10 px or 10 ppt
-        bindsym semicolon resize grow width 10 px or 10 ppt
-
-        # same bindings, but for the arrow keys
-        bindsym Left resize shrink width 10 px or 10 ppt
-        bindsym Down resize grow height 10 px or 10 ppt
-        bindsym Up resize shrink height 10 px or 10 ppt
-        bindsym Right resize grow width 10 px or 10 ppt
-
-        # back to normal: Enter or Escape or $mod+r
-        bindsym Return mode "default"
-        bindsym Escape mode "default"
-        bindsym $mod+r mode "default"
-}
-
-bindsym $mod+r mode "resize"
 
 #########################################################################################################################
 ############################################# Custom Configurations (Shared) ############################################
@@ -291,25 +264,23 @@ bindsym $mod+c exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
 bindsym $mod+i exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
 	ranger "termite --title='Ranger' -e 'ranger'" 0.1 ".*Ranger.*" 1320 874
 bindsym $mod+b exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-    barrier "barrier" 0.1 ".*Barrier.*" 640 480
+    "barrier" "barrier" 0.1 ".*Barrier.*" 640 480
+bindsym $mod+m exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
+    spotify "/snap/bin/spotify" 3.6 ".*Spotify.*" 1340 980
+bindsym $mod+n exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
+    pocketcasts "/snap/bin/pocket-casts" 3.6 ".*Podcast.*" 960 1000
+bindsym F9 exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
+	gmail "/usr/bin/google-chrome-stable --app=https://mail.google.com/mail/u/0/" 1 ".*gmail.*" 1420 974
+bindsym Print exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
+	screenshot "/usr/bin/gnome-screenshot -i" 2 ".*Screenshot.*" 1420 974
 
 # Uncomment if no local config
 bindsym $mod+Return exec termite
 
 # volume control
-mode "volume" {
-    bindsym Up   exec --no-startup-id ~/.util/pactl/volume_controller.sh inc_volume
-    bindsym Down exec --no-startup-id ~/.util/pactl/volume_controller.sh dec_volume
-    bindsym l    exec --no-startup-id ~/.util/pactl/volume_controller.sh inc_volume
-    bindsym k    exec --no-startup-id ~/.util/pactl/volume_controller.sh dec_volume
-
-    # back to normal: Enter or Escape or $mod+r
-    bindsym Return mode "default"
-    bindsym Escape mode "default"
-    bindsym $mod+Control+v mode "default"
-}
-
-bindsym $mod+Control+v mode "volume"
+bindsym F2 exec --no-startup-id ~/.util/pactl/volume_controller.sh dec_volume 10
+bindsym F3 exec --no-startup-id ~/.util/pactl/volume_controller.sh inc_volume 10
+bindsym F4 exec --no-startup-id ~/.util/pactl/volume_controller.sh mute
 
 ##################################################################################################################
 ######################################## To be supplied by local config ##########################################

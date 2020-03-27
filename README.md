@@ -46,6 +46,7 @@ A set of dotfiles and utilities used to configure desktop environments and autom
     * NOTE: as of 29 Feb, 2020, this line requires using this fork of i3-gaps:
     * https://github.com/resloved/i3.git
 * i3-blocks  (utility bar)
+* Gnome desktop environment (used for utilities)
 * compton    (X Window compositor)
 * ranger     (terminal file manager)
 * termite    (terminal emulator)
@@ -57,13 +58,15 @@ A set of dotfiles and utilities used to configure desktop environments and autom
 
 ## TODO
 * integrate crontab
-* refactor to install utils so that scripts don't rely on .workflow/src code
-* refactor to use ~/.cache/ instead of .workflow/cache (same for log)
 * make sure .bashrc (and other stuff...) works on multiple distros
 * organize scratchpad bindings and brainstorm others
-    * htop
-    * pocketcasts
-    * spotify
-    * volume control
+    * Google Drive
+    * Google Translate
+    * browser research window (F10)
+    * teams
 * i3 blocks scripts directory
-* deal with annoying __init__.py files everywhere
+* ability to easily call util scripts from command line
+    * useful global scripts
+* easy access to scratchpad cache
+* ability to swap out scripts for different available dependencies (through configuration)
+    * generically named script in utils/shared, like 'screenshot.sh' could be overridden with utils/local/screenshot.sh calling a different underlying utility

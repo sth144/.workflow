@@ -117,3 +117,6 @@ export TERM=xterm-256color
 
 export NVM_DIR=~/.nvm 
 source ~/.nvm/nvm.sh
+
+# add all utils to PATH
+export PATH="$(find ~/.util -type d -printf ":%p"):$PATH"

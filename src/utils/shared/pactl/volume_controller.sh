@@ -31,7 +31,7 @@ dec_volume() {
 }
 
 mute() {
-    set_volume $(get_running_sink) 0
+    pactl set-sink-mute $(get_running_sink) "toggle"
 }
 
 get_running_sink() {
