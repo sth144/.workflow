@@ -17,6 +17,7 @@ install() {
 		cp -r $BASE_ABS/stage/. ~/
 
         rm ~/.keep
+		rm ~/README.md
 	fi
 
 	mkdir -p ~/.cache/.workflow

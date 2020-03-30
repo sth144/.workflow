@@ -151,6 +151,8 @@ exec_always --no-startup-id compton --config ~/.config/compton/compton.conf -b
 gaps inner 10
 # disable window titles (enables gaps to work properly)
 for_window [class="^.*"] border pixel 0
+# dynamically name workspaces based on focused window
+exec_always --no-startup-id ~/.config/i3/sh/workspace_names.sh
 
 # window decoration
 # class                 border     background  text    	 indicator   child_border
@@ -281,6 +283,9 @@ bindsym $mod+Return exec termite
 bindsym F2 exec --no-startup-id ~/.util/pactl/volume_controller.sh dec_volume 10
 bindsym F3 exec --no-startup-id ~/.util/pactl/volume_controller.sh inc_volume 10
 bindsym F4 exec --no-startup-id ~/.util/pactl/volume_controller.sh mute
+
+# lock screen
+bindsym $mod+F11 exec --no-startup-id ~/.config/i3/sh/lock.sh
 
 ##################################################################################################################
 ######################################## To be supplied by local config ##########################################

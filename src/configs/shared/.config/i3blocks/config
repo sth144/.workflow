@@ -42,7 +42,7 @@ interval=600
 
 [network]
 label=📶
-command=hostname -I
+command=hostname -I | awk '{print $1, $2}'
 color=#de8107
 interval=600
 

@@ -1,10 +1,11 @@
 all: stage install
 
-# build configs (merge local and shared into build directory)
+# stage configs and utils, giving preference to files in local if they exist in both local and shared
 .PHONY: stage
 stage: clean
-	@echo "building and staging configs"
-	./admin/build_configs.py build
+	@echo "staging configs"
+	cp -r ./src/configs/shared/. ./stage
+	cp -r ./src/configs/local/. ./stage
 	@echo "staging utils (with preference for local utils)"
 	cp -r ./src/utils/shared/. ./stage/.util
 	cp -r ./src/utils/local/. ./stage/.util
@@ -42,7 +43,7 @@ refresh:
 # clear config build directory
 clean:
 	@echo "cleaning config build output directory"
-	./admin/build_configs.py clean
+	rm -rf ./stage/*
 
 .PHONY: backup
 backup:
