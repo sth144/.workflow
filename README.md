@@ -76,9 +76,8 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * easy access to scratchpad cache
 * ability to swap out scripts for different available dependencies (through configuration)
     * generically named script in utils/shared, like 'screenshot.sh' could be overridden with utils/local/screenshot.sh calling a different underlying utility
-* lock screen customization, screensaver or autolock
-* instead of appending local to source for configs...just override with local, copy over if doesn't exist (this is a big refactor, but will simplify things a lot and make porting to multiple devices much much easier)
-    * need to work out a good dev workflow where you can modify src/*/shared and continuously update local versions automatically.
-        * new Makefile target
-    * does this obviate the need for stage/*? Not necessary to figure that out just yet
+* screensaver or autolock
+* need to work out a good dev workflow where you can modify src/*/shared and continuously update local versions automatically.
+    * new Makefile target
+* is there really a need for stage/*? Not necessary to figure that out just yet
 * is update_bashrc necessary?
