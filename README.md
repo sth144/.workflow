@@ -57,26 +57,41 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * Node.js
 * npm
 * barrier    (keyboard/mouse share)
+* jq
 
 ## TODO
-* integrate crontab
+### Bash
 * make sure .bashrc (and other stuff...) works on multiple distros
+* useful global scripts
+* useful bash aliases
+* ability to swap out scripts for different available dependencies (through configuration)
+    * generically named script in utils/shared, like 'screenshot.sh' could be overridden with utils/local/screenshot.sh calling a different underlying utility
+### Cron
+* integrate crontab
+### i3
+* fix bug where multiple workspaces end up with same number
+* screensaver and/or autolock
+### i3Blocks
+* i3blocks
+    * i3blocks scripts directory
+    * i3blocks mail notification
+### Scratchpads
 * organize scratchpad bindings and brainstorm others
     * Google Drive
     * Google Translate
     * browser research window (F10)
     * teams
-    * NOTES NOTES NOTES!!! Figure out an integrated notetaking solution
+* Figure out an integrated notetaking solution
 * use mod1 for scratchpads???
 * scratchpad commands REGISTRY, rather than hardcoding in i3 config
     * could have a default that can be overridden
-* i3 blocks scripts directory
-* useful global scripts
-* useful bash aliases
+    * Trello board URLs should be configured, not hardcoded
+* multiple scratchpads in view within workspace
+    * investigate i3 marks for scratchpads?
+* persist scratchpad sizes when changed?
+* F12 for calculator
 * easy access to scratchpad cache
-* ability to swap out scripts for different available dependencies (through configuration)
-    * generically named script in utils/shared, like 'screenshot.sh' could be overridden with utils/local/screenshot.sh calling a different underlying utility
-* screensaver or autolock
+### Workflow
 * need to work out a good dev workflow where you can modify src/*/shared and continuously update local versions automatically.
     * new Makefile target
 * is there really a need for stage/*? Not necessary to figure that out just yet

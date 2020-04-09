@@ -19,15 +19,7 @@ inc_volume() {
 
 dec_volume() {
     PERCENT_DEC=$1
-    echo "DEC $PERCENT_DEC"
-    get_volume
-    
-    if (( $(get_volume) >= $PERCENT_DEC))
-    then
-        set_volume "-$1"
-    else
-        echo "NOPE"
-    fi
+    set_volume "-$1"
 }
 
 mute() {
