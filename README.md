@@ -64,8 +64,10 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * make sure .bashrc (and other stuff...) works on multiple distros
 * useful global scripts
 * useful bash aliases
+    * $ git log --all --graph --oneline --decorate
 * ability to swap out scripts for different available dependencies (through configuration)
     * generically named script in utils/shared, like 'screenshot.sh' could be overridden with utils/local/screenshot.sh calling a different underlying utility
+* fix issue where workspace_names script takes up an entire CPU core
 ### Cron
 * integrate crontab
 ### i3
@@ -91,6 +93,9 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * persist scratchpad sizes when changed?
 * F12 for calculator
 * easy access to scratchpad cache
+* fix bug where window controller doesn't attach to scratchpad window (specifically Trello)
+### Vim
+* .vimrc
 ### Workflow
 * need to work out a good dev workflow where you can modify src/*/shared and continuously update local versions automatically.
     * new Makefile target

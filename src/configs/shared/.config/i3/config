@@ -130,6 +130,8 @@ set $obsidian   #292d2e
 set $light_red  #ff8888
 set $eggshell   #efefef
 
+focus_follows_mouse no
+
 ##=========================================== initialize desktop environment ==================================##
 
 # window compositor
@@ -245,9 +247,9 @@ bindsym $mod+minus exec --no-startup-id i3-msg scratchpad show && i3-msg move po
 
 # modular scratchpads. Create if window doesn't exist, otherwise show
 bindsym mod1+t exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-	trello "/usr/bin/google-chrome-stable --app=https://trello.com/b/cK9nA9nR/to-do" 1 ".*ToDo.*" 1917 1096
+	trello "/usr/bin/google-chrome-stable --app=https://trello.com/b/cK9nA9nR/to-do" 6 ".*ToDo.*" 1917 1096
 bindsym mod1+j exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-	notes "/usr/bin/google-chrome-stable --app=https://trello.com/b/afKu2AfH/notes" 1 ".*Notes.*" 1917 1096
+	notes "/usr/bin/google-chrome-stable --app=https://trello.com/b/afKu2AfH/notes" 6 ".*Notes.*" 1917 1096
 bindsym mod1+u exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
 	dropdown "termite" 0.1 ".*sthinds.*" 712 712
 bindsym mod1+c exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
@@ -260,9 +262,9 @@ bindsym mod1+w exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
 	work_communication "/usr/bin/google-chrome-stable --new-window https://outlook.office.com https://teams.microsoft.com" \
 	2 ".*Outlook.*" 1726 970 
 bindsym mod1+m exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-    spotify "/snap/bin/spotify" 3.6 ".*Spotify.*" 1340 980
+    spotify "/snap/bin/spotify" 5 ".*Spotify.*" 1340 980
 bindsym mod1+n exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-    pocketcasts "/snap/bin/pocket-casts" 3.6 ".*Podcast.*" 960 1000
+    pocketcasts "/snap/bin/pocket-casts" 4.6 ".*Podcast.*" 960 1000
 bindsym mod1+r exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
 	research "/usr/bin/google-chrome-stable --new-window http://google.com" 2.5 "Google - Google Chrome" 1836 970 
 bindsym mod1+s exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
