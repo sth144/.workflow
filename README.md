@@ -74,6 +74,7 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 ### i3
 * fix bug where multiple workspaces end up with same number
 * screensaver and/or autolock
+* syntax highlighting in VSCode
 ### i3Blocks
 * i3blocks
     * i3blocks scripts directory

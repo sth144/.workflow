@@ -40,7 +40,6 @@ enable_utils:
 # this makefile target will append them to ~/.bashrc
 update_bashrc:
 	@echo "appending ~/.bashrc"
-	@echo "$HOME"
 	./admin/update_bashrc.sh
 
 # restart i3
