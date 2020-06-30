@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# get home directory (needed for sed to work)
-HOME_ABS=~
-
 # get the base directory
 BASE_ABS=$(cd "$(dirname $0)/.." && pwd)
 
@@ -14,13 +11,18 @@ install() {
 	if [ $RESPONSE = "y" ]; 
 	then
 		# copy config build and utils to ~ 
-		cp -r $BASE_ABS/stage/. ~/
+		cp -r $BASE_ABS/stage/.util ~/
+		cp -r $BASE_ABS/stage/.config ~/
 
-        rm ~/.keep
-		rm ~/README.md
+        # rm ~/.keep
+		# rm ~/README.md
 	fi
 
 	mkdir -p ~/.cache/.workflow
+}
+
+update_cronjobs() {
+	sudo cp -r $BASE_ABS/stage/cronjobs/* /etc/cron.d/
 }
 
 refresh() {

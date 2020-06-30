@@ -1,0 +1,5 @@
+# /etc/cron.d/workflow-shared-cronjobs
+* * * * * sthinds echo 'hello cronjob' >> /home/sthinds/.cache/.workflow/cronjob.log
+
+# log rotation
+0 0 * * * sthinds /home/sthinds/.util/cron/log_rotate.sh

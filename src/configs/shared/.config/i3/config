@@ -145,9 +145,9 @@ exec --no-startup-id ~/.config/i3/sh/workspace_names.sh
 
 # window decoration
 # class                 border     background  text    	 indicator   child_border
-client.focused          $med_gray $light_gray $charcoal $sky_blue   $ocean_blue
-client.focused_inactive $med_gray $med_gray  $charcoal $charcoal   $charcoal
-client.unfocused        $med_gray $med_gray  $charcoal $obsidian   $obsidian
+client.focused          $med_gray  $light_gray $charcoal $sky_blue   $ocean_blue
+client.focused_inactive $med_gray  $med_gray   $charcoal $charcoal   $charcoal
+client.unfocused        $med_gray  $med_gray   $charcoal $obsidian   $obsidian
 client.urgent           $obsidian  $light_red  $eggshell $light_red  $light_red
 client.placeholder      $obsidian  $obsidian   $eggshell $obsidian   $obsidian
 client.background       $eggshell
@@ -246,34 +246,20 @@ bindsym $mod+Shift+minus move scratchpad
 bindsym $mod+minus exec --no-startup-id i3-msg scratchpad show && i3-msg move position center
 
 # modular scratchpads. Create if window doesn't exist, otherwise show
-bindsym mod1+t exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-	trello "/usr/bin/google-chrome-stable --app=https://trello.com/b/cK9nA9nR/to-do" 6 ".*ToDo.*" 1917 1096
-bindsym mod1+j exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-	notes "/usr/bin/google-chrome-stable --app=https://trello.com/b/afKu2AfH/notes" 6 ".*Notes.*" 1917 1096
-bindsym mod1+u exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-	dropdown "termite" 0.1 ".*sthinds.*" 712 712
-bindsym mod1+c exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-	calculator "termite --title='Calculator' -e 'bc'" 0.1 ".*Calculator.*" 480 474
-bindsym mod1+i exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-	ranger "termite --title='Ranger' -e 'ranger'" 0.1 ".*Ranger.*" 1320 874
-bindsym mod1+b exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-    "barrier" "barrier" 0.1 ".*Barrier.*" 640 480
-bindsym mod1+w exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-	work_communication "/usr/bin/google-chrome-stable --new-window https://outlook.office.com https://teams.microsoft.com" \
-	2 ".*Outlook.*" 1726 970 
-bindsym mod1+m exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-    spotify "/snap/bin/spotify" 5 ".*Spotify.*" 1340 980
-bindsym mod1+n exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-    pocketcasts "/snap/bin/pocket-casts" 4.6 ".*Podcast.*" 960 1000
-bindsym mod1+r exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-	research "/usr/bin/google-chrome-stable --new-window http://google.com" 2.5 "Google - Google Chrome" 1836 970 
-bindsym mod1+s exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-	translate "/usr/bin/google-chrome-stable --app=https://translate.google.com/#view=home&op=translate&sl=en&tl=es" \
-	1 ".*Translate.*" 1335 579
-bindsym F9 exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-	gmail "/usr/bin/google-chrome-stable --app=https://mail.google.com/mail/u/0/" 1 ".*gmail.*" 1420 974
-bindsym Print exec --no-startup-id ~/.util/i3/i3_run_scratchpad.sh \
-	screenshot "/usr/bin/gnome-screenshot -i" 2 ".*Screenshot.*" 1420 974
+bindsym mod1+t exec --no-startup-id ~/.config/i3/sh/scratchpad/trello.todo.sh
+bindsym mod1+j exec --no-startup-id ~/.config/i3/sh/scratchpad/trello.notes.sh
+bindsym mod1+c exec --no-startup-id ~/.config/i3/sh/scratchpad/calendar.sh
+bindsym mod1+u exec --no-startup-id ~/.config/i3/sh/scratchpad/termite.shell.sh
+bindsym mod1+F12 exec --no-startup-id ~/.config/i3/sh/scratchpad/bc-calc.shell.sh
+bindsym mod1+i exec --no-startup-id ~/.config/i3/sh/scratchpad/ranger.shell.sh
+bindsym mod1+b exec --no-startup-id ~/.config/i3/sh/scratchpad/barrier.sh
+bindsym mod1+w exec --no-startup-id ~/.config/i3/sh/scratchpad/work.communication.sh
+bindsym mod1+m exec --no-startup-id ~/.config/i3/sh/scratchpad/spotify.sh
+bindsym mod1+n exec --no-startup-id ~/.config/i3/sh/scratchpad/pocketcasts.sh
+bindsym mod1+r exec --no-startup-id ~/.config/i3/sh/scratchpad/research.sh
+bindsym mod1+s exec --no-startup-id ~/.config/i3/sh/scratchpad/translate.sh
+bindsym mod1+F9 exec --no-startup-id ~/.config/i3/sh/scratchpad/gmail.sh
+bindsym Print exec --no-startup-id ~/.config/i3/sh/scratchpad/screenshot.sh
 
 # Uncomment if no local config
 bindsym $mod+Return exec termite

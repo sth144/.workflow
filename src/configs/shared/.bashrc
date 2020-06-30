@@ -104,6 +104,7 @@ export EDITOR=/usr/bin/vim
 
 alias barrier='/usr/local/bin/barrier-2.1.2/barrier-2.1.2-startup'
 alias xdotool='/usr/bin/xdotool'
+alias gitgraph='/usr/bin/git log --all --decorate --graph --oneline'
 
 # global sendkey function
 grabwindow() { xdotool windowactivate $(xdotool search --name "$1"); }

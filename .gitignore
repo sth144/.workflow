@@ -15,6 +15,8 @@ src/configs/local/.config/*
 !src/configs/local/.config/.keep
 src/utils/local/*
 !src/utils/local/.keep
+src/cronjobs/local/*
+!src/cronjobs/local/.keep
 
 # sensitive ranger files
 src/configs/shared/ranger/history

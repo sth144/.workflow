@@ -70,6 +70,7 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * fix issue where workspace_names script takes up an entire CPU core
 ### Cron
 * integrate crontab
+* implement a way to patch in username at build time
 ### i3
 * fix bug where multiple workspaces end up with same number
 * screensaver and/or autolock

@@ -3,15 +3,18 @@ all: stage install
 # stage configs and utils, giving preference to files in local if they exist in both local and shared
 .PHONY: stage
 stage: clean
-	@echo "staging configs"
+	@echo "staging configs (with preference for local"
 	cp -r ./src/configs/shared/. ./stage
 	cp -r ./src/configs/local/. ./stage
 	@echo "staging utils (with preference for local utils)"
 	cp -r ./src/utils/shared/. ./stage/.util
 	cp -r ./src/utils/local/. ./stage/.util
+	@echo "staging cron jobs (with preference for local)"
+	cp -r ./src/cronjobs/shared/. ./stage/cronjobs
+	cp -r ./src/cronjobs/local/. ./stage/cronjobs
 
 .PHONY: install
-install: copy_staged_to_home enable_utils update_bashrc refresh
+install: copy_staged_to_home enable_utils update_bashrc update_cronjobs refresh
 	@echo "installing configs and utils"
 
 # copy config build to ~/.config dot directory
@@ -23,6 +26,10 @@ copy_staged_to_home:
 	@echo "copying dotfiles and utils to home directory"
 	./admin/install.sh install
 
+update_cronjobs:
+	@echo "installing cronjobs in /etc/cron.d/"
+	./admin/install.sh update_cronjobs
+
 # enable utils
 enable_utils:
 	@echo "enabling utils in ~/.util"
@@ -33,6 +40,7 @@ enable_utils:
 # this makefile target will append them to ~/.bashrc
 update_bashrc:
 	@echo "appending ~/.bashrc"
+	@echo "$HOME"
 	./admin/update_bashrc.sh
 
 # restart i3
@@ -43,7 +51,9 @@ refresh:
 # clear config build directory
 clean:
 	@echo "cleaning config build output directory"
-	rm -rf ./stage/*
+	rm -rf ./stage/**/*
+	rm -rf ./stage/.util
+	rm -rf ./stage/.config
 
 .PHONY: backup
 backup:
