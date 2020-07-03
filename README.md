@@ -71,6 +71,8 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 ### Cron
 * integrate crontab
 * implement a way to patch in username at build time
+* restart conkies from cronjob
+* cronjob to restart NetworkManager when WiFi drops
 ### i3
 * fix bug where multiple workspaces end up with same number
 * screensaver and/or autolock
