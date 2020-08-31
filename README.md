@@ -68,6 +68,8 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * ability to swap out scripts for different available dependencies (through configuration)
     * generically named script in utils/shared, like 'screenshot.sh' could be overridden with utils/local/screenshot.sh calling a different underlying utility
 * fix issue where workspace_names script takes up an entire CPU core
+* daemon utils folder for scripts automatically started in .bashrc or i3 config 
+    * refactor, workspace names script would go here
 ### Cron
 * integrate crontab
 * implement a way to patch in username at build time
