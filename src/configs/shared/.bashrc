@@ -122,3 +122,6 @@ source ~/.nvm/nvm.sh
 # add all utils to PATH
 export PATH="$(find ~/.util -type d -printf ":%p"):$PATH"
 export PATH=$PATH:/opt/sonar/bin
+
+~/.config/i3/sh/xrandr-layout.sh
+

@@ -253,7 +253,7 @@ bindsym mod1+u exec --no-startup-id ~/.config/i3/sh/scratchpad/termite.shell.sh
 bindsym mod1+F12 exec --no-startup-id ~/.config/i3/sh/scratchpad/bc-calc.shell.sh
 bindsym mod1+i exec --no-startup-id ~/.config/i3/sh/scratchpad/ranger.shell.sh
 bindsym mod1+b exec --no-startup-id ~/.config/i3/sh/scratchpad/barrier.sh
-bindsym mod1+w exec --no-startup-id ~/.config/i3/sh/scratchpad/work.communication.sh
+bindsym mod1+w exec --no-startup-id ~/.config/i3/sh/scratchpad/chrome.window.sh
 bindsym mod1+m exec --no-startup-id ~/.config/i3/sh/scratchpad/spotify.sh
 bindsym mod1+n exec --no-startup-id ~/.config/i3/sh/scratchpad/pocketcasts.sh
 bindsym mod1+r exec --no-startup-id ~/.config/i3/sh/scratchpad/research.sh
