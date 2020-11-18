@@ -1,5 +1,9 @@
 #!/bin/bash
 
+print_volume_for_display() {
+    echo "$(get_icon) $(get_volume)"
+}
+
 get_volume() {
     pactl list sinks | grep '^[[:space:]]Volume:' | head -n 1 | tail -n 1 | sed -e 's/.* \([0-9][0-9]*\)%.*/\1/'
 }
@@ -33,6 +37,16 @@ get_running_sink() {
         RES="@DEFAULT_SINK@"
     fi
     echo $RES
+}
+
+get_icon() {
+    ISMUTED=$(pacmd list-sinks | awk '/muted/ { print $2 }' | head -1)
+    if [ "$ISMUTED" = "yes" ]
+    then
+        echo 🔇
+    else
+        echo 🔊
+    fi
 }
 
 $1 "${@:2}"

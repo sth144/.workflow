@@ -53,10 +53,9 @@ command=date '+%a %d %b, %Y %H:%M:%S'
 interval=1
 
 [volume]
-label=🔊
 color=#5da0c2
-interval=2
-command=echo "$(~/.util/pactl/volume_controller.sh get_volume)%"
+interval=1
+command=echo "$(~/.util/pactl/volume_controller.sh print_volume_for_display)%"
 
 [user]
 label=👤
