@@ -10,9 +10,8 @@ install() {
 
 	if [ $RESPONSE = "y" ]; 
 	then
-		# copy config build and utils to ~ 
-		cp -r $BASE_ABS/stage/.util ~/
-		cp -r $BASE_ABS/stage/.config ~/
+		# copy config build and utils to ~
+		cp -rT $BASE_ABS/stage ~/
 
         # rm ~/.keep
 		# rm ~/README.md

@@ -70,6 +70,8 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * fix issue where workspace_names script takes up an entire CPU core
 * daemon utils folder for scripts automatically started in .bashrc or i3 config 
     * refactor, workspace names script would go here
+### Conky
+* see how much of the contents of local/.config/conky can be moved to shared
 ### Cron
 * integrate crontab
 * implement a way to patch in username at build time

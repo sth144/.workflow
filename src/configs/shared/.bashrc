@@ -96,8 +96,12 @@ fi
 #################################### Custom Configurations (Shared) #####################################
 #########################################################################################################
 
+parse_git_branch() {
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
+}
+
 # export color prompt
-export PS1="\[\e[36m\][\[\e[m\]\[\e[33m\]\u\[\e[m\]\[\e[31m\]@\[\e[m\]\[\e[36m\]\h\[\e[m\]:\[\e[36m\]\w\[\e[m\]\[\e[36m\]]\[\e[m\]\[\e[36;36m\]\\$\[\e[m\] "
+export PS1="\[\e[36m\][\[\e[m\]\[\e[33m\]\u\[\e[m\]\[\e[31m\]@\[\e[m\]\[\e[36m\]\h\[\e[m\]:\[\e[36m\]\w\[\e[m\]\[\e[32m\]$(parse_git_branch)\[\e[m\]\]\e[36;36m\]]\\$\[\e[m\] "
 
 export BROWSER=/usr/bin/google-chrome-stable
 export EDITOR=/usr/bin/vim
@@ -105,6 +109,7 @@ export EDITOR=/usr/bin/vim
 alias barrier='/usr/local/bin/barrier-2.1.2/barrier-2.1.2-startup'
 alias xdotool='/usr/bin/xdotool'
 alias gitgraph='/usr/bin/git log --all --decorate --graph --oneline'
+alias trello="$(npm list -g | head -1)/node_modules/trello-cli/bin/trello"
 
 # global sendkey function
 grabwindow() { xdotool windowactivate $(xdotool search --name "$1"); }
@@ -124,4 +129,3 @@ export PATH="$(find ~/.util -type d -printf ":%p"):$PATH"
 export PATH=$PATH:/opt/sonar/bin
 
 ~/.config/i3/sh/xrandr-layout.sh
-
