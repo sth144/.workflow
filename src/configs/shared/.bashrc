@@ -101,7 +101,7 @@ parse_git_branch() {
 }
 
 # export color prompt
-export PS1="\[\e[36m\][\[\e[m\]\[\e[33m\]\u\[\e[m\]\[\e[31m\]@\[\e[m\]\[\e[36m\]\h\[\e[m\]:\[\e[36m\]\w\[\e[m\]\[\e[32m\]$(parse_git_branch)\[\e[m\]\]\e[36;36m\]]\\$\[\e[m\] "
+export PS1="\[\e[36m\][\[\e[m\]\[\e[33m\]\u\[\e[m\]\[\e[31m\]@\[\e[m\]\[\e[36m\]\h\[\e[m\]:\[\e[36m\]\w\[\e[m\]\[\e[32m\]\$(parse_git_branch)\[\e[m\]\]\e[36;36m\]]\\$\[\e[m\] "
 
 export BROWSER=/usr/bin/google-chrome-stable
 export EDITOR=/usr/bin/vim
