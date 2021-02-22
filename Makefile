@@ -14,7 +14,7 @@ stage: clean
 	cp -r ./src/cronjobs/local/. ./stage/cronjobs
 
 .PHONY: install
-install: copy_staged_to_home enable_utils update_bashrc update_cronjobs refresh
+install: update_cronjobs copy_staged_to_home enable_utils update_bashrc  refresh
 	@echo "installing configs and utils"
 
 # copy config build to ~/.config dot directory

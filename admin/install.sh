@@ -10,6 +10,10 @@ install() {
 
 	if [ $RESPONSE = "y" ]; 
 	then
+		rm -rf $BASE_ABS/stage/cronjobs
+		rm -rf $BASE_ABS/stage/README.md
+		rm -rf $BASE_ABS/stage/.keep
+
 		# copy config build and utils to ~
 		cp -rT $BASE_ABS/stage ~/
 

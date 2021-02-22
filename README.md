@@ -58,6 +58,9 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * npm
 * barrier    (keyboard/mouse share)
 * jq
+* lm-sensors
+* feh
+* radeontop
 
 ## TODO
 ### Bash
@@ -109,3 +112,5 @@ Note: to some extent, these are all optional, as local configs/utils can be used
     * new Makefile target
 * is there really a need for stage/*? Not necessary to figure that out just yet
 * is update_bashrc necessary?
+* packaging scheme for dependencies
+* stop copying cronjobs to home directory
