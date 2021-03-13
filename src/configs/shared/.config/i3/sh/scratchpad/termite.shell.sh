@@ -1,4 +1,4 @@
 #!/bin/bash
 
-~/.util/i3/i3_run_scratchpad.sh \
-	dropdown "termite" 0.1 ".*sthinds.*" 712 712
+~/bin/i3/i3_run_scratchpad.sh \
+	dropdown "termite" 0.5 ".*(sthinds|termite).*" 712 712

@@ -7,8 +7,8 @@ stage: clean
 	cp -r ./src/configs/shared/. ./stage
 	cp -r ./src/configs/local/. ./stage
 	@echo "staging utils (with preference for local utils)"
-	cp -r ./src/utils/shared/. ./stage/.util
-	cp -r ./src/utils/local/. ./stage/.util
+	cp -r ./src/utils/shared/. ./stage/bin
+	cp -r ./src/utils/local/. ./stage/bin
 	@echo "staging cron jobs (with preference for local)"
 	cp -r ./src/cronjobs/shared/. ./stage/cronjobs
 	cp -r ./src/cronjobs/local/. ./stage/cronjobs
@@ -21,7 +21,7 @@ install: update_cronjobs copy_staged_to_home enable_utils update_bashrc  refresh
 # add .workflow base directory to path in ~/.bashrc
 # this allows scripts in other locations, as well as within .workflow, to call
 # workflow scripts without using relative paths
-# copy utils to ~/.util directory
+# copy utils to ~/bin directory (symlink to /usr/local/bin)
 copy_staged_to_home:
 	@echo "copying dotfiles and utils to home directory"
 	./admin/install.sh install
@@ -32,9 +32,9 @@ update_cronjobs:
 
 # enable utils
 enable_utils:
-	@echo "enabling utils in ~/.util"
-	find ~/.util -type f -iname "*.sh" -exec chmod +x {} \;
-	find ~/.util -type f -iname "*.py" -exec chmod +x {} \;
+	@echo "enabling utils in ~/bin"
+	find ~/bin -type f -iname "*.sh" -exec chmod +x {} \;
+	find ~/bin -type f -iname "*.py" -exec chmod +x {} \;
 
 # some commands (like "export WORKFLOW_BASE=...") cannot be hardcoded into conf/shared/.bashrc
 # this makefile target will append them to ~/.bashrc
@@ -51,7 +51,7 @@ refresh:
 clean:
 	@echo "cleaning config build output directory"
 	rm -rf ./stage/**/*
-	rm -rf ./stage/.util
+	rm -rf ./stage/bin
 	rm -rf ./stage/.config
 
 .PHONY: backup

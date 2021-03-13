@@ -61,6 +61,7 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * lm-sensors
 * feh
 * radeontop
+* i3help    (https://github.com/glennular/i3help)
 
 ## TODO
 ### Bash
@@ -107,10 +108,15 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * fix bug where window controller doesn't attach to scratchpad window (specifically Trello)
 ### Vim
 * .vimrc
+### systemd
+* put node_exporter service definition under source control
+* install script for systemd services
 ### Workflow
 * need to work out a good dev workflow where you can modify src/*/shared and continuously update local versions automatically.
     * new Makefile target
 * is there really a need for stage/*? Not necessary to figure that out just yet
 * is update_bashrc necessary?
 * packaging scheme for dependencies
-* stop copying cronjobs to home directory
+* figure out a way to make .workflow portable and configurable for Ubuntu, Raspberry Pi, & MacOS
+    * probably a config file that allows you to select and ignore directories in .workflow/stage before copying
+* ~~stop copying cronjobs to home directory~~

@@ -8,7 +8,7 @@ then
 	i3-msg "focus output $1"
 fi
 
-~/.util/i3/i3_run_scratchpad.sh trello \
+~/bin/i3/i3_run_scratchpad.sh trello \
 	"/usr/bin/google-chrome-stable --app=https://trello.com/b/cK9nA9nR/to-do" \
 	6 \
 	".*ToDo.*" \

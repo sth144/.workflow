@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import os, sys
 import zipfile
@@ -17,7 +17,7 @@ def zipdir(path, ziphandle):
         len_path=len(path)
         for file in files:
             file_path = os.path.join(root, file)
-            print file_path
+            print(file_path)
             ziphandle.write(file_path, file_path.split("/src/")[1])
 
 if __name__ == '__main__':

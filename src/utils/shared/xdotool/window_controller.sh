@@ -25,7 +25,7 @@ get_xid_from_rgx() {
 	# params
 	SEARCH_RGX=$1
 
-	xdotool search --name "$SEARCH_RGX" | tail -1	#TODO: handle multiples?
+	$xdotool search --name "$SEARCH_RGX" | tail -1	#TODO: handle multiples?
 }
 
 get_pid_from_xid() {

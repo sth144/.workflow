@@ -97,7 +97,12 @@ fi
 #########################################################################################################
 
 parse_git_branch() {
-    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+    if [ "$(git rev-parse --is-inside-work-tree 2>/dev/null)" = "true" ];
+    then
+        git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+    else
+        echo ""
+    fi
 }
 
 # export color prompt
@@ -123,17 +128,19 @@ alias trello="$(npm list -g | head -1)/node_modules/trello-cli/bin/trello"
 grabwindow() { xdotool windowactivate $(xdotool search --name "$1"); }
 keystroketowindow() { echo $3; grabwindow "$2" && xdotool key "$1"; sleep 1; }
 
-export EDITOR=/usr/bin/vim
 export PYTHONDONTWRITEBYTECODE=True
 
 # this enables syntax highlighting in Termite
 export TERM=xterm-256color
 
-export NVM_DIR=~/.nvm 
+export NVM_DIR=~/.nvm
 source ~/.nvm/nvm.sh
 
-# add all utils to PATH
-export PATH="$(find ~/.util -type d -printf ":%p"):$PATH"
+# add all utils (and scripts within .config) to PATH
+export PATH="$(find ~/bin/ -type d -printf ":%p"):$PATH"
+#export PATH="$(find ~/.config/ -type d -printf ":%p"):$PATH"
 export PATH=$PATH:/opt/sonar/bin
 
-~/.config/i3/sh/xrandr-layout.sh
+#~/.config/i3/sh/xrandr-layout.sh
+export WORKFLOW_BASE=/mnt/D/Coding/Projects/Personal/.workflow
+export PYTHONPATH="${PYTHONPATH}:/mnt/D/Coding/Projects/Personal/.workflow"

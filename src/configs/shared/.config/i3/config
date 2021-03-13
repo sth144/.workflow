@@ -260,14 +260,15 @@ bindsym mod1+r exec --no-startup-id ~/.config/i3/sh/scratchpad/research.sh
 bindsym mod1+s exec --no-startup-id ~/.config/i3/sh/scratchpad/translate.sh
 bindsym mod1+F9 exec --no-startup-id ~/.config/i3/sh/scratchpad/gmail.sh
 bindsym Print exec --no-startup-id ~/.config/i3/sh/scratchpad/screenshot.sh
+bindsym mod+i exec --no-startup-id ~/.config/i3/sh/scratchpad/i3help.sh
 
 # Uncomment if no local config
 bindsym $mod+Return exec termite
 
 # volume control
-bindsym F2 exec --no-startup-id ~/.util/pactl/volume_controller.sh dec_volume 10
-bindsym F3 exec --no-startup-id ~/.util/pactl/volume_controller.sh inc_volume 10
-bindsym F4 exec --no-startup-id ~/.util/pactl/volume_controller.sh mute
+bindsym F2 exec --no-startup-id ~/bin/pactl/volume_controller.sh dec_volume 10
+bindsym F3 exec --no-startup-id ~/bin/pactl/volume_controller.sh inc_volume 10
+bindsym F4 exec --no-startup-id ~/bin/pactl/volume_controller.sh mute
 
 # lock screen
 bindsym $mod+F11 exec --no-startup-id ~/.config/i3/sh/lock.sh

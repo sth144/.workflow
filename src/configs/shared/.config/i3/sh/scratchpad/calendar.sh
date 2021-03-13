@@ -2,9 +2,15 @@
 
 export DISPLAY=':0.0'
 
-i3-msg "focus output HDMI-1-1"
+if [ $# -ne 0 ]
+then
+	# can pass display name as first (optional) argument
+	i3-msg "focus output $1"
+else
+	i3-msg "focus output HDMI-1-1"
+fi
 
-~/.util/i3/i3_run_scratchpad.sh calendar \
+~/bin/i3/i3_run_scratchpad.sh calendar \
 	"/usr/bin/google-chrome-stable --app=https://calendar.google.com/calendar/r" \
 	2 \
 	".*Calendar.*" \
