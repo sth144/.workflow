@@ -30,3 +30,7 @@ src/configs/shared/ranger/bookmarks
 *node_modules/*
 
 .vscode
+
+config/**/*
+!config/**/*.template.*
+!config/.gitkeep
