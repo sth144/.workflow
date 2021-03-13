@@ -9,6 +9,7 @@ today = date.today()
 basedir=sys.path[0]+"/.."
 confdir=basedir+"/src/configs/local/"
 utildir=basedir+"/src/utils/local/"
+crondir=basedir+"/src/cronjobs/local/"
 backupdir=basedir+"/backup/"
 
 def zipdir(path, ziphandle):
@@ -24,4 +25,5 @@ if __name__ == '__main__':
     zipf = zipfile.ZipFile(backupdir+str(today)+".backup.zip", 'w', zipfile.ZIP_DEFLATED)
     zipdir(utildir, zipf)
     zipdir(confdir, zipf)
+    zipdir(crondir, zipf)
     zipf.close()

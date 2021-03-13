@@ -1,4 +1,14 @@
-all: stage install
+all: commission stage prune install
+
+.PHONY: commission
+commission:
+	@echo commisioning system
+	./admin/commission.sh
+
+.PHONY: prune
+prune: prune
+	@echo "pruning ignored file path patterns from staged build output"
+	./admin/prune_staged.py
 
 # stage configs and utils, giving preference to files in local if they exist in both local and shared
 .PHONY: stage
@@ -14,7 +24,7 @@ stage: clean
 	cp -r ./src/cronjobs/local/. ./stage/cronjobs
 
 .PHONY: install
-install: update_cronjobs copy_staged_to_home enable_utils update_bashrc  refresh
+install: update_cronjobs update_systemd_services copy_staged_to_home enable_utils update_bashrc refresh
 	@echo "installing configs and utils"
 
 # copy config build to ~/.config dot directory
@@ -24,11 +34,15 @@ install: update_cronjobs copy_staged_to_home enable_utils update_bashrc  refresh
 # copy utils to ~/bin directory (symlink to /usr/local/bin)
 copy_staged_to_home:
 	@echo "copying dotfiles and utils to home directory"
-	./admin/install.sh install
+	./admin/install.sh update_home
 
 update_cronjobs:
 	@echo "installing cronjobs in /etc/cron.d/"
 	./admin/install.sh update_cronjobs
+
+update_systemd_services:
+	@echo "installing systemd services in /etc/systemd/system/"
+	./admin/install.sh update_systemd_services
 
 # enable utils
 enable_utils:
@@ -44,7 +58,7 @@ update_bashrc:
 
 # restart i3
 refresh:
-	@echo "refreshing i3wm"
+	@echo "refreshing (ie. refresh i3wm)"
 	./admin/install.sh refresh &
 
 # clear config build directory
@@ -57,4 +71,4 @@ clean:
 .PHONY: backup
 backup:
 	@echo "backing up local configs and utils"
-	./admin/backup_local.py
+	./admin/backup_local.pyz

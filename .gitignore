@@ -17,6 +17,8 @@ src/utils/local/*
 !src/utils/local/.keep
 src/cronjobs/local/*
 !src/cronjobs/local/.keep
+src/systemd/local/*
+!src/systemd/local/.keep
 
 # sensitive ranger files
 src/configs/shared/ranger/history
@@ -32,5 +34,5 @@ src/configs/shared/ranger/bookmarks
 .vscode
 
 admin/config/**/*
-!admin/config/**/*.template.*
+!admin/config/template/
 !admin/config/.gitkeep
