@@ -13,15 +13,8 @@ prune: prune
 # stage configs and utils, giving preference to files in local if they exist in both local and shared
 .PHONY: stage
 stage: clean
-	@echo "staging configs (with preference for local"
-	cp -r ./src/configs/shared/. ./stage
-	cp -r ./src/configs/local/. ./stage
-	@echo "staging utils (with preference for local utils)"
-	cp -r ./src/utils/shared/. ./stage/bin
-	cp -r ./src/utils/local/. ./stage/bin
-	@echo "staging cron jobs (with preference for local)"
-	cp -r ./src/cronjobs/shared/. ./stage/cronjobs
-	cp -r ./src/cronjobs/local/. ./stage/cronjobs
+	@echo "staging"
+	./admin/install.sh stage
 
 .PHONY: install
 install: update_cronjobs update_systemd_services copy_staged_to_home enable_utils update_bashrc refresh

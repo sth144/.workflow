@@ -34,6 +34,8 @@ A set of dotfiles and utilities used to configure desktop environments and autom
             * utility scripts specific to local machine, not tracked by Git
         * shared/
             * utility scripts which can be used on any Linux machine
+    * cronjobs/
+    * systemd/
 * stage/
     * staging for compiled config files, after build, install script copies from this directory to ~/
 * cache/
@@ -68,7 +70,6 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * make sure .bashrc (and other stuff...) works on multiple distros
 * useful global scripts
 * useful bash aliases
-    * $ git log --all --graph --oneline --decorate
 * ability to swap out scripts for different available dependencies (through configuration)
     * generically named script in utils/shared, like 'screenshot.sh' could be overridden with utils/local/screenshot.sh calling a different underlying utility
 * fix issue where workspace_names script takes up an entire CPU core
@@ -77,7 +78,6 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 ### Conky
 * see how much of the contents of local/.config/conky can be moved to shared
 ### Cron
-* integrate crontab
 * implement a way to patch in username at build time
 * restart conkies from cronjob
 * cronjob to restart NetworkManager when WiFi drops
@@ -112,6 +112,7 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * put node_exporter service definition under source control
 * install script for systemd services
 ### Workflow
+* need to carry out a thorough round of cleanup, organization, documentation on entire repo
 * need to work out a good dev workflow where you can modify src/*/shared and continuously update local versions automatically.
     * new Makefile target
 * is there really a need for stage/*? Not necessary to figure that out just yet
@@ -119,4 +120,7 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * packaging scheme for dependencies
 * figure out a way to make .workflow portable and configurable for Ubuntu, Raspberry Pi, & MacOS
     * probably a config file that allows you to select and ignore directories in .workflow/stage before copying
+    * figure out a clean way to target certain files for certain OS
 * ~~stop copying cronjobs to home directory~~
+* cleanup and decluttering scripts for ~, ~/bin, ~/.config, /etc/cron.d/, /etc/systemd/system/
+    * look for systemd and other files to bring under version control
