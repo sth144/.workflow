@@ -31,6 +31,6 @@ src/configs/shared/ranger/bookmarks
 
 .vscode
 
-config/**/*
-!config/**/*.template.*
-!config/.gitkeep
+admin/config/**/*
+!admin/config/**/*.template.*
+!admin/config/.gitkeep
