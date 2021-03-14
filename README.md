@@ -113,6 +113,7 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * install script for systemd services
 ### Workflow
 * need to carry out a thorough round of cleanup, organization, documentation on entire repo
+* get rid of hardcoded references to username
 * need to work out a good dev workflow where you can modify src/*/shared and continuously update local versions automatically.
     * new Makefile target
 * is there really a need for stage/*? Not necessary to figure that out just yet

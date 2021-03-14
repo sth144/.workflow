@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 print_volume_for_display() {
     echo "$(get_icon) $(get_volume)"
 }

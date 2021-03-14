@@ -2,12 +2,16 @@
 
 # get the base directory
 BASE_ABS=$(cd "$(dirname $0)/.." && pwd)
+BUILD_CONFIG=$(cat $BASE_ABS/admin/config/settings.json | jq .build)
 
 stage() {
-	EXTRA_INCLUDES=$(cat $BASE_ABS/admin/config/settings.json | jq .build.include | jq -r '.[]')
+	EXTRA_INCLUDES=$(echo $BUILD_CONFIG | jq .include | jq -r '.[]')
+	USE_SHARED=$(echo $BUILD_CONFIG | jq .useShared)
 
-	# echo "staging configs (with preference for local)"
-	cp -r $BASE_ABS/src/configs/shared/. $BASE_ABS/stage
+	if [ "$USE_SHARED" == "true" ];
+	then
+		cp -r $BASE_ABS/src/configs/shared/. $BASE_ABS/stage
+	fi
 	for include in $EXTRA_INCLUDES;
 	do
 		if [ -d $BASE_ABS/src/configs/$include ];
@@ -18,18 +22,25 @@ stage() {
 	cp -r $BASE_ABS/src/configs/local/. $BASE_ABS/stage
 	
 	echo "staging utils (with preference for local utils)"
-	cp -r $BASE_ABS/src/utils/shared/. $BASE_ABS/stage/bin
+
+	if [ "$USE_SHARED" == "true" ];
+	then
+		cp -r $BASE_ABS/src/utils/shared/. $BASE_ABS/stage/bin
+	fi
 	for include in $EXTRA_INCLUDES;
 	do
 		if [ -d $BASE_ABS/src/utils/$include ];
 		then
-			cp -r $BASE_ABS/src/utils/$include/. $BASE_ABS/stage
+			cp -r $BASE_ABS/src/utils/$include/. $BASE_ABS/stage/bin
 		fi
 	done
 	cp -r $BASE_ABS/src/utils/local/. $BASE_ABS/stage/bin
 	
-	# echo "staging cron jobs (with preference for local)"
-	cp -r $BASE_ABS/src/cronjobs/shared/. $BASE_ABS/stage/cronjobs
+	echo "staging cron jobs (with preference for local)"
+	if [ "$USE_SHARED" == "true" ];
+	then
+		cp -r $BASE_ABS/src/cronjobs/shared/. $BASE_ABS/stage/cronjobs
+	fi
 	for include in $EXTRA_INCLUDES;
 	do
 		if [ -d $BASE_ABS/src/cronjobs/$include ];
@@ -39,8 +50,11 @@ stage() {
 	done
 	cp -r $BASE_ABS/src/cronjobs/local/. $BASE_ABS/stage/cronjobs
 	
-	# echo "staging systemd services (with preference for local)"
-	cp -r $BASE_ABS/src/systemd/shared/. $BASE_ABS/stage/systemd
+	echo "staging systemd services (with preference for local)"
+	if [ "$USE_SHARED" == "true" ];
+	then
+		cp -r $BASE_ABS/src/systemd/shared/. $BASE_ABS/stage/systemd
+	fi
 	for include in $EXTRA_INCLUDES;
 	do
 		if [ -d $BASE_ABS/src/systemd/$include ];

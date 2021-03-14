@@ -6,7 +6,7 @@ commission:
 	./admin/commission.sh
 
 .PHONY: prune
-prune: prune
+prune:
 	@echo "pruning ignored file path patterns from staged build output"
 	./admin/prune_staged.py
 
