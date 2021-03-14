@@ -67,7 +67,11 @@ stage() {
 
 update_home() {
 	echo "WARNING: If the following files exist, they will be overwritten"
-	find "$BASE_ABS/stage" -type f | sed 's/.*stage/\~/g' | grep -v ".keep"
+	find "$BASE_ABS/stage" -type f | sed 's/.*stage/\~/g' \
+		| grep -v ".keep" \
+		| grep -v "cronjobs/" \
+		| grep -v "systemd/"
+
 	read -p "Proceed? (y/n) " RESPONSE
 
 	if [ $RESPONSE = "y" ]; 
@@ -96,7 +100,15 @@ update_cronjobs() {
 
 update_systemd_services() {
 	sudo cp -r $BASE_ABS/stage/systemd/* /etc/systemd/system/
+
 	# TODO: enable and start services
+	SERVICES=$(ls -lA $BASE_ABS/stage/systemd | awk '{print $9}' | grep -v ".keep")
+
+	for service in $SERVICES;
+	do
+		sudo systemctl enable $service
+		sudo systemctl start $service
+	done
 
 	sudo systemctl daemon-reload
 }
