@@ -63,6 +63,10 @@ stage() {
 		fi
 	done
 	cp -r $BASE_ABS/src/systemd/local/. $BASE_ABS/stage/systemd
+
+	# preprocess staged output
+	# change <USER> tag to $USER wherever it appears in files
+	find stage -type f -exec sed -i -e "s@<USER>@$USER@g" {} \;
 }
 
 update_home() {
@@ -70,7 +74,8 @@ update_home() {
 	find "$BASE_ABS/stage" -type f | sed 's/.*stage/\~/g' \
 		| grep -v ".keep" \
 		| grep -v "cronjobs/" \
-		| grep -v "systemd/"
+		| grep -v "systemd/" \
+		| grep -v "README.md"
 
 	read -p "Proceed? (y/n) " RESPONSE
 

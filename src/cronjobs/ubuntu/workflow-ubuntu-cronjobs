@@ -1,2 +1,2 @@
-*/15 * * * * root /usr/local/bin/network/maintain_ip_iface.sh wlan0 >> /home/sthinds/.cache/.workflow/cronjob.log 2>&1
-0 * * * * root /home/sthinds/.config/conky/sh/map_network.sh writeFile
+*/15 * * * * root /usr/local/bin/network/maintain_ip_iface.sh wlan0 >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
+0 * * * * root /home/<USER>/.config/conky/sh/map_network.sh writeFile
