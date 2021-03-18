@@ -4,15 +4,15 @@
 BASE_ABS=$(cd "$(dirname $0)/.." && pwd)
 
 export_to_bashrc() {
-        # params
-        KEY=$1
-        VALUE=$2
+    # params
+    KEY=$1
+    VALUE=$2
 
-        if [ ! -z "$(cat ~/.bashrc | grep $KEY)" ]; then
-                sed -i -e "s@export $KEY=.*@export $KEY=$VALUE@g" "$HOME/.bashrc"
-        else
-                echo "export $KEY=$VALUE" >> ~/.bashrc
-        fi
+    if [ ! -z "$(cat ~/.bashrc | grep $KEY)" ]; then
+        sed -i -e "s@export $KEY=.*@export $KEY=$VALUE@g" "$HOME/.bashrc"
+    else
+        echo "export $KEY=$VALUE" >> ~/.bashrc
+    fi
 }
 
 refresh() {

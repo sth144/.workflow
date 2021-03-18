@@ -69,7 +69,7 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 ### Bash
 * make sure .bashrc (and other stuff...) works on multiple distros
 * useful global scripts
-* useful bash aliases
+* useful bash aliases, and a way to deal with different aliases for different machinnes
 * ability to swap out scripts for different available dependencies (through configuration)
     * generically named script in utils/shared, like 'screenshot.sh' could be overridden with utils/local/screenshot.sh calling a different underlying utility
 * fix issue where workspace_names script takes up an entire CPU core
