@@ -148,3 +148,8 @@ export PYTHONPATH="${PYTHONPATH}:/mnt/D/Coding/Projects/Personal/.workflow"
 if [ -f /usr/local/src/alacritty/extra/completions/alacritty.bash ]; then
     source /usr/local/src/alacritty/extra/completions/alacritty.bash
 fi
+
+if command -v neofetch &> /dev/null
+then
+    neofetch
+fi
