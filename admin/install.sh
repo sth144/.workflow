@@ -17,6 +17,7 @@ stage() {
 		if [ -d $BASE_ABS/src/configs/$include ];
 		then
 			cp -r $BASE_ABS/src/configs/$include/. $BASE_ABS/stage
+			cp -rT $BASE_ABS/src/configs/$include/. $BASE_ABS/stage
 		fi
 	done
 	cp -r $BASE_ABS/src/configs/local/. $BASE_ABS/stage
@@ -37,6 +38,7 @@ stage() {
 	cp -r $BASE_ABS/src/utils/local/. $BASE_ABS/stage/bin
 	
 	echo "staging cron jobs (with preference for local)"
+	mkdir -p $BASE_ABS/stage/cronjobs
 	if [ "$USE_SHARED" == "true" ];
 	then
 		cp -r $BASE_ABS/src/cronjobs/shared/. $BASE_ABS/stage/cronjobs
@@ -83,13 +85,12 @@ update_home() {
 	then
 		# NOTE: make sure you copy staged cronjobs and systemd services before running
 		#		this function!
-		rm -rf $BASE_ABS/stage/cronjobs
-		rm -rf $BASE_ABS/stage/systemd
 		rm -rf $BASE_ABS/stage/README.md
 		rm -rf $BASE_ABS/stage/.keep
 		
 		# copy config build and utils to ~
-		sudo cp -rT $BASE_ABS/stage/ ~/
+		sudo cp -r $BASE_ABS/stage/ ~/
+		sudo cp -rT $BASE_ABS/stage/.config ~/.config
 		sudo cp -rT $BASE_ABS/stage/bin/ /usr/local/bin/
 
         rm ~/.keep

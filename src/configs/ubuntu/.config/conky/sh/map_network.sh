@@ -8,7 +8,7 @@ function writeFile() {
 }
 
 function readFile() {
-    cat /home/<USER>/.cache/.workflow/network_devices.dat
+    cat /home/<USER>/.cache/.workflow/network_devices.dat | tr "\n" ", "
 } 
 
 $1 "${@:2}"
