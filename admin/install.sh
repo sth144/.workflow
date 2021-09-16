@@ -87,9 +87,10 @@ update_home() {
 		#		this function!
 		rm -rf $BASE_ABS/stage/README.md
 		rm -rf $BASE_ABS/stage/.keep
-		
+
 		# copy config build and utils to ~
 		sudo cp -r $BASE_ABS/stage/ ~/
+        	sudo cp $BASE_ABS/stage/.bashrc ~/
 		sudo cp -rT $BASE_ABS/stage/.config ~/.config
 		sudo cp -rT $BASE_ABS/stage/bin/ /usr/local/bin/
 
