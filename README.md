@@ -125,3 +125,4 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * ~~stop copying cronjobs to home directory~~
 * cleanup and decluttering scripts for ~, ~/bin, ~/.config, /etc/cron.d/, /etc/systemd/system/
     * look for systemd and other files to bring under version control
+* general src/etc folder to be copied recursively to /etc for configs

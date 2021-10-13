@@ -1,0 +1,15 @@
+version: "3"
+services:
+  pushgateway:
+    image: prom/pushgateway:v1.0.1
+    restart: always
+    command:
+      - --persistence.file=/data/pushgateway.data
+      - --persistence.interval=1h
+    network_mode: host
+    expose:
+      - 9091
+    # ports:
+    #   - 9091:9091
+    volumes: 
+      - /home/<USER>/Drive/D/Volumes/Docker/pushgateway:/data

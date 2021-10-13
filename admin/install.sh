@@ -12,6 +12,7 @@ stage() {
 	then
 		cp -r $BASE_ABS/src/configs/shared/. $BASE_ABS/stage
 	fi
+	
 	for include in $EXTRA_INCLUDES;
 	do
 		if [ -d $BASE_ABS/src/configs/$include ];
@@ -66,6 +67,20 @@ stage() {
 	done
 	cp -r $BASE_ABS/src/systemd/local/. $BASE_ABS/stage/systemd
 
+	echo "staging docker-compose.yml files for starting docker services"
+	if [ "$USE_SHARED" == "true" ];
+	then
+		cp -r $BASE_ABS/src/docker/shared $BASE_ABS/stage/docker/
+	fi
+	for include in $EXTRA_INCLUDES;
+	do
+		if [ -d $BASE_ABS/src/docker/$include ];
+		then
+			cp -r $BASE_ABS/src/docker/$include $BASE_ABS/stage/docker/
+		fi
+	done
+	cp -r $BASE_ABS/src/docker/local $BASE_ABS/stage/docker/
+
 	# preprocess staged output
 	# change <USER> tag to $USER wherever it appears in files
 	find stage -type f -exec sed -i -e "s@<USER>@$USER@g" {} \;
@@ -89,13 +104,17 @@ update_home() {
 		rm -rf $BASE_ABS/stage/.keep
 
 		# copy config build and utils to ~
-		sudo cp -r $BASE_ABS/stage/ ~/
-        	sudo cp $BASE_ABS/stage/.bashrc ~/
+		sudo cp -r $BASE_ABS/stage/* ~/
+        sudo cp $BASE_ABS/stage/.bashrc ~/
 		sudo cp -rT $BASE_ABS/stage/.config ~/.config
 		sudo cp -rT $BASE_ABS/stage/bin/ /usr/local/bin/
+		sudo cp -rT $BASE_ABS/stage/docker/ ~/.config/docker
 
         rm ~/.keep
 		rm ~/README.md
+        rm -rf ~/stage
+        sudo rm -rf ~/cronjobs
+        sudo rm -rf ~/systemd
 	fi
 
 	mkdir -p ~/.cache/.workflow
@@ -108,7 +127,6 @@ update_cronjobs() {
 update_systemd_services() {
 	sudo cp -r $BASE_ABS/stage/systemd/* /etc/systemd/system/
 
-	# TODO: enable and start services
 	SERVICES=$(ls -lA $BASE_ABS/stage/systemd | awk '{print $9}' | grep -v ".keep")
 
 	for service in $SERVICES;
@@ -118,6 +136,12 @@ update_systemd_services() {
 	done
 
 	sudo systemctl daemon-reload
+}
+
+start_docker_services() {
+	# TODO: start docker services and call this function
+
+
 }
 
 refresh() {

@@ -1,2 +1,7 @@
 */15 * * * * root /usr/local/bin/network/maintain_ip_iface.sh wlan0 >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
-0 * * * * root /home/<USER>/.config/conky/sh/map_network.sh writeFile
+0 * * * * root /home/<USER>/.config/conky/sh/map_network.sh writeFile >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
+0 1 * * 0 <USER> /home/<USER>/bin/ubuntu/package-backup.sh make_backup >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
+
+
+* * * * * root /usr/local/bin/top_push.sh top_cpu 2>&1
+* * * * * root /usr/local/bin/top_push.sh top_mem 2>&1
