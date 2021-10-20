@@ -138,11 +138,11 @@ update_systemd_services() {
 	sudo systemctl daemon-reload
 }
 
-start_docker_services() {
-	# TODO: start docker services and call this function
+# start_docker_services() {
+# 	# TODO: start docker services and call this function
 
 
-}
+# }
 
 refresh() {
 	if [ -d $BASE_ABS/stage/.config/i3 ];

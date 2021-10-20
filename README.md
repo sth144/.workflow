@@ -106,6 +106,7 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * F12 for calculator
 * easy access to scratchpad cache
 * fix bug where window controller doesn't attach to scratchpad window (specifically Trello)
+* Joplin notes scratchpad
 ### Vim
 * .vimrc
 ### systemd
