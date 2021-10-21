@@ -1,3 +1,5 @@
 #!/bin/bash
 
-docker ps --format '- targets: ["{{.ID}}"]\n  labels:\n    container_name: "{{.Names}}"' > /etc/promtail/promtail-targets.yaml
+HOSTNAME=$(hostname)
+
+docker ps --format "- targets: [\"{{.ID}}\"]\n  labels:\n    container_name: \"{{.Names}}\"\n    host: $HOSTNAME" > /etc/promtail/promtail-targets.yaml

@@ -3,7 +3,7 @@
 # log rotation
 0 0 * * * <USER> /home/<USER>/bin/cron/log_rotate.sh
 
-* * * * * <USER> /home/<USER>/bin/promtail/service_discovery.sh
+* * * * * root /home/<USER>/bin/promtail/service_discovery.sh
 
 # ex: show Trello board every morning (runs at 5am)
 # 0 5 * * * <USER> /home/<USER>/.config/i3/sh/scratchpad/trello.todo.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
