@@ -247,7 +247,8 @@ bindsym $mod+minus exec --no-startup-id i3-msg scratchpad show && i3-msg move po
 
 # modular scratchpads. Create if window doesn't exist, otherwise show
 bindsym mod1+t exec --no-startup-id ~/.config/i3/sh/scratchpad/trello.todo.sh
-bindsym mod1+j exec --no-startup-id ~/.config/i3/sh/scratchpad/trello.notes.sh
+bindsym mod1+j exec --no-startup-id ~/.config/i3/sh/scratchpad/joplin.sh
+bindsym mod1+Shift+j exec --no-startup-id ~/.config/i3/sh/scratchpad/trello.notes.sh
 bindsym mod1+c exec --no-startup-id ~/.config/i3/sh/scratchpad/calendar.sh
 bindsym mod1+u exec --no-startup-id ~/.config/i3/sh/scratchpad/termite.shell.sh
 bindsym mod1+F12 exec --no-startup-id ~/.config/i3/sh/scratchpad/bc-calc.shell.sh

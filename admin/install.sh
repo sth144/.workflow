@@ -104,11 +104,12 @@ update_home() {
 		rm -rf $BASE_ABS/stage/.keep
 
 		# copy config build and utils to ~
+		sudo cp -rT $BASE_ABS/stage/docker/ ~/.config/docker
+		rm -rf $BASE_ABS/stage/docker
 		sudo cp -r $BASE_ABS/stage/* ~/
         sudo cp $BASE_ABS/stage/.bashrc ~/
 		sudo cp -rT $BASE_ABS/stage/.config ~/.config
 		sudo cp -rT $BASE_ABS/stage/bin/ /usr/local/bin/
-		sudo cp -rT $BASE_ABS/stage/docker/ ~/.config/docker
 
         rm ~/.keep
 		rm ~/README.md
