@@ -1,4 +1,8 @@
 #!/bin/bash
 
-~/bin/i3/i3_run_scratchpad.sh \
-    pocketcasts "/snap/bin/pocket-casts" 4.6 ".*Podcast.*" 960 1000
+~/bin/i3/i3_run_mark_scratchpad.sh \
+    "/snap/bin/pocket-casts" \
+    pocketcasts \
+    4.6 \
+    960 \
+    1000

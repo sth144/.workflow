@@ -1,9 +1,9 @@
 #!/bin/bash
 
-~/bin/i3/i3_run_scratchpad.sh \
-	joplin "/usr/local/bin/Joplin/joplin" \
+~/bin/i3/i3_run_mark_scratchpad.sh \
+	"/usr/local/bin/Joplin/joplin" \
+	"Joplin" \
 	4 \
-	".*Joplin.*" \
-	1917 \
-	1096
+	1921 \
+	1093
 	
