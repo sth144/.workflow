@@ -26,6 +26,7 @@
 ############ Custom Configuration. Default /etc/i3blocks/conf ################
 ##############################################################################
 
+
 # Global properties
 #
 # The top properties below are applied to every block, but can be overridden.
@@ -56,12 +57,13 @@ interval=1
 color=#5da0c2
 interval=1
 command=echo "$(~/bin/pactl/volume_controller.sh print_volume_for_display)%"
+separator=true
+separator_block_width=9
 
 [user]
 label=👤
 color=#185dccc
 command=whoami
 interval=600
-
 
 # NOTE: there MUST be a newline at the end of file
