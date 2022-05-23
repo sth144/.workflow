@@ -64,4 +64,4 @@ clean:
 .PHONY: backup
 backup:
 	@echo "backing up local configs and utils"
-	./admin/backup_local.pyz
+	./admin/backup_local.py

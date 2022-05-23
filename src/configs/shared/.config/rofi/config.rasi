@@ -1,0 +1,11 @@
+configuration {
+	modi: "window,drun,ssh";
+	kb-cancel: "Escape,Alt+F1";
+	color-normal: "#efefef, #505050, #efefef, #a4a4a4, #efefef";
+	color-urgent: "argb:00000000, #f43753, argb:00000000, argb:00000000, #e29a49";
+	color-active: "argb:00000000, #49bbfb, argb:00000000, argb:00000000, #e29a49";
+	color-window: "#efefef, #505050, #efefef";
+	font: "San Francisco 18";
+	hide-scrollbar: true;
+	width: 30;
+}

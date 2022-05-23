@@ -1,4 +1,8 @@
 #!/bin/bash
 
-~/bin/i3/i3_run_scratchpad.sh \
-    "barrier" "barrier" 0.1 ".*Barrier.*" 640 480
+~/bin/i3/i3_run_mark_scratchpad.sh \
+    "barrier" \
+    "Barrier" \
+    0.1 \
+    640 \
+    480
