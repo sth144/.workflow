@@ -8,7 +8,7 @@ top_cpu() {
     z=$(ps aux)
     while read -r z
     do
-        var=$var$(awk -v process=11 '{print "cpu_usage{process=\""substr($process,length($process)-40,40)"\", pid=\""$2"\"}", $3z}');
+        var=$var$(awk -v process=11 '{print "cpu_usage{process=\""substr($process,length($process)-40,length($process))"\", pid=\""$2"\"}", $3z}');
     done <<< "$z"
 
     echo $var
@@ -21,7 +21,7 @@ top_mem() {
     z=$(ps aux)
     while read -r z
     do
-        var=$var$(awk -v process=11 '{print "memory_usage{process=\""substr($process,length($process)-40,40)"\", pid=\""$2"\"}", $4z}');
+        var=$var$(awk -v process=11 '{print "memory_usage{process=\""substr($process,length($process)-40,length($process))"\", pid=\""$2"\"}", $4z}');
     done <<< "$z"
 
     echo $var
