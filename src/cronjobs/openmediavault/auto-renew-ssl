@@ -1,0 +1,1 @@
+0 1 * * * root /usr/bin/certbot renew >> /home/sthinds/.cache/.workflow/cronjob.log 2>&1
