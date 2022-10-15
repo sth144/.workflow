@@ -1,7 +1,7 @@
 # /etc/cron.d/workflow-shared-cronjobs
 
 # log rotation
-0 0 * * * <USER> /home/<USER>/bin/cron/log_rotate.sh
+0 0 * * * root /home/<USER>/bin/cron/log_rotate.sh
 
 * * * * * root /home/<USER>/bin/promtail/service_discovery.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
 
