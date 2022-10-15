@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export EDITOR=/usr/bin/vim
+
  ~/bin/i3/i3_run_mark_scratchpad.sh \
 	"/usr/local/bin/alacritty/alacritty --title='Ranger' -e ranger" \
 	"Ranger" \
