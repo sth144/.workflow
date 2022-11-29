@@ -11,7 +11,7 @@ export_to_bashrc() {
     if [ ! -z "$(cat ~/.bashrc | grep $KEY)" ]; then
         sed -i -e "s@export $KEY=.*@export $KEY=$VALUE@g" "$HOME/.bashrc"
     else
-        echo "export $KEY=$VALUE" >> ~/.bashrc
+        echo "\nexport $KEY=$VALUE" >> ~/.bashrc
     fi
 }
 

@@ -12,7 +12,7 @@ stage() {
 	then
 		cp -r $BASE_ABS/src/configs/shared/. $BASE_ABS/stage
 	fi
-	
+
 	for include in $EXTRA_INCLUDES;
 	do
 		if [ -d $BASE_ABS/src/configs/$include ];
@@ -37,7 +37,7 @@ stage() {
 		fi
 	done
 	cp -r $BASE_ABS/src/utils/local/. $BASE_ABS/stage/bin
-	
+
 	echo "staging cron jobs (with preference for local)"
 	mkdir -p $BASE_ABS/stage/cronjobs
 	if [ "$USE_SHARED" == "true" ];
@@ -54,6 +54,7 @@ stage() {
 	cp -r $BASE_ABS/src/cronjobs/local/. $BASE_ABS/stage/cronjobs
 	
 	echo "staging systemd services (with preference for local)"
+
 	if [ "$USE_SHARED" == "true" ];
 	then
 		cp -r $BASE_ABS/src/systemd/shared/. $BASE_ABS/stage/systemd
@@ -126,17 +127,21 @@ update_cronjobs() {
 }
 
 update_systemd_services() {
-	sudo cp -r $BASE_ABS/stage/systemd/* /etc/systemd/system/
+	if [ -d /etc/systemd ];
+	then
 
-	SERVICES=$(ls -lA $BASE_ABS/stage/systemd | awk '{print $9}' | grep -v ".keep")
+		sudo cp -r $BASE_ABS/stage/systemd/* /etc/systemd/system/
 
-	for service in $SERVICES;
-	do
-		sudo systemctl enable $service
-		sudo systemctl start $service
-	done
+		SERVICES=$(ls -lA $BASE_ABS/stage/systemd | awk '{print $9}' | grep -v ".keep")
 
-	sudo systemctl daemon-reload
+		for service in $SERVICES;
+		do
+			sudo systemctl enable $service
+			sudo systemctl start $service
+		done
+
+		sudo systemctl daemon-reload
+	fi
 }
 
 # start_docker_services() {
@@ -148,7 +153,7 @@ update_systemd_services() {
 #}
 
 refresh() {
-	if [ -d $BASE_ABS/stage/.config/i3 ];
+	if [ -d $BASE_ABS/stage/.config/i3/config ];
 	then
 	    i3-msg restart
 	fi
