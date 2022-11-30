@@ -35,7 +35,6 @@ relaunch-amethyst:
 mouse-follows-focus: false
 focus-follows-mouse: true
 
-# Add 10px margin between windows
 window-margins: true
-window-margin-size: 10
+window-margin-size: 2px
 
