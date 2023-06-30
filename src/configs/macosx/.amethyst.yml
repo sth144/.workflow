@@ -22,9 +22,9 @@ mod1:
     - option
     - shift
 mod2:
-    - command
     - option
     - shift
+    - control
 
 # Modify the amethyst relaunch to use x and not z
 relaunch-amethyst:

@@ -105,6 +105,14 @@ parse_git_branch() {
     fi
 }
 
+# Change NodeJS version when entering specified directories
+cd() {
+    builtin cd "$@"
+    if [ -f .nvmrc ]; then
+        nvm use
+    fi
+}
+
 # export color prompt
 # export PS1="\[\e[36m\][\[\e[m\]\[\e[33m\]\u\[\e[m\]\[\e[31m\]@\[\e[m\]\[\e[36m\]\h\[\e[m\]:\[\e[36m\]\w\[\e[m\]\[\e[36m\]]\[\e[m\]\[\e[36;36m\]\\$\[\e[m\] "
 # export PS1="\[\e[36m\][\[\e[m\]\[\e[33m\]\u\[\e[m\]\[\e[31m\]@\[\e[m\]\[\e[36m\]\h\[\e[m\]:\[\e[36m\]\w\[\e[m\]\[\e[32m\]\$(parse_git_branch)\[\e[m\]\]\e[36;36m\]]\\$\e[m\] "
@@ -157,5 +165,8 @@ fi
 
 alias python=python3
 eval "$(direnv hook bash)"
-export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:$PATH"
+export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:/usr/local/bin/python3.9:$PATH"
 export BASH_SILENCE_DEPRECATION_WARNING=1
+export python="/usr/local/bin/python3.9"
+
+export alias chromed='open -a Google\ Chrome --args --remote-debugging-port=9222'
