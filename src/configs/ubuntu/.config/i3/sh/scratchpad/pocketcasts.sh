@@ -1,6 +1,6 @@
 #!/bin/bash
 
-~/bin/i3/i3_run_mark_scratchpad.sh \
+~/bin/i3_util/i3_run_mark_scratchpad.sh \
     "/snap/bin/pocket-casts" \
     pocketcasts \
     4.6 \

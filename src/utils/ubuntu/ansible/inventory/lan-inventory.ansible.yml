@@ -1,0 +1,26 @@
+---
+picocluster:
+  hosts:
+    pc0:
+      ansible_host: 192.168.1.240
+    pc1:
+      ansible_host: 192.168.1.241
+    pc2:
+      ansible_host: 192.168.1.242
+  vars:
+    ansible_user: picocluster
+
+nas:
+  hosts:
+    openmediavault:
+      ansible_host: 192.168.1.245
+
+gateway:
+  hosts:
+    raspberrypi:
+      ansible_host: 192.168.1.243
+
+desktop:
+  hosts:
+    sthinds.local:
+      ansible_host: 192.168.1.235

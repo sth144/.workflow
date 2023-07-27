@@ -9,6 +9,8 @@ if [ "$OS" = "Darwin" ]; then
 	CP=gcp
 fi
 
+echo "BASE_ABS ${BASE_ABS}"
+
 stage() {
 	EXTRA_INCLUDES=$(echo $BUILD_CONFIG | jq .include | jq -r '.[]')
 	USE_SHARED=$(echo $BUILD_CONFIG | jq .useShared)
@@ -120,7 +122,7 @@ update_home() {
 
         rm ~/.keep
 		rm ~/README.md
-        rm -rf ~/stage
+        sudo rm -rf ~/stage
         sudo rm -rf ~/cronjobs
         sudo rm -rf ~/systemd
 	fi
