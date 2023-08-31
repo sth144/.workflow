@@ -122,7 +122,7 @@ RED="\[\e[31m\]"
 YELLOW="\[\e[33m\]"
 WHITE="\[\e[m\]"
 DOLLAR_SIGN="\\$"
-export PS1="${BLUE}[${YELLOW}\u${RED}@${BLUE}\h${WHITE}:${BLUE}\w${GREEN}\$(parse_git_branch)${BLUE}]${DOLLAR_SIGN} ${WHITE}"
+export PS1="${BLUE}[${YELLOW}\u${RED}@${BLUE}\t${WHITE}:${BLUE}\w${GREEN}\$(parse_git_branch)${BLUE}]${DOLLAR_SIGN} ${WHITE}"
 
 export BROWSER=/usr/bin/google-chrome-stable
 export EDITOR=/usr/bin/vim
@@ -148,6 +148,7 @@ fi
 
 # add all utils (and scripts within .config) to PATH
 for d in ~/bin; do PATH="$PATH:$d"; done
+export PATH="$HOME/bin:$HOME/bin/*:$PATH"
 #export PATH="$(find ~/.config/ -type d -printf ":%p"):$PATH"
 export PATH=$PATH:/opt/sonar/bin
 
@@ -162,6 +163,8 @@ if command -v neofetch &> /dev/null
 then
     neofetch
 fi
+
+export CDPATH=.:..:../..:$HOME:$HOME/src:$HOME/Data:$HOME/Projects
 
 alias python=python3
 eval "$(direnv hook bash)"

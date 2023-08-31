@@ -12,6 +12,12 @@ fi
 echo "BASE_ABS ${BASE_ABS}"
 
 stage() {
+	rm -rf $BASE_ABS/stage/*
+	rm -rf $BASE_ABS/stage/.*
+
+	echo "emptied stage/"
+	ls -lA $BASE_ABS/stage/
+
 	EXTRA_INCLUDES=$(echo $BUILD_CONFIG | jq .include | jq -r '.[]')
 	USE_SHARED=$(echo $BUILD_CONFIG | jq .useShared)
 
@@ -19,6 +25,9 @@ stage() {
 	then
 		cp -r $BASE_ABS/src/configs/shared/. $BASE_ABS/stage
 	fi
+	
+	echo "copied dotfiles"
+	ls -lA $BASE_ABS/stage/
 
 	for include in $EXTRA_INCLUDES;
 	do
@@ -114,7 +123,7 @@ update_home() {
 		# copy config build and utils to ~
 		sudo $CP -rT $BASE_ABS/stage/docker/ ~/.config/docker
 		rm -rf $BASE_ABS/stage/docker
-		sudo $CP -r $BASE_ABS/stage/ ~/
+		sudo $CP -r $BASE_ABS/stage/ ~/ && sudo chown -R $(whoami) $BASE_ABS/stage
 		sudo $CP -r $BASE_ABS/stage/.[^.]* ~/
 		sudo $CP $BASE_ABS/stage/.bashrc ~/
 		sudo $CP -rT $BASE_ABS/stage/.config ~/.config
