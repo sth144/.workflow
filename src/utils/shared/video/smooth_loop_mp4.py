@@ -5,28 +5,44 @@ import sys
 import subprocess
 from moviepy.editor import VideoFileClip, concatenate_videoclips
 
+def get_video_fps(file_path):
+    command = ["ffprobe", "-v", "error", "-select_streams", "v", "-of", "default=noprint_wrappers=1:nokey=1", "-show_entries", "stream=r_frame_rate", file_path]
+    result = subprocess.run(command, capture_output=True, text=True)
+    fps = round(eval(result.stdout))
+    return fps
+
 # Get the path to the input file from the command line argument
-if len(sys.argv) < 2:
+if len(sys.argv) < 3:
     print("Please provide the path to the input MP4 file as an argument")
     exit(1)
 
 input_file_path = sys.argv[1]
+output_file_path = sys.argv[2]
+use_defaults = False
+if len(sys.argv) > 3:
+    if sys.argv[3].lower() == "usedefault":
+        use_defaults = True
+    
 # Derive the output file path
 filename = os.path.basename(input_file_path)
-output_dir = os.path.expanduser("~/tmp")
 
-tmp_file_path_0 = os.path.join(output_dir, f"tmp.0.{filename}")
-tmp_file_path_1 = os.path.join(output_dir, f"tmp.1.{filename}")
-output_file_path = os.path.join(output_dir, f"looped.smoothed.{filename}")
+tmp_dir = os.path.expanduser("~/tmp")
+
+tmp_file_path_0 = os.path.join(tmp_dir, f"tmp.0.{filename}")
+tmp_file_path_1 = os.path.join(tmp_dir, f"tmp.1.{filename}")
 
 # Prompt the user for the slowdown multiplier
-default_slowdown = 2
-slowdown = input(f"Enter slowdown multiplier (default {default_slowdown}): ")
+default_slowdown = 6
+slowdown = default_slowdown
+if not use_defaults:
+    slowdown = input(f"Enter slowdown multiplier (default {default_slowdown}): ")
 slowdown = float(slowdown) if slowdown else default_slowdown
 
 # Prompt the user for the number of times to loop the video
-default_loops = 10
-loops = input(f"Enter number of loops (default {default_loops}): ")
+default_loops = 5
+loops = default_loops
+if not use_defaults:
+    loops = input(f"Enter number of loops (default {default_loops}): ")
 loops = int(loops) if loops else default_loops
 
 
@@ -35,6 +51,9 @@ command3 = (
     f'ffmpeg -y -i {input_file_path} -filter:v "setpts=1.2*PTS" {tmp_file_path_0}'
 )
 subprocess.run(command3, shell=True, check=True)
+
+fps = get_video_fps(tmp_file_path_0)
+print(f"The video fps is: {fps}")
 
 command4 = (
     f'ffmpeg -y -i {tmp_file_path_0} -crf 10 '
