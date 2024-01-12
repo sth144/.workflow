@@ -165,3 +165,5 @@ if command -v neofetch &> /dev/null
 then
     neofetch
 fi
+
+git config --global pull.rebase true
