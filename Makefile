@@ -65,3 +65,5 @@ clean:
 backup:
 	@echo "backing up local configs and utils"
 	./admin/backup_local.py
+	rsync -av ./backup ~/Drive/D/Software/Source/workflow/
+

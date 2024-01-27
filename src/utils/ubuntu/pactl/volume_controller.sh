@@ -6,7 +6,7 @@ print_volume_for_display() {
 }
 
 get_volume() {
-    pactl list sinks | grep '^[[:space:]]Volume:' | head -n 1 | tail -n 1 | sed -e 's/.* \([0-9][0-9]*\)%.*/\1/'
+    pactl list sinks | grep '^[[:space:]]Volume:' | tail -n 1 | sed -e 's/.* \([0-9][0-9]*\)%.*/\1/'
 }
 
 set_volume() {

@@ -23,7 +23,7 @@ T='#5da0c2ee'  # text
 W='#e84f4fbb'  # wrong
 V='#fa75fabb'  # verifying
 
-/usr/bin/i3_utillock -i $IMAGE -p default \
+/usr/bin/i3lock -i $IMAGE -p default \
     --insidevercolor=$C   \
     --ringvercolor=$V     \
     \
