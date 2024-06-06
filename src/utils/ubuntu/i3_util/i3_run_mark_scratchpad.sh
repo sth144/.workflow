@@ -23,6 +23,8 @@ i3-msg [con_mark="$MARK"] scratchpad show
 
 LAUNCH_NEW=$?
 
+echo "Launch new? $LAUNCH_NEW"
+
 if (( $LAUNCH_NEW != 0 ))
 then
 	$LAUNCH_CMD &
@@ -39,7 +41,9 @@ then
 fi
 
 i3-msg [con_mark="$MARK"] move position center
-# i3-msg [con_mark="$MARK"] move up
+sleep 0.4
+i3-msg [con_mark="$MARK"] move up 16px
+# i3-msg [con_mark="$MARK"] move up 
 
 echo "Done, removing lockfile"
 

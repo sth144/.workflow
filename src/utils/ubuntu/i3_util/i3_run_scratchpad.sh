@@ -36,11 +36,13 @@ WINDOW_ID=$($CONTROLLER get_xid_from_key $WINDOW_KEY)
 if [ $LAUNCH_NEW = "true" ]; then
 	# configure window
 	i3-msg [id="$WINDOW_ID"] focus
-   	i3-msg [id="$WINDOW_ID"] floating enable
-    i3-msg [id="$WINDOW_ID"] resize set $WIDTH $HEIGHT
-    i3-msg [id="$WINDOW_ID"] move scratchpad
-    i3-msg [id="$WINDOW_ID"] border pixel 4
+ 	i3-msg [id="$WINDOW_ID"] floating enable
+  i3-msg [id="$WINDOW_ID"] resize set $WIDTH $HEIGHT
+  i3-msg [id="$WINDOW_ID"] move scratchpad
+  i3-msg [id="$WINDOW_ID"] border pixel 4
 fi
 
 i3-msg [id="$WINDOW_ID"] scratchpad show
 i3-msg [id="$WINDOW_ID"] move position center
+sleep 0.4
+i3-msg [id="$WINDOW_ID"] move up 16px

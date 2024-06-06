@@ -366,9 +366,12 @@ bindsym mod+i exec --no-startup-id ~/.config/i3/sh/scratchpad/i3help.sh
 bindsym $mod+Return exec termite
 
 # volume control
-bindsym F2 exec --no-startup-id ~/bin/pactl/volume_controller.sh dec_volume 10
-bindsym F3 exec --no-startup-id ~/bin/pactl/volume_controller.sh inc_volume 10
+bindsym F2 exec --no-startup-id ~/bin/pactl/volume_controller.sh dec_volume 10 >> $HOME/.cache/.workflow/i3.log
+bindsym XF86LowerVolume exec --no-startup-id ~/bin/pactl/volume_controller.sh dec_volume 10 >> $HOME/.cache/.workflow/i3.log
+bindsym F3 exec --no-startup-id ~/bin/pactl/volume_controller.sh inc_volume 10 >> $HOME/.cache/.workflow/i3.log
+bindsym XF86RaiseVolume exec --no-startup-id ~/bin/pactl/volume_controller.sh inc_volume 10 >> $HOME/.cache/.workflow/i3.log
 bindsym F4 exec --no-startup-id ~/bin/pactl/volume_controller.sh mute
+bindsym XF86AudioMute exec --no-startup-id ~/bin/pactl/volume_controller.sh mute
 
 # lock screen
 bindsym $mod+F11 exec --no-startup-id ~/.config/i3/sh/lock.sh
