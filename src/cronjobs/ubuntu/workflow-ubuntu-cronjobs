@@ -10,3 +10,5 @@
 * * * * * root /home/<USER>/bin/ubuntu/notifyd-kill.sh
 
 #*/30 * * * * <USER> /home/<USER>/.config/i3/sh/xrandr-layout.sh
+
+0 2 * * 0 <USER> /home/<USER>/bin/ubuntu/network-backups.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
