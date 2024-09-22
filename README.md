@@ -120,6 +120,8 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * is there really a need for stage/*? Not necessary to figure that out just yet
 * is update_bashrc necessary?
 * packaging scheme for dependencies
+    * feh
+    * xdotool
 * figure out a way to make .workflow portable and configurable for Ubuntu, Raspberry Pi, & MacOS
     * probably a config file that allows you to select and ignore directories in .workflow/stage before copying
     * figure out a clean way to target certain files for certain OS

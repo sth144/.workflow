@@ -1,0 +1,88 @@
+---
+- name: Setup Ubuntu PC
+  hosts: all
+  become: true
+
+  vars:
+    static_ip: 192.168.1.235
+
+  tasks:
+    - name: Set static IP
+      copy:
+        dest: /etc/netplan/01-netcfg.yaml
+        content: |
+          network:
+            version: 2
+            renderer: networkd
+            ethernets:
+              enp0s3:
+                dhcp4: no
+                addresses:
+                  - "{{ static_ip }}/24"
+                gateway4: 192.168.1.1
+                nameservers:
+                  addresses: [8.8.8.8, 8.8.4.4]
+      notify: restart networkd
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Install i3wm
+      apt:
+        name: i3
+        state: present
+
+    - name: Install encfs
+      apt:
+        name: encfs
+        state: present
+
+    - name: Install conky
+      apt:
+        name: conky
+        state: present
+
+    - name: Install xrandr
+      apt:
+        name: x11-xserver-utils
+        state: present
+
+          #- name: Install VS Code
+          #apt:
+          #deb: https://packages.microsoft.com/repos/vscode stable main
+          #state: present
+          # notify: restart code
+
+    - name: Install Samba
+      apt:
+        name: samba
+        state: present
+
+          #- name: Configure Samba
+          #template:
+          #src: samba.conf.j2
+          #dest: /etc/samba/smb.conf
+          #notify: restart smbd
+
+    - name: Allow SSH traffic
+      ufw:
+        rule: allow
+        port: 22
+
+  handlers:
+    - name: restart networkd
+      systemd:
+        name: systemd-networkd
+        state: restarted
+
+    - name: restart code
+      systemd:
+        name: code
+        state: restarted
+
+    - name: restart smbd
+      systemd:
+        name: smbd
+        state: restarted

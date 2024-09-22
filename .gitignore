@@ -34,3 +34,5 @@ src/configs/shared/ranger/bookmarks
 admin/config/**/*
 !admin/config/template/*
 !admin/config/.gitkeep
+
+**/ansible/vault/**/*

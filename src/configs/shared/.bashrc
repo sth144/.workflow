@@ -71,6 +71,7 @@ alias l='ls -CF'
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
 alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
+alias gnome-control-center="env XDG_CURRENT_DESKTOP=GNOME gnome-control-center"
 
 # Alias definitions.
 # You may want to put all your additions into a separate file like
@@ -105,6 +106,14 @@ parse_git_branch() {
     fi
 }
 
+# Change NodeJS version when entering specified directories
+cd() {
+    builtin cd "$@"
+    if [ -f .nvmrc ]; then
+        nvm use
+    fi
+}
+
 # export color prompt
 # export PS1="\[\e[36m\][\[\e[m\]\[\e[33m\]\u\[\e[m\]\[\e[31m\]@\[\e[m\]\[\e[36m\]\h\[\e[m\]:\[\e[36m\]\w\[\e[m\]\[\e[36m\]]\[\e[m\]\[\e[36;36m\]\\$\[\e[m\] "
 # export PS1="\[\e[36m\][\[\e[m\]\[\e[33m\]\u\[\e[m\]\[\e[31m\]@\[\e[m\]\[\e[36m\]\h\[\e[m\]:\[\e[36m\]\w\[\e[m\]\[\e[32m\]\$(parse_git_branch)\[\e[m\]\]\e[36;36m\]]\\$\e[m\] "
@@ -136,8 +145,11 @@ export TERM=xterm-256color
 export NVM_DIR=~/.nvm
 source ~/.nvm/nvm.sh
 
+export CDPATH=.:..:../..:$HOME:$HOME/src:$HOME/Projects:$HOME/Coding
+
 # add all utils (and scripts within .config) to PATH
 export PATH="$(find ~/bin/ -type d -printf ":%p"):$PATH"
+export PATH="$HOME/bin:$HOME/bin/*:$PATH"
 #export PATH="$(find ~/.config/ -type d -printf ":%p"):$PATH"
 export PATH=$PATH:/opt/sonar/bin
 
@@ -153,3 +165,5 @@ if command -v neofetch &> /dev/null
 then
     neofetch
 fi
+
+git config --global pull.rebase true

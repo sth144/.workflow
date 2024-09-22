@@ -3,8 +3,21 @@
 # get the base directory
 BASE_ABS=$(cd "$(dirname $0)/.." && pwd)
 BUILD_CONFIG=$(cat $BASE_ABS/admin/config/settings.json | jq .build)
+OS=$(uname)
+CP=cp
+if [ "$OS" = "Darwin" ]; then
+	CP=gcp
+fi
+
+echo "BASE_ABS ${BASE_ABS}"
 
 stage() {
+	rm -rf $BASE_ABS/stage/*
+	rm -rf $BASE_ABS/stage/.*
+
+	echo "emptied stage/"
+	ls -lA $BASE_ABS/stage/
+
 	EXTRA_INCLUDES=$(echo $BUILD_CONFIG | jq .include | jq -r '.[]')
 	USE_SHARED=$(echo $BUILD_CONFIG | jq .useShared)
 
@@ -13,73 +26,77 @@ stage() {
 		cp -r $BASE_ABS/src/configs/shared/. $BASE_ABS/stage
 	fi
 	
+	echo "copied dotfiles"
+	ls -lA $BASE_ABS/stage/
+
 	for include in $EXTRA_INCLUDES;
 	do
 		if [ -d $BASE_ABS/src/configs/$include ];
 		then
-			cp -r $BASE_ABS/src/configs/$include/. $BASE_ABS/stage
-			cp -rT $BASE_ABS/src/configs/$include/. $BASE_ABS/stage
+			$CP -r $BASE_ABS/src/configs/$include/. $BASE_ABS/stage
+			$CP -rT $BASE_ABS/src/configs/$include/. $BASE_ABS/stage
 		fi
 	done
-	cp -r $BASE_ABS/src/configs/local/. $BASE_ABS/stage
+	$CP -r $BASE_ABS/src/configs/local/. $BASE_ABS/stage
 	
 	echo "staging utils (with preference for local utils)"
 
 	if [ "$USE_SHARED" == "true" ];
 	then
-		cp -r $BASE_ABS/src/utils/shared/. $BASE_ABS/stage/bin
+		$CP -r $BASE_ABS/src/utils/shared/. $BASE_ABS/stage/bin
 	fi
 	for include in $EXTRA_INCLUDES;
 	do
 		if [ -d $BASE_ABS/src/utils/$include ];
 		then
-			cp -r $BASE_ABS/src/utils/$include/. $BASE_ABS/stage/bin
+			$CP -r $BASE_ABS/src/utils/$include/. $BASE_ABS/stage/bin
 		fi
 	done
-	cp -r $BASE_ABS/src/utils/local/. $BASE_ABS/stage/bin
-	
+	$CP -r $BASE_ABS/src/utils/local/. $BASE_ABS/stage/bin
+
 	echo "staging cron jobs (with preference for local)"
 	mkdir -p $BASE_ABS/stage/cronjobs
 	if [ "$USE_SHARED" == "true" ];
 	then
-		cp -r $BASE_ABS/src/cronjobs/shared/. $BASE_ABS/stage/cronjobs
+		$CP -r $BASE_ABS/src/cronjobs/shared/. $BASE_ABS/stage/cronjobs
 	fi
 	for include in $EXTRA_INCLUDES;
 	do
 		if [ -d $BASE_ABS/src/cronjobs/$include ];
 		then
-			cp -r $BASE_ABS/src/cronjobs/$include/. $BASE_ABS/stage/cronjobs
+			$CP -r $BASE_ABS/src/cronjobs/$include/. $BASE_ABS/stage/cronjobs
 		fi
 	done
-	cp -r $BASE_ABS/src/cronjobs/local/. $BASE_ABS/stage/cronjobs
+	$CP -r $BASE_ABS/src/cronjobs/local/. $BASE_ABS/stage/cronjobs
 	
 	echo "staging systemd services (with preference for local)"
+
 	if [ "$USE_SHARED" == "true" ];
 	then
-		cp -r $BASE_ABS/src/systemd/shared/. $BASE_ABS/stage/systemd
+		$CP -r $BASE_ABS/src/systemd/shared/. $BASE_ABS/stage/systemd
 	fi
 	for include in $EXTRA_INCLUDES;
 	do
 		if [ -d $BASE_ABS/src/systemd/$include ];
 		then
-			cp -r $BASE_ABS/src/systemd/$include/. $BASE_ABS/stage/systemd
+			$CP -r $BASE_ABS/src/systemd/$include/. $BASE_ABS/stage/systemd
 		fi
 	done
-	cp -r $BASE_ABS/src/systemd/local/. $BASE_ABS/stage/systemd
+	$CP -r $BASE_ABS/src/systemd/local/. $BASE_ABS/stage/systemd
 
 	echo "staging docker-compose.yml files for starting docker services"
 	if [ "$USE_SHARED" == "true" ];
 	then
-		cp -r $BASE_ABS/src/docker/shared $BASE_ABS/stage/docker/
+		$CP -r $BASE_ABS/src/docker/shared $BASE_ABS/stage/docker/
 	fi
 	for include in $EXTRA_INCLUDES;
 	do
 		if [ -d $BASE_ABS/src/docker/$include ];
 		then
-			cp -r $BASE_ABS/src/docker/$include $BASE_ABS/stage/docker/
+			$CP -r $BASE_ABS/src/docker/$include $BASE_ABS/stage/docker/
 		fi
 	done
-	cp -r $BASE_ABS/src/docker/local $BASE_ABS/stage/docker/
+	$CP -r $BASE_ABS/src/docker/local $BASE_ABS/stage/docker/
 
 	# preprocess staged output
 	# change <USER> tag to $USER wherever it appears in files
@@ -104,16 +121,17 @@ update_home() {
 		rm -rf $BASE_ABS/stage/.keep
 
 		# copy config build and utils to ~
-		sudo cp -rT $BASE_ABS/stage/docker/ ~/.config/docker
+		sudo $CP -rT $BASE_ABS/stage/docker/ ~/.config/docker
 		rm -rf $BASE_ABS/stage/docker
-		sudo cp -r $BASE_ABS/stage/* ~/
-        sudo cp $BASE_ABS/stage/.bashrc ~/
-		sudo cp -rT $BASE_ABS/stage/.config ~/.config
-		sudo cp -rT $BASE_ABS/stage/bin/ /usr/local/bin/
+		sudo $CP -r $BASE_ABS/stage/ ~/ && sudo chown -R $(whoami) $BASE_ABS/stage
+		sudo $CP -r $BASE_ABS/stage/.[^.]* ~/
+		sudo $CP $BASE_ABS/stage/.bashrc ~/
+		sudo $CP -rT $BASE_ABS/stage/.config ~/.config
+		sudo $CP -rT $BASE_ABS/stage/bin/ /usr/local/bin/
 
         rm ~/.keep
 		rm ~/README.md
-        rm -rf ~/stage
+        sudo rm -rf ~/stage
         sudo rm -rf ~/cronjobs
         sudo rm -rf ~/systemd
 	fi
@@ -122,21 +140,25 @@ update_home() {
 }
 
 update_cronjobs() {
-	sudo cp -r $BASE_ABS/stage/cronjobs/* /etc/cron.d/
+	sudo $CP -r $BASE_ABS/stage/cronjobs/* /etc/cron.d/
 }
 
 update_systemd_services() {
-	sudo cp -r $BASE_ABS/stage/systemd/* /etc/systemd/system/
+	if [ -d /etc/systemd ];
+	then
 
-	SERVICES=$(ls -lA $BASE_ABS/stage/systemd | awk '{print $9}' | grep -v ".keep")
+		sudo $CP -r $BASE_ABS/stage/systemd/* /etc/systemd/system/
 
-	for service in $SERVICES;
-	do
-		sudo systemctl enable $service
-		sudo systemctl start $service
-	done
+		SERVICES=$(ls -lA $BASE_ABS/stage/systemd | awk '{print $9}' | grep -v ".keep")
 
-	sudo systemctl daemon-reload
+		for service in $SERVICES;
+		do
+			sudo systemctl enable $service
+			sudo systemctl start $service
+		done
+
+		sudo systemctl daemon-reload
+	fi
 }
 
 # start_docker_services() {
@@ -148,7 +170,7 @@ update_systemd_services() {
 #}
 
 refresh() {
-	if [ -d $BASE_ABS/stage/.config/i3 ];
+	if [ -d $BASE_ABS/stage/.config/i3/config ];
 	then
 	    i3-msg restart
 	fi
