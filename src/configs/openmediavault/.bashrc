@@ -153,3 +153,6 @@ if command -v neofetch &> /dev/null
 then
     neofetch
 fi
+
+
+LS_COLORS+=':ow=01;33'
