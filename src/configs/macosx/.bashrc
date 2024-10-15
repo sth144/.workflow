@@ -174,3 +174,11 @@ export python="/usr/local/bin/python3.9"
 
 export alias chromed='open -a Google\ Chrome --args --remote-debugging-port=9222'
 export alias tmux='if $(tmux has-session IDE); then tmux; else tmux attach -t IDE; fi'
+
+
+# Enable color output for the ls command
+export CLICOLOR=1
+
+# Define colors for file types (directories, symbolic links, etc.)
+export LSCOLORS=ExFxBxDxCxegedabagacad
+

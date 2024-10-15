@@ -36,3 +36,5 @@ admin/config/**/*
 !admin/config/.gitkeep
 
 **/ansible/vault/**/*
+
+~

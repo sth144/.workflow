@@ -34,6 +34,9 @@ soup = BeautifulSoup(html_content, "html.parser")
 # Find all the links in the page
 links = soup.find_all("a")
 
+print("Links:")
+print(links)
+
 # Scrape the text from each linked page
 output_text = ""
 
