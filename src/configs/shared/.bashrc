@@ -167,3 +167,6 @@ then
 fi
 
 git config --global pull.rebase true
+
+export DOCKER_USER="$(id -u):$(id -g)"
+
