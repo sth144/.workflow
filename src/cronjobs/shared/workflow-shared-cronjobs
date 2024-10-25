@@ -6,3 +6,8 @@
 0 2 * * * <USER> /usr/bin/docker system prune -af
 # removes all the contents of `~/tmp/` every Monday at 4am
 0 4 * * 1 <USER> /usr/bin/rm -r ~/tmp/*
+# run disk report every Monday at 5am
+0 5 * * 1 <USER> /usr/bin/echo "Disk report $(date)" >> /home/<USER>/.cache/.workflow/.cronjob.log &&/usr/bin/ncdu -o /home/<USER>/tmp/disk_report.txt /
+# ex: show Trello board every morning (runs at 5am)
+# 0 5 * * * <USER> /home/<USER>/.config/i3/sh/scratchpad/trello.todo.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
+# EOF
