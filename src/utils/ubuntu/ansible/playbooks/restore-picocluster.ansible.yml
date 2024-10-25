@@ -1,0 +1,58 @@
+---
+- name: Setup picocluster nodes and synchronize files
+  hosts: pc0:pc1:pc2
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Install required packages on remote nodes
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - vim
+        - jq
+        - neofetch
+        - docker.io
+        - containerd
+
+    - name: Ensure docker group exists
+      group:
+        name: docker
+        state: present
+
+    - name: Add user to docker group
+      user:
+        name: picocluster
+        groups: docker
+        append: yes
+
+    - name: Generate SSH key pair if not exists
+      command: ssh-keygen -t rsa -b 4096 -f /home/{{ ansible_user }}/.ssh/id_rsa -N ""
+
+    - name: Synchronize files and directories to remote nodes
+      synchronize:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: push
+      loop:
+        - {
+            src: "/mnt/tmp_pc0_restore/home/picocluster/",
+            dest: "/home/picocluster/",
+          }
+        - {
+            src: "/mnt/tmp_pc1_restore/home/picocluster/",
+            dest: "/home/picocluster/",
+          }
+        - {
+            src: "/mnt/tmp_pc2_restore/home/picocluster/",
+            dest: "/home/picocluster/",
+          }
+        - {
+            src: "/mnt/tmp_pc{{ inventory_hostname.split('-')[-1] }}_restore/usr/local/bin/",
+            dest: "/usr/local/bin/",
+          }
+  handlers:
+    - name: Restart docker service
+      service:
+        name: docker
+        state: restarted

@@ -11,4 +11,5 @@
 
 #*/30 * * * * <USER> /home/<USER>/.config/i3/sh/xrandr-layout.sh
 
-0 2 * * 0 <USER> /home/<USER>/bin/ubuntu/network-backups.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
+# run network backups 2am Monday
+0 2 * * 1 <USER> /home/<USER>/bin/ubuntu/network-backups.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1

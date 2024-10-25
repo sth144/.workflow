@@ -12,3 +12,5 @@ $SCREENSHOT
 convert $IMAGE -blur $BLURTYPE $IMAGE
 
 i3lock -i $IMAGE
+
+
