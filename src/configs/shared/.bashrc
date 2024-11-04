@@ -171,3 +171,6 @@ git config --global pull.rebase true
 export DOCKER_USER="$(id -u):$(id -g)"
 
 LS_COLORS+=':ow=01;33'
+
+export PRIVATE_KEY=$(base64 < ~/.ssh/id_rsa)
+export PUBLIC_KEY=$(base64 < ~/.ssh/id_rsa.pub)
