@@ -9,7 +9,7 @@
 # run disk report every Monday at 5am
 0 5 * * 1 <USER> /usr/bin/echo "Disk report $(date)" >> /home/<USER>/.cache/.workflow/cronjob.log &&/usr/bin/ncdu -o /home/<USER>/tmp/disk_report.txt /
 # disk cleanup Monday at 3am
-0 3 * * 1 root /usr/bin/echo "Disk cleanup $(date)" >> /home/sthinds/.cache/.workflow/cronjob.log && /usr/local/bin/cron/disk_cleanup.sh
+0 3 * * 1 root /usr/bin/echo "Disk cleanup $(date)" >> /home/<USER>/.cache/.workflow/cronjob.log && /usr/local/bin/cron/disk_cleanup.sh
 
 # ex: show Trello board every morning (runs at 5am)
 # 0 5 * * * <USER> /home/<USER>/.config/i3/sh/scratchpad/trello.todo.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
