@@ -25,7 +25,7 @@ ls $backup_dir
 
 # Rotate backups to keep last five months
 cd $backup_dir
-ls -tp | grep "rpi.home-assistant.$backup_prefix" | tail -n +6 | xargs -I {} rm -- {}
-ls -tp | grep "rpi.pc0.$backup_prefix" | tail -n +6 | xargs -I {} rm -- {}
-ls -tp | grep "rpi.pc1.$backup_prefix" | tail -n +6 | xargs -I {} rm -- {}
-ls -tp | grep "rpi.pc2.$backup_prefix" | tail -n +6 | xargs -I {} rm -- {}
+ls -tp | grep "rpi.home-assistant.$backup_prefix" | grep -v "hold" | tail -n +6 | xargs -I {} rm -- {}
+ls -tp | grep "rpi.pc0.$backup_prefix" | grep -v "hold"  | tail -n +6 | xargs -I {} rm -- {}
+ls -tp | grep "rpi.pc1.$backup_prefix" | grep -v "hold"  | tail -n +6 | xargs -I {} rm -- {}
+ls -tp | grep "rpi.pc2.$backup_prefix" | grep -v "hold"  | tail -n +6 | xargs -I {} rm -- {}
