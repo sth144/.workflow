@@ -1,0 +1,5 @@
+# monkey patch /etc/hosts with Avahi mDNS address of desktop (Prometheus can't seem to use mDNS)
+0 17 * * * /usr/local/bin/mdns_to_etc.sh sthinds.local
+
+# once per year on Jan 1
+0 0 1 1 * pi cd /home/pi/Projects/nginx && /usr/local/bin/docker-compose down && ./init-letsencrypt.sh && /usr/local/bin/docker-compose up -d

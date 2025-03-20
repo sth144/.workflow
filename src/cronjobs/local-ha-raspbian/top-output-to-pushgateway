@@ -1,0 +1,2 @@
+* * * * * root /usr/local/bin/pushgateway/top_push.sh top_cpu >> /home/pi/.cache/.workflow/cronjob.log 2>&1
+* * * * * root /usr/local/bin/pushgateway/top_push.sh top_mem >> /home/pi/.cache/.workflow/cronjob.log 2>&1
