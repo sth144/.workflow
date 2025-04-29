@@ -2,14 +2,17 @@
 
 import requests
 from bs4 import BeautifulSoup
-import re
+import os
 
 import argparse
 import sys
+from urllib.parse import urljoin
 
 # Create the argument parser
 parser = argparse.ArgumentParser()
 parser.add_argument('-u', '--url', help='URL argument')
+OUTPUT_FOLDER = os.path.expanduser('~/tmp/output_html')
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # Parse the command-line arguments
 args = parser.parse_args()
@@ -34,49 +37,24 @@ soup = BeautifulSoup(html_content, "html.parser")
 # Find all the links in the page
 links = soup.find_all("a")
 
-print("Links:")
 print(links)
 
-# Scrape the text from each linked page
-output_text = ""
-
-prefix_counts = {}
+# Function to download and save an HTML page
+def download_and_save_html(url, output_folder, filename):
+    response = requests.get(url)
+    response.raise_for_status()  # Ensure we notice bad responses
+    with open(os.path.join(output_folder, filename), 'w', encoding='utf-8') as f:
+        f.write(response.text)
 
 for link in links:
-    classes = link.get("class")
-    if classes is not None and all(elem in classes for elem in ['reference', 'internal']):
-        href = link.get("href")
-        if href.startswith("http"):  # Skip external links
-            continue
-
-        link_url = f"{url}/{href}" if not href.startswith("/") else f"{url}{href}"
-        link_response = requests.get(link_url)
-        link_content = link_response.text
-
-        link_soup = BeautifulSoup(link_content, "html.parser")
-        link_text = re.sub(r'\n+', '\n', link_soup.get_text())
-        
-        href_no_html = href.replace(".html", "")
-        href_split = re.split(r'[\/#]', href_no_html)
-
-        print(f'\n\n\n--- File: {href_split} ---\n')
-        print(link_text)
-
-        choice = input(f"Do you want to keep the file for '{href_split}'? (y/n): ")
-        if choice.lower() == 'y':
-            if href_split[0] in prefix_counts:
-                prefix_counts[href_split[0]] += 1
-            else:
-                prefix_counts[href_split[0]] = 0
-            
-            href_joined = f"{href_split[0]}-{prefix_counts[href_split[0]]}"
-
-            if (len(href_split) > 1):
-                href_joined += '.' + '.'.join(href_split[1:])
-
-            filename = f"{href_joined}.md"
-            
-            with open(f"{filename}", "w", encoding="utf-8") as file:
-                file.write(f"Page: {link_url}\n{link_text}\n\n")
-
-# TODO: feed into TTS
+    if "href" in link.attrs:
+        print(link)
+        page_url = urljoin(args.url, link['href'])
+        page_name = link['href'].split('/')[-1]  # Use the last part of the URL as the filename
+        try:
+            if (page_url.endswith(".html")):
+                print(f'Downloading {page_url} as {page_name}...')
+                download_and_save_html(page_url, OUTPUT_FOLDER, page_name)
+        except BaseException as e:
+            print(f"Failed to scrape {page_url}")
+    

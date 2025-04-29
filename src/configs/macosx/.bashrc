@@ -8,16 +8,17 @@ case $- in
       *) return;;
 esac
 
-# don't put duplicate lines or lines starting with space in the history.
-# See bash(1) for more options
-HISTCONTROL=ignoreboth
-
 # append to the history file, don't overwrite it
 shopt -s histappend
 
+# don't put duplicate lines or lines starting with space in the history.
+# See bash(1) for more options
+export HISTCONTROL=ignoreboth
+export HISTIGNORE='ls:ll:cd:pwd:bg:fg:history'
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=1000
-HISTFILESIZE=2000
+export HISTSIZE=1000000
+export HISTFILESIZE=10000000
+
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -124,6 +125,38 @@ WHITE="\[\e[m\]"
 DOLLAR_SIGN="\\$"
 export PS1="${BLUE}[${YELLOW}\u${RED}@${BLUE}\t${WHITE}:${BLUE}\w${GREEN}\$(parse_git_branch)${BLUE}]${DOLLAR_SIGN} ${WHITE}"
 
+
+# Function to capture the start time
+preexec_invoke_cmd() {
+    # Store the start time as soon as the user presses Enter
+    export START_TIME=$(gdate +%s%N)
+}
+
+# Function to calculate and display the elapsed time after a command finishes
+precmd_invoke_cmd() {
+    # Only calculate the elapsed time if START_TIME is set
+    if [[ -n "$START_TIME" ]]; then
+        END_TIME=$(gdate +%s%N)
+
+        # Calculate the elapsed time in milliseconds
+        ELAPSED_TIME=$(( ($END_TIME - $START_TIME) / 10000 ))
+
+        if (($ELAPSED_TIME > 1000)); then
+            # Display the elapsed time for the command
+            echo "⏱️  ${ELAPSED_TIME}ms"
+        fi
+
+        # Cleanup the START_TIME variable
+        unset START_TIME
+    fi
+}
+
+# Add the DEBUG trap to capture the start time for each command
+trap 'preexec_invoke_cmd' DEBUG
+
+# Add the PROMPT_COMMAND to run the function after a command finishes
+export PROMPT_COMMAND='precmd_invoke_cmd; history -a; history -n'
+
 export BROWSER=/usr/bin/google-chrome-stable
 export EDITOR=/usr/bin/vim
 
@@ -174,11 +207,12 @@ export python="/usr/local/bin/python3.9"
 
 export alias chromed='open -a Google\ Chrome --args --remote-debugging-port=9222'
 export alias tmux='if $(tmux has-session IDE); then tmux; else tmux attach -t IDE; fi'
-
+export alias chrome_refresh="osascript -e 'tell application \"Google Chrome\" to tell the active tab of its first window to reload'"
 
 # Enable color output for the ls command
 export CLICOLOR=1
 
 # Define colors for file types (directories, symbolic links, etc.)
 export LSCOLORS=ExFxBxDxCxegedabagacad
+
 
