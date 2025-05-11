@@ -98,6 +98,21 @@ stage() {
 	done
 	$CP -r $BASE_ABS/src/docker/local $BASE_ABS/stage/docker/
 
+	echo "staging root"
+	if [ "$USE_SHARED" == "true" ];
+	then
+		$CP -R $BASE_ABS/src/root/shared $BASE_ABS/stage/root/
+	fi
+	for include in $EXTRA_INCLUDES;
+	do
+		if [ -d $BASE_ABS/src/root/$include ];
+		then
+			$CP -r $BASE_ABS/src/root/$include $BASE_ABS/stage/root/
+		fi
+	done
+	$CP -r $BASE_ABS/src/root/local $BASE_ABS/stage/root/
+
+
 	# preprocess staged output
 	# change <USER> tag to $USER wherever it appears in files
 	find stage -type f -exec sed -i -e "s@<USER>@$USER@g" {} \;
@@ -137,6 +152,10 @@ update_home() {
 	fi
 
 	mkdir -p ~/.cache/.workflow
+}
+
+update_root() {
+  sudo $CP -R $BASE_ABS/stage/root/* /
 }
 
 update_cronjobs() {

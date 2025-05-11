@@ -17,7 +17,7 @@ stage: clean
 	./admin/install.sh stage
 
 .PHONY: install
-install: update_cronjobs update_systemd_services copy_staged_to_home enable_utils update_bashrc refresh
+install: update_cronjobs update_systemd_services copy_staged_to_home enable_utils update_bashrc update_root refresh
 	@echo "installing configs and utils"
 
 # copy config build to ~/.config dot directory
@@ -36,6 +36,10 @@ update_cronjobs:
 update_systemd_services:
 	@echo "installing systemd services in /etc/systemd/system/"
 	./admin/install.sh update_systemd_services
+
+update_root:
+	@echo "updating root configs"
+	./admin/install.sh update_root
 
 # enable utils
 enable_utils:

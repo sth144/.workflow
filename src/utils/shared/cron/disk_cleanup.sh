@@ -10,6 +10,7 @@ pip3 cache purge
 
 # Clean up pip cache
 pip cache purge
+rm -rf /home/<USER>/.cache/pip/*
 
 pip uninstall -y -r <(pip freeze)
 pip3 uninstall -y -r <(pip3 freeze)
