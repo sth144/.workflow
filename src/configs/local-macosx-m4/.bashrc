@@ -19,6 +19,7 @@ export HISTIGNORE='ls:ll:cd:pwd:bg:fg:history'
 export HISTSIZE=1000000
 export HISTFILESIZE=10000000
 
+
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
 shopt -s checkwinsize
@@ -71,7 +72,6 @@ alias l='ls -CF'
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
 alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
-alias gnome-control-center="env XDG_CURRENT_DESKTOP=GNOME gnome-control-center"
 
 # Alias definitions.
 # You may want to put all your additions into a separate file like
@@ -123,8 +123,7 @@ RED="\[\e[31m\]"
 YELLOW="\[\e[33m\]"
 WHITE="\[\e[m\]"
 DOLLAR_SIGN="\\$"
-export PS1="${BLUE}[${YELLOW}\u${RED}@${BLUE}\h${WHITE}:${BLUE}\w${GREEN}\$(parse_git_branch)${BLUE}]${DOLLAR_SIGN} ${WHITE}"
-
+export PS1="${BLUE}[${YELLOW}\u${RED}@${BLUE}\t${WHITE}:${BLUE}\w${GREEN}\$(parse_git_branch)${BLUE}]${DOLLAR_SIGN} ${WHITE}"
 
 
 # Function to capture the start time
@@ -175,20 +174,19 @@ export PYTHONDONTWRITEBYTECODE=True
 # this enables syntax highlighting in Termite
 export TERM=xterm-256color
 
-export NVM_DIR=~/.nvm
-source ~/.nvm/nvm.sh
-
-export CDPATH=.:..:../..:$HOME:$HOME/src:$HOME/Projects:$HOME/Coding
+if [ -d ~/.nvm ]; then
+    export NVM_DIR=~/.nvm
+    source ~/.nvm/nvm.sh
+fi
 
 # add all utils (and scripts within .config) to PATH
-export PATH="$(find ~/bin/ -type d -printf ":%p"):$PATH"
+for d in ~/bin; do PATH="$PATH:$d"; done
 export PATH="$HOME/bin:$HOME/bin/*:$PATH"
 #export PATH="$(find ~/.config/ -type d -printf ":%p"):$PATH"
 export PATH=$PATH:/opt/sonar/bin
 
 #~/.config/i3/sh/xrandr-layout.sh
 export WORKFLOW_BASE=/mnt/D/Coding/Projects/Personal/.workflow
-export PYTHONPATH="${PYTHONPATH}:/mnt/D/Coding/Projects/Personal/.workflow"
 
 if [ -f /usr/local/src/alacritty/extra/completions/alacritty.bash ]; then
     source /usr/local/src/alacritty/extra/completions/alacritty.bash
@@ -199,13 +197,22 @@ then
     neofetch
 fi
 
-git config --global pull.rebase true
+export CDPATH=.:..:../..:$HOME:$HOME/src:$HOME/Data:$HOME/Projects
 
-export DOCKER_USER="$(id -u):$(id -g)"
+alias python=python3
+eval "$(direnv hook bash)"
+export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:/usr/local/bin/python3.9:$PATH"
+export BASH_SILENCE_DEPRECATION_WARNING=1
+export python="/usr/local/bin/python3.9"
 
-LS_COLORS+=':ow=01;33'
+export alias chromed='open -a Google\ Chrome --args --remote-debugging-port=9222'
+export alias tmux='if $(tmux has-session IDE); then tmux; else tmux attach -t IDE; fi'
+export alias chrome_refresh="osascript -e 'tell application \"Google Chrome\" to tell the active tab of its first window to reload'"
 
-export PRIVATE_KEY=$(base64 < ~/.ssh/id_rsa)
-export PUBLIC_KEY=$(base64 < ~/.ssh/id_rsa.pub)
+# Enable color output for the ls command
+export CLICOLOR=1
+
+# Define colors for file types (directories, symbolic links, etc.)
+export LSCOLORS=ExFxBxDxCxegedabagacad
 
 export PATH=$PATH:/opt/homebrew/bin

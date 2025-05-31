@@ -231,4 +231,5 @@ export CLICOLOR=1
 # Define colors for file types (directories, symbolic links, etc.)
 export LSCOLORS=ExFxBxDxCxegedabagacad
 
-
+# for Apple Silicon
+export PATH=$PATH:/opt/homebrew/bin

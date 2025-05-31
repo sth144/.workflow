@@ -49,6 +49,7 @@ stage() {
 	do
 		if [ -d $BASE_ABS/src/utils/$include ];
 		then
+			echo "Include $BASE_ABS/src/utils/$include"
 			$CP -r $BASE_ABS/src/utils/$include/. $BASE_ABS/stage/bin
 		fi
 	done
@@ -155,7 +156,7 @@ update_home() {
 }
 
 update_root() {
-  sudo $CP -R $BASE_ABS/stage/root/* /
+  sudo $CP -R $BASE_ABS/stage/root/* /; echo "";
 }
 
 update_cronjobs() {
@@ -189,6 +190,7 @@ update_systemd_services() {
 #}
 
 refresh() {
+
 	if [ -d $BASE_ABS/stage/.config/i3/config ];
 	then
 	    i3-msg restart
