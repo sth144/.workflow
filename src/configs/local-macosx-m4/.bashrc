@@ -182,7 +182,9 @@ fi
 # add all utils (and scripts within .config) to PATH
 for d in ~/bin; do PATH="$PATH:$d"; done
 export PATH="$HOME/bin:$HOME/bin/*:$HOME/bin/**/*:$PATH"
-#export PATH="$(find ~/.config/ -type d -printf ":%p"):$PATH"
+for dir in "$HOME/bin"/*/; do
+    [ -d "$dir" ] && PATH="$dir:$PATH"
+done
 export PATH=$PATH:/opt/sonar/bin
 
 #~/.config/i3/sh/xrandr-layout.sh
