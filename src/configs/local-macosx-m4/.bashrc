@@ -4,8 +4,8 @@
 
 # If not running interactively, don't do anything
 case $- in
-    *i*) ;;
-      *) return;;
+*i*) ;;
+*) return ;;
 esac
 
 # append to the history file, don't overwrite it
@@ -18,7 +18,6 @@ export HISTIGNORE='ls:ll:cd:pwd:bg:fg:history'
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 export HISTSIZE=1000000
 export HISTFILESIZE=10000000
-
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -37,16 +36,15 @@ if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
 fi
 
 # set a fancy prompt (non-color, unless we know we "want" color)
-case "$TERM" in xterm-color|*-256color) color_prompt=yes;;
+case "$TERM" in xterm-color | *-256color) color_prompt=yes ;;
 esac
 
 # TODO: how does this work on Arch...?
 # If this is an xterm set the title to user@host:dir
-case "$TERM" in xterm*|rxvt*)
+case "$TERM" in xterm* | rxvt*)
     PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
     ;;
-*)
-    ;;
+*) ;;
 esac
 
 # enable color support of ls and also add handy aliases
@@ -86,11 +84,11 @@ fi
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).
 if ! shopt -oq posix; then
-  if [ -f /usr/share/bash-completion/bash_completion ]; then
-    . /usr/share/bash-completion/bash_completion
-  elif [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
-  fi
+    if [ -f /usr/share/bash-completion/bash_completion ]; then
+        . /usr/share/bash-completion/bash_completion
+    elif [ -f /etc/bash_completion ]; then
+        . /etc/bash_completion
+    fi
 fi
 
 #########################################################################################################
@@ -98,9 +96,8 @@ fi
 #########################################################################################################
 
 parse_git_branch() {
-    if [ "$(git rev-parse --is-inside-work-tree 2>/dev/null)" = "true" ];
-    then
-        git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+    if [ "$(git rev-parse --is-inside-work-tree 2>/dev/null)" = "true" ]; then
+        git branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
     else
         echo ""
     fi
@@ -125,7 +122,6 @@ WHITE="\[\e[m\]"
 DOLLAR_SIGN="\\$"
 export PS1="${BLUE}[${YELLOW}\u${RED}@${BLUE}\t${WHITE}:${BLUE}\w${GREEN}\$(parse_git_branch)${BLUE}]${DOLLAR_SIGN} ${WHITE}"
 
-
 # Function to capture the start time
 preexec_invoke_cmd() {
     # Store the start time as soon as the user presses Enter
@@ -139,7 +135,7 @@ precmd_invoke_cmd() {
         END_TIME=$(gdate +%s%N)
 
         # Calculate the elapsed time in milliseconds
-        ELAPSED_TIME=$(( ($END_TIME - $START_TIME) / 10000 ))
+        ELAPSED_TIME=$((($END_TIME - $START_TIME) / 10000))
 
         if (($ELAPSED_TIME > 1000)); then
             # Display the elapsed time for the command
@@ -167,7 +163,11 @@ alias trello="$(npm list -g | head -1)/node_modules/trello-cli/bin/trello"
 
 # global sendkey function
 grabwindow() { xdotool windowactivate $(xdotool search --name "$1"); }
-keystroketowindow() { echo $3; grabwindow "$2" && xdotool key "$1"; sleep 1; }
+keystroketowindow() {
+    echo $3
+    grabwindow "$2" && xdotool key "$1"
+    sleep 1
+}
 
 export PYTHONDONTWRITEBYTECODE=True
 
@@ -181,7 +181,7 @@ fi
 
 # add all utils (and scripts within .config) to PATH
 for d in ~/bin; do PATH="$PATH:$d"; done
-export PATH="$HOME/bin:$HOME/bin/*:$PATH"
+export PATH="$HOME/bin:$HOME/bin/*:$HOME/bin/**/*:$PATH"
 #export PATH="$(find ~/.config/ -type d -printf ":%p"):$PATH"
 export PATH=$PATH:/opt/sonar/bin
 
@@ -192,8 +192,7 @@ if [ -f /usr/local/src/alacritty/extra/completions/alacritty.bash ]; then
     source /usr/local/src/alacritty/extra/completions/alacritty.bash
 fi
 
-if command -v neofetch &> /dev/null
-then
+if command -v neofetch &>/dev/null; then
     neofetch
 fi
 
