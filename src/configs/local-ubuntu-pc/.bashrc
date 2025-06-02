@@ -165,6 +165,7 @@ alias chat="cd $HOME/src/chatgpt-cli/ && if [[ -z \"$(echo $VIRTUAL_ENV)\" ]]; t
 alias notes="/usr/bin/joplin-cli --profile $HOME/.config/joplin/"
 alias gnome-control-center="env XDG_CURRENT_DESKTOP=GNOME gnome-control-center"
 alias settings="env XDG_CURRENT_DESKTOP=GNOME gnome-control-center"
+alias python=python3
 
 eval "$(direnv hook bash)"
 

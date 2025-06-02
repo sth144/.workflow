@@ -1,0 +1,47 @@
+# /etc/fstab: static file system information.
+#
+# Use 'blkid' to print the universally unique identifier for a
+# device; this may be used with UUID= as a more robust way to name devices
+# that works even if disks are added and removed. See fstab(5).
+#
+# <file system> <mount point>   <type>  <options>       <dump>  <pass>
+# / was on /dev/nvme0n1p4 during installation
+UUID=272216d4-c170-43d1-9873-7425be16a73a /               ext4    errors=remount-ro 0       1
+# /boot/efi was on /dev/sda2 during installation
+UUID=C852-6C5A  /boot/efi       vfat    umask=0077      0       1
+# /home was on /dev/nvme0n1p5 during installation
+#UUID=d8535cce-4498-4a8e-9e02-5f11233aa0e4 /home           ext4    defaults        0       2
+UUID=8b531d67-6da7-4549-9303-91138a220a63 /home           ext4    defaults        0       2
+
+
+
+# swap was on /dev/nvme0n1p3 during installation
+UUID=994d9b7f-bd34-4dae-8683-8e9bd073870a none            swap    sw              0       0
+# swap was on /dev/nvme0n1p6 during installation
+UUID=5cf9b909-77ac-41de-9c66-15a168d0b984 none            swap    sw              0       0
+
+
+###################################### Configuration ##########################################
+# auto-mount data drive (HDD D drive NTFS partition)
+/dev/disk/by-uuid/283A97C03A978988 /mnt/D auto nosuid,nodev,nofail,x-gvfs-show 0 0
+
+# auto-mount old Ubuntu SSD partition 
+/dev/disk/by-uuid/612c5a63-0dcf-450d-a58b-ac0d8fee27d0 /mnt/S auto nosuid,nodev,nofail,x-gvfs-show 0 0
+
+# auto-mount previous Ubuntu NVMe partitions
+/dev/disk/by-uuid/85f924c6-9c10-4903-af61-21308c55c8a6 /mnt/T auto nosuid,nodev,nofail,x-gvfs-show 0 0
+/dev/disk/by-uuid/969fffa3-9ba3-43fe-afa9-5134d77638d0 /mnt/Th auto nosuid,nodev,nofail,x-gvfs-show 0 0
+/dev/disk/by-uuid/ee1e833d-85a4-4ee7-b4e4-a95e42d1879b /mnt/U auto nosuid,nodev,nofail,x-gvfs-show 0 0
+/dev/disk/by-uuid/d8535cce-4498-4a8e-9e02-5f11233aa0e4 /mnt/Uh auto nosuid,nodev,nofail,x-gvfs-show 0 0
+
+# auto-mount NAS ('O' drive, openmediavault)
+#//192.168.1.245/NAS /media/NAS cifs vers=3.0,credentials=/root/.smbcredentials
+//192.168.1.245/NAS/ /media/NAS cifs auto,uid=1000,gid=1000,forceuid,forcegid,credentials=/root/.smbcredentials,iocharset=utf8,file_mode=0777,dir_mode=0777,noauto,x-systemd.automount 0 0
+//192.168.1.245/sthinds/ /media/omv cifs auto,uid=1000,gid=1000,forceuid,forcegid,credentials=/root/.smbcredentials,iocharset=utf8,file_mode=0777,dir_mode=0777,noauto,x-systemd.automount 0 0
+
+# auto-mount Raspberry Pi's (home directories) on LAN
+//192.168.1.243/pi/ /media/pi cifs auto,uid=1000,gid=1000,forceuid,forcegid,credentials=/root/.smbcredentials.pi,iocharset=utf8,file_mode=0777,dir_mode=0777,noauto,x-systemd.automount 0 0
+//192.168.1.240/picocluster/ /media/pc0 cifs auto,uid=1000,gid=1000,forceuid,forcegid,credentials=/root/.smbcredentials.picocluster,iocharset=utf8,file_mode=0777,dir_mode=0777,noauto,x-systemd.automount 0 0
+//192.168.1.241/picocluster/ /media/pc1 cifs auto,uid=1000,gid=1000,forceuid,forcegid,credentials=/root/.smbcredentials.picocluster,iocharset=utf8,file_mode=0777,dir_mode=0777,noauto,x-systemd.automount 0 0
+//192.168.1.242/picocluster/ /media/pc2 cifs auto,uid=1000,gid=1000,forceuid,forcegid,credentials=/root/.smbcredentials.picocluster,iocharset=utf8,file_mode=0777,dir_mode=0777,noauto,x-systemd.automount 0 0
+

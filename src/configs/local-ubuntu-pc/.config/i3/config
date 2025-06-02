@@ -130,7 +130,7 @@ set $obsidian   #292d2e
 set $light_red  #ff8888
 set $eggshell   #efefef
 
-set $alacritty 	/home/<USER>/.cargo/bin/alacritty
+set $alacritty 	/home/<USER>/bin/alacritty
 
 focus_follows_mouse no
 
