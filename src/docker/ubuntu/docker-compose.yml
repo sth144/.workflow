@@ -12,4 +12,16 @@ services:
       - 9091:9091
     volumes: 
       - /home/<USER>/Drive/D/Volumes/Docker/pushgateway:/data
+  dcgm-exporter:
+    image: nvidia/dcgm-exporter:latest
+    container_name: dcgm-exporter
+    restart: unless-stopped
+    ports:
+      - "9400:9400"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    runtime: nvidia
 # TODO: promtail push cronjob log

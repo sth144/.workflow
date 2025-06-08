@@ -16,7 +16,7 @@ fi
 
 # Resolve the absolute path of the input
 SRC_PATH="$(realpath "$1")"
-SRC_BASENAME="$(basename "$SRC_PATH")"  # Get the basename of the source (file or directory)
+SRC_BASENAME="$(basename "$SRC_PATH")" # Get the basename of the source (file or directory)
 
 # If a second argument is provided, use it as DEST_PATH, otherwise prepend BASE_DIR
 if [ -n "$2" ]; then
@@ -24,6 +24,7 @@ if [ -n "$2" ]; then
 else
   DEST_PATH="$BASE_DIR/$SRC_BASENAME"
 fi
+REL_PATH="${SRC_PATH#/}" # Remove leading slash
 
 # Create the parent directory at the destination
 mkdir -p "$(dirname "$DEST_PATH")"
@@ -39,7 +40,7 @@ fi
 
 # Check if rsync was successful and then remove the source file/directory
 if [ -e "$DEST_PATH" ]; then
-  rm -rf "$SRC_PATH"  # Remove the original file/directory
+  rm -rf "$SRC_PATH" # Remove the original file/directory
   echo "Successfully moved '$SRC_PATH' to '$DEST_PATH'."
 else
   echo "Error: rsync failed to copy '$SRC_PATH'. Source not deleted."

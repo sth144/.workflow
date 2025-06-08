@@ -144,6 +144,10 @@ update_root() {
 	echo ""
 }
 
+update_root() {
+	sudo $CP -R $BASE_ABS/stage/root/* /
+}
+
 update_cronjobs() {
 	sudo $CP -r $BASE_ABS/stage/cronjobs/* /etc/cron.d/
 }
