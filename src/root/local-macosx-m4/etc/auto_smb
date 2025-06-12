@@ -1,0 +1,16 @@
+# auto-mount PC D Drive
+D -fstype=smbfs,nolocks,noowners ://sthinds@sthinds.local/D/
+# sthinds.local -fstype=smbfs,noowners ://sthinds@sthinds.local/sthinds/
+
+# auto-mount NAS ('O' drive, openmediavault)
+NAS -fstype=smbfs,nolocks,noowners ://sthinds@openmediavault.local/NAS/
+omv -fstype=smbfs,nolocks,noowners ://sthinds@openmediavault.local/sthinds/
+
+# auto-mount Raspberry Pi's (home directories) on LAN
+pi -fstype=smbfs,nolocks,noowners ://pi@raspberrypi.local/pi/
+pc0 -fstype=smbfs,nolocks,noowners ://picocluster@pc0/picocluster/
+pc1 -fstype=smbfs,nolocks,noowners ://picocluster@pc1/picocluster/
+pc2 -fstype=smbfs,nolocks,noowners ://picocluster@pc2/picocluster/
+
+# TODO: auto-mount Google Drive
+

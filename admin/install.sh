@@ -86,18 +86,19 @@ stage() {
 
 	echo "staging root"
 	if [ "$USE_SHARED" == "true" ]; then
-		$CP -R $BASE_ABS/src/root/shared $BASE_ABS/stage/root/
+		$CP -R $BASE_ABS/src/root/shared/ $BASE_ABS/stage/root/
 	fi
 	for include in $EXTRA_INCLUDES; do
 		if [ -d $BASE_ABS/src/root/$include ]; then
-			$CP -r $BASE_ABS/src/root/$include $BASE_ABS/stage/root/
+			$CP -r $BASE_ABS/src/root/$include/. $BASE_ABS/stage/root/
 		fi
 	done
-	$CP -r $BASE_ABS/src/root/local $BASE_ABS/stage/root/
+	$CP -r $BASE_ABS/src/root/local/ $BASE_ABS/stage/root/
 
 	# preprocess staged output
 	# change <USER> tag to $USER wherever it appears in files
 	find stage -type f -exec sed -i -e "s@<USER>@$USER@g" {} \;
+	find ./stage -type f -name '*-e' -exec rm -f {} +
 }
 
 update_home() {
@@ -140,7 +141,10 @@ update_home() {
 }
 
 update_root() {
-	sudo $CP -R $BASE_ABS/stage/root/* /
+	if [[ $(uname) == "Darwin" ]]; then
+		sudo rsync -avh ./stage/root/etc/ /private/etc/
+	fi
+	sudo rsync -avh ./stage/root/ /
 	echo ""
 }
 
@@ -150,6 +154,24 @@ update_root() {
 
 update_cronjobs() {
 	sudo $CP -r $BASE_ABS/stage/cronjobs/* /etc/cron.d/
+	if [[ $(uname) == "Darwin" ]]; then
+		TMP_CRON="/tmp/workflow_crontab.tmp"
+		COMBINED="/etc/cron.d/workflow_crontab"
+		# Combine, strip comments/blanks, and remove the "user" field (6th field)
+
+		find /etc/cron.d -type f ! -name 'workflow_crontab' -exec cat {} + |
+			grep -vE '^($|#)' |
+			awk 'NF >= 6 { print $1, $2, $3, $4, $5, substr($0, index($0, $7)) }' |
+			sort -u >"$TMP_CRON"
+
+		# Optional: Save the combined version
+		sudo cp "$TMP_CRON" "$COMBINED"
+		# Load into current user's crontab
+		crontab "$TMP_CRON"
+		# Clean up
+		rm "$TMP_CRON"
+		echo "Crontab updated from /etc/cron.d/*"
+	fi
 }
 
 update_systemd_services() {

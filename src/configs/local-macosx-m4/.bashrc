@@ -2,6 +2,8 @@
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
 
+export PATH=$PATH:/opt/homebrew/bin:/opt/homebrew/opt/coreutils/libexec/gnubin
+
 # If not running interactively, don't do anything
 case $- in
 *i*) ;;
@@ -120,7 +122,7 @@ RED="\[\e[31m\]"
 YELLOW="\[\e[33m\]"
 WHITE="\[\e[m\]"
 DOLLAR_SIGN="\\$"
-export PS1="${BLUE}[${YELLOW}\u${RED}@${BLUE}\t${WHITE}:${BLUE}\w${GREEN}\$(parse_git_branch)${BLUE}]${DOLLAR_SIGN} ${WHITE}"
+export PS1="${BLUE}[${YELLOW}\u${RED}@${BLUE}\h${RED}-${GREEN}\t${WHITE}:${BLUE}\w${GREEN}\$(parse_git_branch)${BLUE}]${DOLLAR_SIGN} ${WHITE}"
 
 # Function to capture the start time
 preexec_invoke_cmd() {
@@ -215,5 +217,3 @@ export CLICOLOR=1
 
 # Define colors for file types (directories, symbolic links, etc.)
 export LSCOLORS=ExFxBxDxCxegedabagacad
-
-export PATH=$PATH:/opt/homebrew/bin
