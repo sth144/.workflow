@@ -1,0 +1,25 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://192.168.1.245:3100/loki/api/v1/push  # Update if using remote Loki
+
+scrape_configs:
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: varlogs
+          __path__: /var/log/*.log
+  - job_name: workflow_cronjob
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: cronjob
+          __path__: /home/<USER>/.cache/.workflow/cronjob.log
