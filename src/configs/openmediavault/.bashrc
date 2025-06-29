@@ -156,3 +156,5 @@ fi
 
 
 LS_COLORS+=':ow=01;33'
+
+eval "$(direnv hook bash)"

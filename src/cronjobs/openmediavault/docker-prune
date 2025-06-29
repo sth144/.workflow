@@ -1,0 +1,2 @@
+0 3 * * * /usr/local/bin/docker/docker_prune.sh >> /var/log/docker-prune.log 2>&1
+

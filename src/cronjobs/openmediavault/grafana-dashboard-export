@@ -1,0 +1,2 @@
+0 0 * * 0 sthinds /home/sthinds/bin/cron/export_grafana_dashboard.sh
+

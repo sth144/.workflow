@@ -233,3 +233,5 @@ export LSCOLORS=ExFxBxDxCxegedabagacad
 
 # for Apple Silicon
 export PATH=$PATH:/opt/homebrew/bin
+
+eval "$(direnv hook bash)"

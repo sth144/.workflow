@@ -185,4 +185,4 @@ unset __conda_setup
 # <<< conda initialize <<<
 
 LS_COLORS+=':ow=01;33'
-
+eval "$(direnv hook bash)"

@@ -85,6 +85,7 @@ stage() {
 	$CP -r $BASE_ABS/src/docker/local $BASE_ABS/stage/docker/
 
 	echo "staging root"
+        mkdir -p $BASE_ABS/stage/root
 	if [ "$USE_SHARED" == "true" ]; then
 		$CP -R $BASE_ABS/src/root/shared/ $BASE_ABS/stage/root/
 	fi
@@ -146,10 +147,6 @@ update_root() {
 	fi
 	sudo rsync -avh ./stage/root/ /
 	echo ""
-}
-
-update_root() {
-	sudo $CP -R $BASE_ABS/stage/root/* /
 }
 
 update_cronjobs() {

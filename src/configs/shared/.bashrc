@@ -210,3 +210,7 @@ export PUBLIC_KEY=$(base64 < ~/.ssh/id_rsa.pub)
 
 export PATH=$PATH:/opt/homebrew/bin
 alias python=python3
+
+eval "$(direnv hook bash)"
+
+
