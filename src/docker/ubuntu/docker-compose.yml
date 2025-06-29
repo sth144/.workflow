@@ -12,6 +12,13 @@ services:
       - 9091:9091
     volumes: 
       - /home/<USER>/Drive/D/Volumes/Docker/pushgateway:/data
+  promtail:
+    image: grafana/promtail:2.9.2
+    restart: always
+    volumes:
+      - /var/log:/var/log:ro
+      - /home/sthinds/.config/promtail/promtail-config.yaml:/etc/promtail/config.yaml:ro
+    command: -config.file=/etc/promtail/config.yaml
   dcgm-exporter:
     image: nvidia/dcgm-exporter:latest
     container_name: dcgm-exporter
@@ -24,4 +31,3 @@ services:
           devices:
             - capabilities: [gpu]
     runtime: nvidia
-# TODO: promtail push cronjob log
