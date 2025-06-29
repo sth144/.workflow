@@ -98,7 +98,13 @@ stage() {
 
 	# preprocess staged output
 	# change <USER> tag to $USER wherever it appears in files
+
+	if [[ $(uname) == "Darwin" ]]; then
+		find ./stage -type f -exec sed -i '' 's|/home/<USER>|/Users/<USER>|g' {} +
+	fi
+
 	find stage -type f -exec sed -i -e "s@<USER>@$USER@g" {} \;
+
 	find ./stage -type f -name '*-e' -exec rm -f {} +
 }
 
