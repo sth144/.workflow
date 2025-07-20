@@ -26,7 +26,7 @@ tmux send-keys 'ssh picocluster@pc0' C-m
 
 tmux select-pane -t 7
 
-tmux send-keys 'ssh sthinds@openmediavault.local bash -i' C-m
+tmux send-keys 'ssh sthinds@openmediavault.local' C-m
 
 tmux select-pane -t 8
 

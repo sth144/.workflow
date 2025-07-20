@@ -35,6 +35,8 @@
 192.168.1.245 calibre-web
 192.168.1.245 paperless-ng
 192.168.1.245 gitlab.local
+192.168.1.245 joplin
+192.168.1.245 joplin.local
 192.168.1.50 canon.local
 192.168.1.243 wireguard
 192.168.1.243 wyze.bridge
