@@ -4,8 +4,8 @@
 
 # If not running interactively, don't do anything
 case $- in
-    *i*) ;;
-      *) return;;
+*i*) ;;
+*) return ;;
 esac
 
 # append to the history file, don't overwrite it
@@ -32,32 +32,31 @@ shopt -s checkwinsize
 
 # set variable identifying the chroot you work in (used in the prompt below)
 if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
-    debian_chroot=$(cat /etc/debian_chroot)
+  debian_chroot=$(cat /etc/debian_chroot)
 fi
 
 # set a fancy prompt (non-color, unless we know we "want" color)
-case "$TERM" in xterm-color|*-256color) color_prompt=yes;;
+case "$TERM" in xterm-color | *-256color) color_prompt=yes ;;
 esac
 
 # TODO: how does this work on Arch...?
 # If this is an xterm set the title to user@host:dir
-case "$TERM" in xterm*|rxvt*)
-    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
-    ;;
-*)
-    ;;
+case "$TERM" in xterm* | rxvt*)
+  PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+  ;;
+*) ;;
 esac
 
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
+  test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+  alias ls='ls --color=auto'
+  #alias dir='dir --color=auto'
+  #alias vdir='vdir --color=auto'
 
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
+  alias grep='grep --color=auto'
+  alias fgrep='fgrep --color=auto'
+  alias egrep='egrep --color=auto'
 fi
 
 # colored GCC warnings and errors
@@ -79,7 +78,7 @@ alias gnome-control-center="env XDG_CURRENT_DESKTOP=GNOME gnome-control-center"
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
 if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
+  . ~/.bash_aliases
 fi
 
 # enable programmable completion features (you don't need to enable
@@ -98,20 +97,19 @@ fi
 #########################################################################################################
 
 parse_git_branch() {
-    if [ "$(git rev-parse --is-inside-work-tree 2>/dev/null)" = "true" ];
-    then
-        git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
-    else
-        echo ""
-    fi
+  if [ "$(git rev-parse --is-inside-work-tree 2>/dev/null)" = "true" ]; then
+    git branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+  else
+    echo ""
+  fi
 }
 
 # Change NodeJS version when entering specified directories
 cd() {
-    builtin cd "$@"
-    if [ -f .nvmrc ]; then
-        nvm use
-    fi
+  builtin cd "$@"
+  if [ -f .nvmrc ]; then
+    nvm use
+  fi
 }
 
 # export color prompt
@@ -125,31 +123,29 @@ WHITE="\[\e[m\]"
 DOLLAR_SIGN="\\$"
 export PS1="${BLUE}[${YELLOW}\u${RED}@${BLUE}\h${WHITE}:${BLUE}\w${GREEN}\$(parse_git_branch)${BLUE}]${DOLLAR_SIGN} ${WHITE}"
 
-
-
 # Function to capture the start time
 preexec_invoke_cmd() {
-    # Store the start time as soon as the user presses Enter
-    export START_TIME=$(gdate +%s%N)
+  # Store the start time as soon as the user presses Enter
+  export START_TIME=$(gdate +%s%N)
 }
 
 # Function to calculate and display the elapsed time after a command finishes
 precmd_invoke_cmd() {
-    # Only calculate the elapsed time if START_TIME is set
-    if [[ -n "$START_TIME" ]]; then
-        END_TIME=$(gdate +%s%N)
+  # Only calculate the elapsed time if START_TIME is set
+  if [[ -n "$START_TIME" ]]; then
+    END_TIME=$(gdate +%s%N)
 
-        # Calculate the elapsed time in milliseconds
-        ELAPSED_TIME=$(( ($END_TIME - $START_TIME) / 10000 ))
+    # Calculate the elapsed time in milliseconds
+    ELAPSED_TIME=$((($END_TIME - $START_TIME) / 10000))
 
-        if (($ELAPSED_TIME > 1000)); then
-            # Display the elapsed time for the command
-            echo "⏱️  ${ELAPSED_TIME}ms"
-        fi
-
-        # Cleanup the START_TIME variable
-        unset START_TIME
+    if (($ELAPSED_TIME > 1000)); then
+      # Display the elapsed time for the command
+      echo "⏱️  ${ELAPSED_TIME}ms"
     fi
+
+    # Cleanup the START_TIME variable
+    unset START_TIME
+  fi
 }
 
 # Add the DEBUG trap to capture the start time for each command
@@ -168,7 +164,11 @@ alias trello="$(npm list -g | head -1)/node_modules/trello-cli/bin/trello"
 
 # global sendkey function
 grabwindow() { xdotool windowactivate $(xdotool search --name "$1"); }
-keystroketowindow() { echo $3; grabwindow "$2" && xdotool key "$1"; sleep 1; }
+keystroketowindow() {
+  echo $3
+  grabwindow "$2" && xdotool key "$1"
+  sleep 1
+}
 
 export PYTHONDONTWRITEBYTECODE=True
 
@@ -191,12 +191,11 @@ export WORKFLOW_BASE=/mnt/D/Coding/Projects/Personal/.workflow
 export PYTHONPATH="${PYTHONPATH}:/mnt/D/Coding/Projects/Personal/.workflow"
 
 if [ -f /usr/local/src/alacritty/extra/completions/alacritty.bash ]; then
-    source /usr/local/src/alacritty/extra/completions/alacritty.bash
+  source /usr/local/src/alacritty/extra/completions/alacritty.bash
 fi
 
-if command -v neofetch &> /dev/null
-then
-    neofetch
+if command -v neofetch &>/dev/null; then
+  neofetch
 fi
 
 git config --global pull.rebase true
@@ -205,12 +204,15 @@ export DOCKER_USER="$(id -u):$(id -g)"
 
 LS_COLORS+=':ow=01;33'
 
-export PRIVATE_KEY=$(base64 < ~/.ssh/id_rsa)
-export PUBLIC_KEY=$(base64 < ~/.ssh/id_rsa.pub)
+export PRIVATE_KEY=$(base64 <~/.ssh/id_rsa)
+export PUBLIC_KEY=$(base64 <~/.ssh/id_rsa.pub)
 
 export PATH=$PATH:/opt/homebrew/bin
 alias python=python3
 
 eval "$(direnv hook bash)"
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 9625f50 (Bash)

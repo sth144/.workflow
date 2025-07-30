@@ -4,8 +4,8 @@
 
 # If not running interactively, don't do anything
 case $- in
-    *i*) ;;
-      *) return;;
+*i*) ;;
+*) return ;;
 esac
 
 # don't put duplicate lines or lines starting with space in the history.
@@ -32,32 +32,31 @@ shopt -s checkwinsize
 
 # set variable identifying the chroot you work in (used in the prompt below)
 if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
-    debian_chroot=$(cat /etc/debian_chroot)
+  debian_chroot=$(cat /etc/debian_chroot)
 fi
 
 # set a fancy prompt (non-color, unless we know we "want" color)
-case "$TERM" in xterm-color|*-256color) color_prompt=yes;;
+case "$TERM" in xterm-color | *-256color) color_prompt=yes ;;
 esac
 
 # TODO: how does this work on Arch...?
 # If this is an xterm set the title to user@host:dir
-case "$TERM" in xterm*|rxvt*)
-    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
-    ;;
-*)
-    ;;
+case "$TERM" in xterm* | rxvt*)
+  PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+  ;;
+*) ;;
 esac
 
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
+  test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+  alias ls='ls --color=auto'
+  #alias dir='dir --color=auto'
+  #alias vdir='vdir --color=auto'
 
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
+  alias grep='grep --color=auto'
+  alias fgrep='fgrep --color=auto'
+  alias egrep='egrep --color=auto'
 fi
 
 # colored GCC warnings and errors
@@ -78,7 +77,7 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
 if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
+  . ~/.bash_aliases
 fi
 
 # enable programmable completion features (you don't need to enable
@@ -97,12 +96,11 @@ fi
 #########################################################################################################
 
 parse_git_branch() {
-    if [ "$(git rev-parse --is-inside-work-tree 2>/dev/null)" = "true" ];
-    then
-        git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
-    else
-        echo ""
-    fi
+  if [ "$(git rev-parse --is-inside-work-tree 2>/dev/null)" = "true" ]; then
+    git branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+  else
+    echo ""
+  fi
 }
 
 # export color prompt
@@ -126,7 +124,11 @@ alias trello="$(npm list -g | head -1)/node_modules/trello-cli/bin/trello"
 
 # global sendkey function
 grabwindow() { xdotool windowactivate $(xdotool search --name "$1"); }
-keystroketowindow() { echo $3; grabwindow "$2" && xdotool key "$1"; sleep 1; }
+keystroketowindow() {
+  echo $3
+  grabwindow "$2" && xdotool key "$1"
+  sleep 1
+}
 
 export PYTHONDONTWRITEBYTECODE=True
 
@@ -146,14 +148,12 @@ export WORKFLOW_BASE=/mnt/D/Coding/Projects/Personal/.workflow
 export PYTHONPATH="${PYTHONPATH}:/mnt/D/Coding/Projects/Personal/.workflow"
 
 if [ -f /usr/local/src/alacritty/extra/completions/alacritty.bash ]; then
-    source /usr/local/src/alacritty/extra/completions/alacritty.bash
+  source /usr/local/src/alacritty/extra/completions/alacritty.bash
 fi
 
-if command -v neofetch &> /dev/null
-then
-    neofetch
+if command -v neofetch &>/dev/null; then
+  neofetch
 fi
-
 
 LS_COLORS+=':ow=01;33'
 
