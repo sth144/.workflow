@@ -211,8 +211,3 @@ export PATH=$PATH:/opt/homebrew/bin
 alias python=python3
 
 eval "$(direnv hook bash)"
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 9625f50 (Bash)
