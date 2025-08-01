@@ -21,3 +21,17 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
     restart: unless-stopped
 #    priveleged: true
+
+  filebrowser:
+    image: filebrowser/filebrowser
+    user: "${UID}:${GID}"
+    ports:
+      - 10690:8080
+    volumes:
+      - $ENV_FILEBROWSER_BASE/gallery:/data
+      - $ENV_FILEBROWSER_BASE/config:/config
+    environment:
+      - FB_BASEURL=/filebrowser
+    restart: "no"
+
+
