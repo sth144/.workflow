@@ -1,0 +1,1 @@
+@monthly root /usr/local/bin/cron/renew_k8s_certs.sh
