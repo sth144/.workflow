@@ -117,14 +117,14 @@ export PS1="${BLUE}[${YELLOW}\u${RED}@${BLUE}\h${WHITE}:${BLUE}\w${GREEN}\$(pars
 # Function to capture the start time
 preexec_invoke_cmd() {
   # Store the start time as soon as the user presses Enter
-  export START_TIME=$(gdate +%s%N)
+  export START_TIME=$(date +%s%N)
 }
 
 # Function to calculate and display the elapsed time after a command finishes
 precmd_invoke_cmd() {
   # Only calculate the elapsed time if START_TIME is set
   if [[ -n "$START_TIME" ]]; then
-    END_TIME=$(gdate +%s%N)
+    END_TIME=$(date +%s%N)
 
     # Calculate the elapsed time in milliseconds
     ELAPSED_TIME=$((($END_TIME - $START_TIME) / 10000))

@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  # =====================
+  # QGIS Server
+  # =====================
+  qgis-server:
+    image: qgis/qgis-server:latest
+    container_name: qgis-server
+    ports:
+      - "90:80"  # Web access
+    volumes:
+      - $HOME/Volumes/qgis:/projects  # Put your .qgs/.qgz projects here
+    environment:
+      - QGIS_PROJECT_FILE=/projects/your_project.qgs
+    restart: unless-stopped
+
+  freecad:
+    image: lscr.io/linuxserver/freecad:latest
+    container_name: freecad
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - SSL_ENABLE=false       # disables HTTPS for easier local access
+    ports:
+      - "4000:3000"            # HTTP port
+      - "4001:3001"            # HTTPS port (optional, will still exist)
+    volumes:
+      - /home/sthinds/Volumes/FreeCAD/config:/config
+      - /home/sthinds/Volumes/FreeCAD/data:/data      # sketches, models, projects
+    shm_size: "1gb"
+    restart: unless-stopped
+  # =====================
+  # CadQuery Server
+  # =====================
+  #cadquery-server:
+  #  image: cadquery/cadquery-server:latest
+  #  container_name: cadquery-server
+  #  command: ["run"]
+  #  ports:
+  #    - "100:5000"  # HTTP API access
+  #  volumes:
+  #    - $HOME/Volumes/cadquery:/work  # Your Python scripts or CQ scripts
+  #  environment:
+  #    - CQ_SERVER_WORKDIR=/work
+  #  restart: unless-stopped

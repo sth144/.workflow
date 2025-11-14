@@ -17,8 +17,9 @@ services:
     restart: always
     volumes:
       - /var/log:/var/log:ro
-      - /home/sthinds/.config/promtail/promtail-config.yaml:/etc/promtail/config.yaml:ro
-    command: -config.file=/etc/promtail/config.yaml
+      - /home/sthinds/.config/promtail/promtail-config.yaml:/etc/promtail/config.yml
+      - /home/sthinds/.cache:/home/sthinds/.cache
+    command: -config.file=/etc/promtail/config.yml
   dcgm-exporter:
     image: nvidia/dcgm-exporter:latest
     container_name: dcgm-exporter
