@@ -23,6 +23,8 @@ services:
       - PGID=1000
       - TZ=Etc/UTC
       - SSL_ENABLE=false       # disables HTTPS for easier local access
+      - WEB_SCALE=2.0
+    
     ports:
       - "4000:3000"            # HTTP port
       - "4001:3001"            # HTTPS port (optional, will still exist)
