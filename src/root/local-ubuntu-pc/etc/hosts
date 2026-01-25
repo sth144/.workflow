@@ -27,6 +27,7 @@
 192.168.1.245   gitlab.local
 192.168.1.50    canon.local
 192.168.1.243   wireguard
+192.168.1.245   kavita
 
 # cluster nodes
 192.168.1.240	pc0

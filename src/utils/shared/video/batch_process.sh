@@ -1,51 +1,78 @@
-
 #!/bin/bash
+set -euo pipefail
+shopt -s nullglob
+
+# -------------------------
+# Argument parsing
+# -------------------------
+
+SKIP_EXISTING=0
+
+if [[ "${1:-}" == "--skip-existing" ]]; then
+  SKIP_EXISTING=1
+  shift
+fi
+
+if [ $# -ne 3 ]; then
+  echo "Usage: batch_process.sh [--skip-existing] <input_dir> <output_dir> <command>"
+  exit 1
+fi
 
 input_directory=$1
 output_directory=$2
-command_string=$3
+command_template=$3
 
-# Create output directory if it doesn't exist
+# -------------------------
+# Validation
+# -------------------------
+
+if [ ! -d "$input_directory" ]; then
+  echo "ERROR: Input directory does not exist: $input_directory"
+  exit 1
+fi
+
 mkdir -p "$output_directory"
 
-# Function to recursively process files in the input directory
+# -------------------------
+# Recursive processor
+# -------------------------
+
 process_files() {
-    local input_dir=$1
-    local output_dir=$2
+  local input_dir=$1
+  local output_dir=$2
 
-    for file in "$input_dir"/*; do
-        if [ -f "$file" ]; then
-            # Get the directory path without the filename
-            dir_path=$(dirname "$file")
+  for file in "$input_dir"/*; do
+    if [ -f "$file" ]; then
+      dir_path=$(dirname "$file")
+      sub_dir="${dir_path/$input_directory/$output_directory}"
 
-            echo "DIR PATH $dir_path"
+      mkdir -p "$sub_dir"
 
-            # Create the directory structure in the output directory
-            sub_dir="${dir_path/$input_directory/$output_directory}"
-            
-            echo "SUB DIR $sub_dir"
+      outfile_name=$(basename "$file")
+      outfile="$sub_dir/$outfile_name"
 
-            mkdir -p "$sub_dir"
+      # Idempotency
+      if [[ $SKIP_EXISTING -eq 1 && -e "$outfile" ]]; then
+        echo "SKIP (exists): $outfile"
+        continue
+      fi
 
-            # Replace placeholders in the command string
-            outfile_name=$(basename $file)
-            echo "OUTFILE NAME $outfile_name"
-            outfile="$sub_dir/$outfile_name"
-            echo "OUTFILE PATH $outfile"
-            command=${command_string/<INPUT>/$file}
-            command=${command/<OUTPUT>/$outfile}
+      cmd="$command_template"
+      cmd="${cmd//__INPUT__/$file}"
+      cmd="${cmd//__OUTPUT__/$outfile}"
 
-            echo "COMMAND $command"
+      echo "RUN: $cmd"
+      eval "$cmd"
 
-            # Execute the command
-            eval "$command"
-        elif [ -d "$file" ]; then
-            echo "RECURSE $file $output_directory"
-            # Recursively process subdirectories
-            process_files "$file" "$output_directory"
+    elif [ -d "$file" ]; then
+      process_files "$file" "$output_directory"
     fi
-    done
+  done
 }
 
-# Start processing files in input directory
+# -------------------------
+# Start
+# -------------------------
+
 process_files "$input_directory" "$output_directory"
+

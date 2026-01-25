@@ -1,78 +1,157 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import sys
 import subprocess
-from moviepy.editor import VideoFileClip, concatenate_videoclips
+from moviepy import VideoFileClip, concatenate_videoclips
 
-def get_video_fps(file_path):
-    command = ["ffprobe", "-v", "error", "-select_streams", "v", "-of", "default=noprint_wrappers=1:nokey=1", "-show_entries", "stream=r_frame_rate", file_path]
-    result = subprocess.run(command, capture_output=True, text=True)
-    fps = round(eval(result.stdout))
-    return fps
+# ------------------------
+# Defaults (sane + predictable)
+# ------------------------
+DEFAULT_SLOWDOWN = 0.5   # 0.5 = 2x slower
+DEFAULT_LOOPS = 3
 
-# Get the path to the input file from the command line argument
+# ------------------------
+# Argument parsing
+# ------------------------
 if len(sys.argv) < 3:
-    print("Please provide the path to the input MP4 file as an argument")
-    exit(1)
+    print("Usage:")
+    print("  smooth_loop_mp4.py <input.mp4> <output.mp4>")
+    print("  smooth_loop_mp4.py <input.mp4> <output.mp4> usedefaults")
+    print("  smooth_loop_mp4.py <input.mp4> <output.mp4> <slowdown> [loops]")
+    sys.exit(1)
 
-input_file_path = sys.argv[1]
-output_file_path = sys.argv[2]
-use_defaults = False
-if len(sys.argv) > 3:
-    if sys.argv[3].lower() == "usedefault":
-        use_defaults = True
-    
-# Derive the output file path
-filename = os.path.basename(input_file_path)
+input_file = sys.argv[1]
+output_file = sys.argv[2]
 
+if not os.path.isfile(input_file):
+    print(f"ERROR: Input file does not exist: {input_file}")
+    sys.exit(1)
+
+# ------------------------
+# Parameter resolution
+# ------------------------
+slowdown = None
+loops = None
+
+# Case 1: scripted defaults
+if len(sys.argv) >= 4 and sys.argv[3].lower() == "usedefaults":
+    slowdown = DEFAULT_SLOWDOWN
+    loops = DEFAULT_LOOPS
+
+# Case 2: scripted explicit values
+elif len(sys.argv) >= 4:
+    try:
+        slowdown = float(sys.argv[3])
+        if slowdown <= 0:
+            raise ValueError("slowdown must be > 0")
+    except ValueError as e:
+        print(f"Invalid slowdown value: {sys.argv[3]} ({e})")
+        sys.exit(1)
+
+    if len(sys.argv) >= 5:
+        try:
+            loops = int(sys.argv[4])
+            if loops < 1:
+                raise ValueError("loops must be >= 1")
+        except ValueError as e:
+            print(f"Invalid loop count: {sys.argv[4]} ({e})")
+            sys.exit(1)
+    else:
+        loops = DEFAULT_LOOPS
+
+# Case 3: interactive (no extra args)
+else:
+    try:
+        slowdown = float(
+            input(f"Slowdown factor (default {DEFAULT_SLOWDOWN}): ").strip()
+            or DEFAULT_SLOWDOWN
+        )
+        loops = int(
+            input(f"Loop count (default {DEFAULT_LOOPS}): ").strip()
+            or DEFAULT_LOOPS
+        )
+        if slowdown <= 0 or loops < 1:
+            raise ValueError
+    except ValueError:
+        print("Invalid input")
+        sys.exit(1)
+
+print(f"▶ Slowdown: {slowdown}")
+print(f"▶ Loops:    {loops}")
+
+# ------------------------
+# Temp paths
+# ------------------------
 tmp_dir = os.path.expanduser("~/tmp")
+os.makedirs(tmp_dir, exist_ok=True)
 
-tmp_file_path_0 = os.path.join(tmp_dir, f"tmp.0.{filename}")
-tmp_file_path_1 = os.path.join(tmp_dir, f"tmp.1.{filename}")
+base = os.path.basename(input_file)
+norm_path = os.path.join(tmp_dir, f"norm.{base}")
+interp_path = os.path.join(tmp_dir, f"interp.{base}")
 
-# Prompt the user for the slowdown multiplier
-default_slowdown = 6
-slowdown = default_slowdown
-if not use_defaults:
-    slowdown = input(f"Enter slowdown multiplier (default {default_slowdown}): ")
-slowdown = float(slowdown) if slowdown else default_slowdown
-
-# Prompt the user for the number of times to loop the video
-default_loops = 5
-loops = default_loops
-if not use_defaults:
-    loops = input(f"Enter number of loops (default {default_loops}): ")
-loops = int(loops) if loops else default_loops
-
-
-# convert mp4 file to smooth mp4 format with minterpolate filter
-command3 = (
-    f'ffmpeg -y -i {input_file_path} -filter:v "setpts=1.2*PTS" {tmp_file_path_0}'
+# ------------------------
+# 1️⃣ Timing normalization (NO slowdown)
+# ------------------------
+subprocess.run(
+    [
+        "ffmpeg",
+        "-y",
+        "-i", input_file,
+        "-vf", "setpts=PTS-STARTPTS",
+        "-an",
+        norm_path
+    ],
+    check=True
 )
-subprocess.run(command3, shell=True, check=True)
 
-fps = get_video_fps(tmp_file_path_0)
-print(f"The video fps is: {fps}")
-
-command4 = (
-    f'ffmpeg -y -i {tmp_file_path_0} -crf 10 '
-  + f' -vf "minterpolate=fps=60:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1"'
-  + f' {tmp_file_path_1}'
+# ------------------------
+# 2️⃣ Motion interpolation (duration preserved)
+# ------------------------
+subprocess.run(
+    [
+        "ffmpeg",
+        "-y",
+        "-i", norm_path,
+        "-vf",
+        "minterpolate=fps=60:"
+        "mi_mode=mci:"
+        "mc_mode=aobmc:"
+        "me_mode=bidir:"
+        "vsbmc=1",
+        "-an",
+        "-crf", "12",
+        interp_path
+    ],
+    check=True
 )
-subprocess.run(command4, shell=True, check=True)
 
-# Apply slowdown and looping
-clip = VideoFileClip(tmp_file_path_1)
+# ------------------------
+# 3️⃣ Single slowdown + looping (MoviePy 2.x)
+# ------------------------
+clip = VideoFileClip(interp_path)
 
-clip = clip.fx(clip.speedx, slowdown)
-clips = [clip] * loops
-final_clip = concatenate_videoclips(clips)
+if slowdown != 1.0:
+    clip = clip.with_speed_scaled(1 / slowdown)
 
-# Write the output file
-final_clip.write_videofile(output_file_path, fps=clip.fps)
+final = concatenate_videoclips([clip] * loops)
 
-os.remove(tmp_file_path_0)
-os.remove(tmp_file_path_1)
+final.write_videofile(
+    output_file,
+    fps=clip.fps,
+    audio=False,
+    codec="libx264",
+    preset="slow"
+)
 
-print(f"Done! {output_file_path}")
+# ------------------------
+# Cleanup
+# ------------------------
+clip.close()
+final.close()
+
+os.remove(norm_path)
+os.remove(interp_path)
+
+print(f"✅ Done: {output_file}")
+

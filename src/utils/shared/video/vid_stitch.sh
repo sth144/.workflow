@@ -1,15 +1,38 @@
 #!/bin/bash
+set -e
 
 timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+output="/home/sthinds/tmp/stitched.$timestamp.mp4"
 
-# store the passed arguments as array
-mp4_list=("$@")
+last_arg="${@: -1}"
+if [[ "$last_arg" == *.mp4 ]]; then
+  output="$last_arg"
+  mp4_list=("${@:1:$#-1}")
+else
+  mp4_list=("$@")
+fi
 
-# combine the array of mp4 files into a single string
-mp4_concat=$(printf "concat:%s|" "${mp4_list[@]}")
-mp4_concat=${mp4_concat%?} # remove the trailing pipe symbol
+if [ ${#mp4_list[@]} -eq 0 ]; then
+  echo "Usage: vid_stitch.sh input1.mp4 input2.mp4 [...] [output.mp4]"
+  exit 1
+fi
 
-# stitch the passed mp4 files together and save in ~/tmp
-ffmpeg -i "$mp4_concat" -c copy /home/<USER>/tmp/stitched.$timestamp.mp4
+echo "MP4 List:"
+printf "  %s\n" "${mp4_list[@]}"
 
-echo "Stitching completed successfully"
+# Create temp concat file
+concat_file=$(mktemp)
+trap 'rm -f "$concat_file"' EXIT
+
+for f in "${mp4_list[@]}"; do
+  printf "file '%s'\n" "$(realpath "$f")" >> "$concat_file"
+done
+
+ffmpeg -y \
+  -f concat -safe 0 \
+  -i "$concat_file" \
+  -c copy \
+  "$output"
+
+echo "Stitching completed successfully: $output"
+
