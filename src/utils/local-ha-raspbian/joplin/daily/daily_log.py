@@ -29,9 +29,11 @@ class Config:
 def load_config() -> Config:
     entities_csv = os.getenv("HA_ENTITIES", "").strip()
     entities = [x.strip() for x in entities_csv.split(",") if x.strip()]
+    joplin_base_url = os.getenv("JOPLIN_BASE_URL", "http://joplin:41184").strip()
+    joplin_base_url = joplin_base_url.rstrip("/")
     return Config(
         joplin_token=must_env("JOPLIN_TOKEN"),
-        joplin_base_url=os.getenv("JOPLIN_BASE_URL", "http://joplin:41184"),
+        joplin_base_url=joplin_base_url,
         joplin_notebook=os.getenv("JOPLIN_NOTEBOOK", "Areas/Journal/"),
         trello_key=os.getenv("TRELLO_KEY"),
         trello_token=os.getenv("TRELLO_TOKEN"),
