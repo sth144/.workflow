@@ -123,11 +123,27 @@ YELLOW="\[\e[33m\]"
 WHITE="\[\e[m\]"
 DOLLAR_SIGN="\\$"
 export PS1="${BLUE}[${YELLOW}\u${RED}@${BLUE}\h${RED}-${GREEN}\t${WHITE}:${BLUE}\w${GREEN}\$(parse_git_branch)${BLUE}]${DOLLAR_SIGN} ${WHITE}"
+# Save original prompt
+ORIG_PS1="$PS1"
+
+# Variable to hold PID
+CMD_PID=""
+
+# Function to update prompt with PID
+update_prompt_with_pid() {
+  if [[ -n "$CMD_PID" ]]; then
+    PS1="[PID:$CMD_PID] $ORIG_PS1"
+  else
+    PS1="$ORIG_PS1"
+  fi
+}
 
 # Function to capture the start time
 preexec_invoke_cmd() {
   # Store the start time as soon as the user presses Enter
   export START_TIME=$(gdate +%s%N)
+
+  [[ "$BASH_COMMAND" != "$PROMPT_COMMAND" ]] && CMD_PID=$! && update_prompt_with_pid
 }
 
 # Function to calculate and display the elapsed time after a command finishes
@@ -152,8 +168,11 @@ precmd_invoke_cmd() {
 # Add the DEBUG trap to capture the start time for each command
 trap 'preexec_invoke_cmd' DEBUG
 
+# Trap after command finishes
+trap 'CMD_PID=""; update_prompt_with_pid' RETURN
+
 # Add the PROMPT_COMMAND to run the function after a command finishes
-export PROMPT_COMMAND='precmd_invoke_cmd; history -a; history -n'
+export PROMPT_COMMAND='precmd_invoke_cmd; history -a; history -n; update_prompt_with_pid'
 
 export BROWSER=/usr/bin/google-chrome-stable
 export EDITOR=/usr/bin/vim

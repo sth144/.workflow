@@ -1,1 +1,2 @@
-/Volumes   auto_smb   -nobrowse
+/Volumes   auto_smb
+# /Volumes   auto_smb -nobrowse
