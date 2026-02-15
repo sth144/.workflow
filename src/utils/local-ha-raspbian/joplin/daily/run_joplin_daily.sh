@@ -7,17 +7,23 @@ CONTAINER_NAME="${JOPLIN_DAILY_CONTAINER_NAME:-workflow-joplin-daily-run}"
 ENV_FILE="${JOPLIN_DAILY_ENV_FILE:-$HOME/.env.joplin_daily}"
 LOCAL_GOOGLE_CREDS="$HOME/.config/google_service_account.json"
 CONTAINER_GOOGLE_CREDS="/run/secrets/google_service_account.json"
-TUNNEL_ENABLED="${JOPLIN_TUNNEL_ENABLED:-0}"
-TUNNEL_SSH_TARGET="${JOPLIN_TUNNEL_SSH_TARGET:-}"
-TUNNEL_LOCAL_PORT="${JOPLIN_TUNNEL_LOCAL_PORT:-41185}"
-TUNNEL_REMOTE_HOST="${JOPLIN_TUNNEL_REMOTE_HOST:-127.0.0.1}"
-TUNNEL_REMOTE_PORT="${JOPLIN_TUNNEL_REMOTE_PORT:-41184}"
 SSH_PID=""
 
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "Missing env file: ${ENV_FILE}" >&2
   exit 1
 fi
+
+# Load env vars for wrapper behavior (tunnel flags, overrides) as well as container runtime.
+set -a
+source "${ENV_FILE}"
+set +a
+
+TUNNEL_ENABLED="${JOPLIN_TUNNEL_ENABLED:-0}"
+TUNNEL_SSH_TARGET="${JOPLIN_TUNNEL_SSH_TARGET:-}"
+TUNNEL_LOCAL_PORT="${JOPLIN_TUNNEL_LOCAL_PORT:-41185}"
+TUNNEL_REMOTE_HOST="${JOPLIN_TUNNEL_REMOTE_HOST:-127.0.0.1}"
+TUNNEL_REMOTE_PORT="${JOPLIN_TUNNEL_REMOTE_PORT:-41184}"
 
 docker build \
   -f "${SCRIPT_DIR}/Dockerfile.joplin_daily" \

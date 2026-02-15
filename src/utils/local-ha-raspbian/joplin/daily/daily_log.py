@@ -79,12 +79,15 @@ def ensure_notebook(cfg: Config) -> str:
 
     parent_id = ""
     for part in path_parts:
-        folders = joplin_get(cfg, "/folders", fields="id,title,parent_id").get("items", [])
+        folders = joplin_get(cfg, "/folders", fields="id,title,parent_id").get(
+            "items", []
+        )
         matching = next(
             (
                 folder
                 for folder in folders
-                if folder.get("title") == part and (folder.get("parent_id") or "") == parent_id
+                if folder.get("title") == part
+                and (folder.get("parent_id") or "") == parent_id
             ),
             None,
         )
@@ -206,7 +209,13 @@ def build_note_body(
     events: list[dict[str, str]],
     ha_rows: list[dict[str, str]],
 ) -> str:
-    lines = [f"# Daily Log - {today.isoformat()}", "", "## Plan", "- [ ] Top priorities", ""]
+    lines = [
+        f"# Daily Log - {today.isoformat()}",
+        "",
+        "## Plan",
+        "- [ ] Top priorities",
+        "",
+    ]
     lines += ["## Trello Open Cards"]
     if trello_cards:
         for card in trello_cards:
