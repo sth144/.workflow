@@ -1,1 +1,1 @@
-15 5 * * * pi /home/pi/Projects/Personal/workflow-macm4/src/utils/local-ha-raspbian/joplin/daily/run_joplin_daily.sh >> /home/pi/.cache/.workflow/cronjob.log 2>&1
+15 5 * * * pi /home/pi/bin/joplin/daily/run_joplin_daily.sh >> /home/pi/.cache/.workflow/cronjob.log 2>&1
