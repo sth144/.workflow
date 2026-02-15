@@ -28,6 +28,15 @@ The script is idempotent per date/title. If the note already exists, it does not
 - `GOOGLE_SERVICE_ACCOUNT_FILE` default in wrapper: `/run/secrets/google_service_account.json`
 - `HA_BASE_URL`, `HA_TOKEN`, `HA_ENTITIES` (comma-separated)
 - `TIMEZONE`
+- `JOPLIN_DAILY_ENV_FILE` default: `$HOME/.env.joplin_daily`
+
+### Optional SSH tunnel settings (for clipper bound to 127.0.0.1 on remote host)
+
+- `JOPLIN_TUNNEL_ENABLED` set `1` or `true` to enable
+- `JOPLIN_TUNNEL_SSH_TARGET` example: `pi@192.168.1.235`
+- `JOPLIN_TUNNEL_LOCAL_PORT` default: `41185`
+- `JOPLIN_TUNNEL_REMOTE_HOST` default: `127.0.0.1`
+- `JOPLIN_TUNNEL_REMOTE_PORT` default: `41184`
 
 ## Quick setup
 
@@ -37,6 +46,21 @@ The script is idempotent per date/title. If the note already exists, it does not
    - `src/utils/local-ha-raspbian/joplin/daily/google_service_account.json`
 4. Run:
    - `src/utils/local-ha-raspbian/joplin/daily/run_joplin_daily.sh`
+
+## Tunnel example
+
+If your Joplin clipper listens only on `127.0.0.1` on host `192.168.1.235`, add this to your env file:
+
+```env
+JOPLIN_TUNNEL_ENABLED=1
+JOPLIN_TUNNEL_SSH_TARGET=pi@192.168.1.235
+JOPLIN_TUNNEL_LOCAL_PORT=41185
+JOPLIN_TUNNEL_REMOTE_HOST=127.0.0.1
+JOPLIN_TUNNEL_REMOTE_PORT=41184
+```
+
+In tunnel mode, the wrapper uses Docker host networking and sets:
+- `JOPLIN_BASE_URL=http://127.0.0.1:${JOPLIN_TUNNEL_LOCAL_PORT}`
 
 ## Cron
 

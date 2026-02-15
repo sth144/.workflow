@@ -4,9 +4,15 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IMAGE_NAME="${JOPLIN_DAILY_IMAGE_NAME:-workflow-joplin-daily}"
 CONTAINER_NAME="${JOPLIN_DAILY_CONTAINER_NAME:-workflow-joplin-daily-run}"
-ENV_FILE="$HOME/.env.joplin_daily"
+ENV_FILE="${JOPLIN_DAILY_ENV_FILE:-$HOME/.env.joplin_daily}"
 LOCAL_GOOGLE_CREDS="$HOME/.config/google_service_account.json"
 CONTAINER_GOOGLE_CREDS="/run/secrets/google_service_account.json"
+TUNNEL_ENABLED="${JOPLIN_TUNNEL_ENABLED:-0}"
+TUNNEL_SSH_TARGET="${JOPLIN_TUNNEL_SSH_TARGET:-}"
+TUNNEL_LOCAL_PORT="${JOPLIN_TUNNEL_LOCAL_PORT:-41185}"
+TUNNEL_REMOTE_HOST="${JOPLIN_TUNNEL_REMOTE_HOST:-127.0.0.1}"
+TUNNEL_REMOTE_PORT="${JOPLIN_TUNNEL_REMOTE_PORT:-41184}"
+SSH_PID=""
 
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "Missing env file: ${ENV_FILE}" >&2
@@ -18,14 +24,47 @@ docker build \
   -t "${IMAGE_NAME}" \
   "${SCRIPT_DIR}"
 
+cleanup() {
+  docker rm -f "${CONTAINER_NAME}" >/dev/null 2>&1 || true
+  if [[ -n "${SSH_PID}" ]] && kill -0 "${SSH_PID}" >/dev/null 2>&1; then
+    kill "${SSH_PID}" >/dev/null 2>&1 || true
+    wait "${SSH_PID}" >/dev/null 2>&1 || true
+  fi
+}
+
 docker rm -f "${CONTAINER_NAME}" >/dev/null 2>&1 || true
-trap 'docker rm -f "${CONTAINER_NAME}" >/dev/null 2>&1 || true' EXIT
+trap cleanup EXIT
 
 docker_args=(
   --rm
   --name "${CONTAINER_NAME}"
   --env-file "${ENV_FILE}"
 )
+
+if [[ "${TUNNEL_ENABLED}" == "1" || "${TUNNEL_ENABLED}" == "true" ]]; then
+  if [[ -z "${TUNNEL_SSH_TARGET}" ]]; then
+    echo "Missing JOPLIN_TUNNEL_SSH_TARGET for tunnel mode" >&2
+    exit 1
+  fi
+
+  ssh -N \
+    -o ExitOnForwardFailure=yes \
+    -o ServerAliveInterval=30 \
+    -o ServerAliveCountMax=3 \
+    -L "${TUNNEL_LOCAL_PORT}:${TUNNEL_REMOTE_HOST}:${TUNNEL_REMOTE_PORT}" \
+    "${TUNNEL_SSH_TARGET}" &
+  SSH_PID="$!"
+  sleep 1
+  if ! kill -0 "${SSH_PID}" >/dev/null 2>&1; then
+    echo "Failed to establish SSH tunnel" >&2
+    exit 1
+  fi
+
+  docker_args+=(
+    --network host
+    -e "JOPLIN_BASE_URL=http://127.0.0.1:${TUNNEL_LOCAL_PORT}"
+  )
+fi
 
 if [[ -f "${LOCAL_GOOGLE_CREDS}" ]]; then
   docker_args+=(
