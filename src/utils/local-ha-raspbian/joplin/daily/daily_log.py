@@ -102,7 +102,7 @@ def load_config() -> Config:
         joplin_token=must_env("JOPLIN_TOKEN"),
         joplin_base_url=joplin_base_url,
         joplin_notebook=os.getenv("JOPLIN_NOTEBOOK", "Areas/Journal/").strip(),
-        note_title_fmt=os.getenv("NOTE_TITLE_FMT", "Daily Log — %Y-%m-%d").strip(),
+        note_title_fmt="%-d %b, %Y",
         note_time_window=os.getenv("NOTE_TIME_WINDOW", "day").strip().lower(),
         trello_key=os.getenv("TRELLO_KEY"),
         trello_token=os.getenv("TRELLO_TOKEN"),
