@@ -10,6 +10,9 @@ import requests
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
+AUTOGEN_START = "<!-- JOPLIN_DAILY_AUTOGEN_START -->"
+AUTOGEN_END = "<!-- JOPLIN_DAILY_AUTOGEN_END -->"
+
 
 @dataclass
 class Config:
@@ -72,6 +75,18 @@ def joplin_post(cfg: Config, path: str, payload: dict[str, Any]) -> dict[str, An
     return resp.json()
 
 
+def joplin_put(cfg: Config, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+    params = {"token": cfg.joplin_token}
+    resp = requests.put(
+        f"{cfg.joplin_base_url}{path}",
+        params=params,
+        json=payload,
+        timeout=20,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
 def ensure_notebook(cfg: Config) -> str:
     path_parts = [part for part in cfg.joplin_notebook.strip("/").split("/") if part]
     if not path_parts:
@@ -112,6 +127,11 @@ def find_note_by_title(cfg: Config, folder_id: str, title: str) -> str | None:
         if note.get("title") == title:
             return note["id"]
     return None
+
+
+def get_note_body(cfg: Config, note_id: str) -> str:
+    note = joplin_get(cfg, f"/notes/{note_id}", fields="id,body")
+    return str(note.get("body", ""))
 
 
 def fetch_trello_open_cards(cfg: Config) -> list[dict[str, str]]:
@@ -241,20 +261,36 @@ def build_note_body(
     return "\n".join(lines)
 
 
-def create_or_skip_note(cfg: Config, folder_id: str, title: str, body: str) -> str:
+def upsert_autogen_block(existing_body: str, generated_body: str) -> tuple[str, str]:
+    block = f"{AUTOGEN_START}\n{generated_body}\n{AUTOGEN_END}"
+    start_idx = existing_body.find(AUTOGEN_START)
+    end_idx = existing_body.find(AUTOGEN_END)
+    if start_idx != -1 and end_idx != -1 and end_idx >= start_idx:
+        end_idx = end_idx + len(AUTOGEN_END)
+        new_body = f"{existing_body[:start_idx].rstrip()}\n\n{block}\n\n{existing_body[end_idx:].lstrip()}".strip()
+        return new_body, "overwrote_block"
+    if existing_body.strip():
+        return f"{existing_body.rstrip()}\n\n{block}", "inserted_block"
+    return block, "inserted_block"
+
+
+def create_or_update_note(cfg: Config, folder_id: str, title: str, body: str) -> tuple[str, str]:
     existing_id = find_note_by_title(cfg, folder_id, title)
     if existing_id:
-        return existing_id
+        existing_body = get_note_body(cfg, existing_id)
+        updated_body, action = upsert_autogen_block(existing_body, body)
+        joplin_put(cfg, f"/notes/{existing_id}", {"body": updated_body})
+        return existing_id, action
     created = joplin_post(
         cfg,
         "/notes",
         {
             "title": title,
             "parent_id": folder_id,
-            "body": body,
+            "body": f"{AUTOGEN_START}\n{body}\n{AUTOGEN_END}",
         },
     )
-    return created["id"]
+    return created["id"], "created"
 
 
 def main() -> int:
@@ -265,9 +301,9 @@ def main() -> int:
     ha_rows = fetch_home_assistant(cfg)
     body = build_note_body(today, trello_cards, events, ha_rows)
     folder_id = ensure_notebook(cfg)
-    title = f"{today.isoformat()} Daily Log"
-    note_id = create_or_skip_note(cfg, folder_id, title, body)
-    print(json.dumps({"status": "ok", "note_id": note_id, "title": title}))
+    title = f"{today.day} {today.strftime('%b')}, {today.year}"
+    note_id, action = create_or_update_note(cfg, folder_id, title, body)
+    print(json.dumps({"status": "ok", "action": action, "note_id": note_id, "title": title}))
     return 0
 
 
