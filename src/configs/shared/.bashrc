@@ -141,7 +141,7 @@ update_prompt_with_pid() {
 # Function to capture the start time
 preexec_invoke_cmd() {
   # Store the start time as soon as the user presses Enter
-  export START_TIME=$(gdate +%s%N)
+  export START_TIME=$(date +%s%N)
   [[ "$BASH_COMMAND" != "$PROMPT_COMMAND" ]] && CMD_PID=$! && update_prompt_with_pid
 }
 
@@ -149,7 +149,7 @@ preexec_invoke_cmd() {
 precmd_invoke_cmd() {
   # Only calculate the elapsed time if START_TIME is set
   if [[ -n "$START_TIME" ]]; then
-    END_TIME=$(gdate +%s%N)
+    END_TIME=$(date +%s%N)
 
     # Calculate the elapsed time in milliseconds
     ELAPSED_TIME=$((($END_TIME - $START_TIME) / 10000))
