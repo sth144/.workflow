@@ -22,8 +22,9 @@ set +a
 TUNNEL_ENABLED="${JOPLIN_TUNNEL_ENABLED:-0}"
 TUNNEL_SSH_TARGET="${JOPLIN_TUNNEL_SSH_TARGET:-}"
 TUNNEL_LOCAL_PORT="${JOPLIN_TUNNEL_LOCAL_PORT:-41185}"
-TUNNEL_REMOTE_HOST="${JOPLIN_TUNNEL_REMOTE_HOST:-192.168.1.235}"
+TUNNEL_REMOTE_HOST="${JOPLIN_TUNNEL_REMOTE_HOST:-127.0.0.1}"
 TUNNEL_REMOTE_PORT="${JOPLIN_TUNNEL_REMOTE_PORT:-41184}"
+EFFECTIVE_JOPLIN_BASE_URL="${JOPLIN_BASE_URL:-http://127.0.0.1:41184}"
 
 wait_for_joplin_api() {
   local base_url="$1"
@@ -96,6 +97,12 @@ if [[ "${TUNNEL_ENABLED}" == "1" || "${TUNNEL_ENABLED}" == "true" ]]; then
   )
 
   wait_for_joplin_api "http://127.0.0.1:${TUNNEL_LOCAL_PORT}"
+elif [[ "${EFFECTIVE_JOPLIN_BASE_URL}" =~ ^https?://(127\.0\.0\.1|localhost)(:[0-9]+)?(/|$) ]]; then
+  # When the clipper is on the same host as Docker, the container needs host networking
+  # to reach the host loopback address.
+  docker_args+=(
+    --network host
+  )
 fi
 
 if [[ -f "${LOCAL_GOOGLE_CREDS}" ]]; then

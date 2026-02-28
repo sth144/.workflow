@@ -62,6 +62,17 @@ JOPLIN_TUNNEL_REMOTE_PORT=41184
 In tunnel mode, the wrapper uses Docker host networking and sets:
 - `JOPLIN_BASE_URL=http://127.0.0.1:${JOPLIN_TUNNEL_LOCAL_PORT}`
 
+## Local host example
+
+If you run the wrapper directly on the same host where Joplin clipper is running, you can disable the tunnel and point `JOPLIN_BASE_URL` at loopback:
+
+```env
+JOPLIN_TUNNEL_ENABLED=0
+JOPLIN_BASE_URL=http://127.0.0.1:41184
+```
+
+When `JOPLIN_BASE_URL` points to `127.0.0.1` or `localhost`, the wrapper automatically uses Docker host networking so the container can reach the host clipper service.
+
 ## Cron
 
 Use the entry in:
