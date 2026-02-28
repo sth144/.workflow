@@ -1,1 +1,0 @@
-15 5 * * * pi /home/pi/bin/joplin/daily/run_joplin_daily.sh >> /home/pi/.cache/.workflow/cronjob.log 2>&1
