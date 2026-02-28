@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
@@ -41,7 +42,13 @@ class Config:
     trello_key: Optional[str]
     trello_token: Optional[str]
     trello_board_id: Optional[str]
+    trello_board_name: str
     trello_limit: int
+
+    # Headlines
+    headlines_enabled: bool
+    headlines_url: str
+    headlines_limit: int
 
     # Google Calendar
     google_calendar_id: Optional[str]
@@ -107,7 +114,14 @@ def load_config() -> Config:
         trello_key=os.getenv("TRELLO_KEY"),
         trello_token=os.getenv("TRELLO_TOKEN"),
         trello_board_id=os.getenv("TRELLO_BOARD_ID"),
+        trello_board_name=os.getenv("TRELLO_BOARD_NAME", "ToDo").strip() or "ToDo",
         trello_limit=getenv_int("TRELLO_LIMIT", 25),
+        headlines_enabled=getenv_bool("HEADLINES_ENABLE", True),
+        headlines_url=os.getenv(
+            "HEADLINES_URL",
+            "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en",
+        ).strip(),
+        headlines_limit=getenv_int("HEADLINES_LIMIT", 5),
         google_calendar_id=os.getenv("GOOGLE_CALENDAR_ID"),
         google_service_account_file=os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE"),
         google_service_account_json=os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
@@ -270,25 +284,45 @@ def create_or_update_note(
 
 
 # ---------- Trello ----------
+def resolve_trello_board_id(cfg: Config) -> str | None:
+    if cfg.trello_board_id:
+        return cfg.trello_board_id
+    if not (cfg.trello_key and cfg.trello_token):
+        return None
+
+    resp = requests.get(
+        "https://api.trello.com/1/members/me/boards",
+        params={
+            "key": cfg.trello_key,
+            "token": cfg.trello_token,
+            "fields": "id,name",
+            "filter": "open",
+        },
+        timeout=30,
+    )
+    resp.raise_for_status()
+
+    board_name = cfg.trello_board_name.casefold()
+    boards = resp.json() or []
+    for board in boards:
+        if str(board.get("name", "")).strip().casefold() == board_name:
+            return str(board.get("id", "")).strip() or None
+    return None
+
+
 def fetch_trello_cards(cfg: Config) -> list[dict[str, str]]:
     if not (cfg.trello_key and cfg.trello_token):
         return []
-    if cfg.trello_board_id:
-        url = f"https://api.trello.com/1/boards/{cfg.trello_board_id}/cards/open"
-        params = {
-            "key": cfg.trello_key,
-            "token": cfg.trello_token,
-            "fields": "name,shortUrl,due,idList",
-        }
-    else:
-        # fallback: all open cards assigned to me
-        url = "https://api.trello.com/1/members/me/cards"
-        params = {
-            "key": cfg.trello_key,
-            "token": cfg.trello_token,
-            "filter": "open",
-            "fields": "name,shortUrl,due",
-        }
+    board_id = resolve_trello_board_id(cfg)
+    if not board_id:
+        return []
+
+    url = f"https://api.trello.com/1/boards/{board_id}/cards/open"
+    params = {
+        "key": cfg.trello_key,
+        "token": cfg.trello_token,
+        "fields": "name,shortUrl,due,idList",
+    }
 
     resp = requests.get(url, params=params, timeout=30)
     resp.raise_for_status()
@@ -303,6 +337,36 @@ def fetch_trello_cards(cfg: Config) -> list[dict[str, str]]:
             }
         )
     return out
+
+
+# ---------- Headlines ----------
+def fetch_headlines(cfg: Config) -> list[dict[str, str]]:
+    if not cfg.headlines_enabled or not cfg.headlines_url:
+        return []
+
+    try:
+        resp = requests.get(
+            cfg.headlines_url,
+            timeout=20,
+            headers={"User-Agent": "workflow-joplin-daily/1.0"},
+        )
+        resp.raise_for_status()
+        root = ET.fromstring(resp.content)
+    except Exception:
+        return []
+
+    items = root.findall(".//channel/item")
+    if not items:
+        items = root.findall(".//item")
+
+    headlines: list[dict[str, str]] = []
+    for item in items[: cfg.headlines_limit]:
+        title = (item.findtext("title") or "").strip()
+        link = (item.findtext("link") or "").strip()
+        if not title:
+            continue
+        headlines.append({"title": title, "link": link})
+    return headlines
 
 
 # ---------- Google Calendar ----------
@@ -538,6 +602,7 @@ def build_generated_md(
     cfg: Config,
     today: dt.date,
     window_label: str,
+    headlines: list[dict[str, str]],
     trello_cards: list[dict[str, str]],
     events: list[dict[str, str]],
     ha_snapshot: list[dict[str, str]],
@@ -571,7 +636,18 @@ def build_generated_md(
         lines.append("- (No events fetched)")
     lines.append("")
 
-    lines += ["## Trello"]
+    lines += ["## Top Headlines"]
+    if headlines:
+        for item in headlines:
+            if item.get("link"):
+                lines.append(f"- [{item['title']}]({item['link']})")
+            else:
+                lines.append(f"- {item['title']}")
+    else:
+        lines.append("- (No headlines fetched)")
+    lines.append("")
+
+    lines += [f"## Trello ({cfg.trello_board_name})"]
     if trello_cards:
         for c in trello_cards:
             due = f" (due: {c['due']})" if c.get("due") else ""
@@ -636,6 +712,7 @@ def main() -> int:
     start, end, today = day_window(cfg)
     window_label = f"{start.isoformat()} → {end.isoformat()} ({cfg.timezone})"
 
+    headlines = fetch_headlines(cfg)
     trello_cards = fetch_trello_cards(cfg)
     events = fetch_google_events(cfg, start, end)
     ha_snapshot = fetch_home_assistant_snapshot(cfg)
@@ -649,6 +726,7 @@ def main() -> int:
         cfg,
         today,
         window_label,
+        headlines,
         trello_cards,
         events,
         ha_snapshot,

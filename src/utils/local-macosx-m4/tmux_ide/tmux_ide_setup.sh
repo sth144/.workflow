@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TARGET_PANES=9
+TARGET_PANES=8
 target_pane="${TMUX_PANE}"
 if [ -z "$target_pane" ]; then
   target_pane=$(tmux display-message -p '#{pane_id}' 2>/dev/null)
@@ -12,51 +12,42 @@ fi
 
 current_panes=$(tmux list-panes -t "$target_pane" -F '#{pane_id}' | wc -l | tr -d ' ')
 
-if [ "$current_panes" -ne "$TARGET_PANES" ]; then
-  if [ "$current_panes" -gt "$TARGET_PANES" ]; then
-    while [ "$current_panes" -gt "$TARGET_PANES" ]; do
-      pane_to_kill=$(tmux list-panes -t "$target_pane" -F '#{pane_index}:#{pane_id}' | sort -n | tail -n1 | cut -d: -f2)
-      tmux kill-pane -t "$pane_to_kill"
-      current_panes=$((current_panes - 1))
-    done
-  fi
-
-  while [ "$current_panes" -lt "$TARGET_PANES" ]; do
-    tmux split-window -t "$target_pane"
-    current_panes=$((current_panes + 1))
+if [ "$current_panes" -ne 1 ]; then
+  tmux list-panes -t "$target_pane" -F '#{pane_id}' | while read -r pane_id; do
+    if [ "$pane_id" != "$target_pane" ]; then
+      tmux kill-pane -t "$pane_id"
+    fi
   done
-
-  tmux select-layout tiled
 fi
 
-# Select the first pane (pane indices start at 0)
-tmux select-pane -t 1
+file_explorer_pane="$target_pane"
+right_pane=$(tmux split-window -t "$file_explorer_pane" -h -p 75 -P -F '#{pane_id}')
+htop_pane=$(tmux split-window -t "$file_explorer_pane" -v -p 33 -P -F '#{pane_id}')
+bottom_pane=$(tmux split-window -t "$right_pane" -v -p 35 -P -F '#{pane_id}')
+main_pane="$bottom_pane"
+bash_pane=$(tmux split-window -t "$main_pane" -h -p 60 -P -F '#{pane_id}')
+codex_pane="$main_pane"
+right_col_pane=$(tmux split-window -t "$right_pane" -h -p 50 -P -F '#{pane_id}')
+left_col_pane="$right_pane"
+left_bottom_pane=$(tmux split-window -t "$left_col_pane" -v -p 50 -P -F '#{pane_id}')
+left_top_pane="$left_col_pane"
+right_bottom_pane=$(tmux split-window -t "$right_col_pane" -v -p 50 -P -F '#{pane_id}')
+right_top_pane="$right_col_pane"
 
-# Send a command to the first pane
-tmux send-keys 'ranger' C-m
+tmux select-pane -t "$file_explorer_pane" -T "Files"
+tmux select-pane -t "$codex_pane" -T "Codex"
+tmux select-pane -t "$bash_pane" -T "Shell"
+tmux select-pane -t "$htop_pane" -T "Monitor"
+tmux select-pane -t "$left_top_pane" -T "Mac Mini"
+tmux select-pane -t "$left_bottom_pane" -T "Pi"
+tmux select-pane -t "$right_top_pane" -T "pc0"
+tmux select-pane -t "$right_bottom_pane" -T "OMV"
 
-# Select the second pane
-tmux select-pane -t 2
-
-tmux send-keys '/bin/bash' C-m
-
-tmux select-pane -t 3
-
-# Send another command to the second pane
-tmux send-keys 'ssh sthinds@sthinds.local' C-m
-
-tmux select-pane -t 4
-
-tmux send-keys 'ssh pi@raspberrypi.local' C-m
-
-tmux select-pane -t 5
-
-tmux send-keys 'ssh picocluster@pc0' C-m
-
-tmux select-pane -t 7
-
-tmux send-keys 'ssh sthinds@openmediavault.local' C-m
-
-tmux select-pane -t 8
-
-tmux send-keys 'htop' C-m
+tmux send-keys -t "$file_explorer_pane" 'ranger' C-m
+tmux send-keys -t "$codex_pane" 'codex' C-m
+tmux send-keys -t "$bash_pane" '/bin/bash' C-m
+tmux send-keys -t "$htop_pane" 'htop' C-m
+tmux send-keys -t "$left_top_pane" 'ssh sthinds@sthinds.local' C-m
+tmux send-keys -t "$left_bottom_pane" 'ssh pi@192.168.1.243' C-m
+tmux send-keys -t "$right_top_pane" 'ssh picocluster@pc0' C-m
+tmux send-keys -t "$right_bottom_pane" 'ssh sthinds@openmediavault.local' C-m
