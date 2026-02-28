@@ -23,7 +23,9 @@ UUID=5cf9b909-77ac-41de-9c66-15a168d0b984 none            swap    sw            
 
 ###################################### Configuration ##########################################
 # auto-mount data drive (HDD D drive NTFS partition)
-/dev/disk/by-uuid/283A97C03A978988 /mnt/D auto nosuid,nodev,nofail,x-gvfs-show,uid=1000,gid=1000 0 0
+#/dev/disk/by-uuid/283A97C03A978988 /mnt/D auto nosuid,nodev,nofail,x-gvfs-show,uid=1000,gid=1000 0 0
+#/dev/disk/by-uuid/283A97C03A978988 /mnt/D ntfs-3g rw,uid=1000,gid=1000,umask=002,nosuid,nodev,nofail,x-gvfs-show 0 0
+/dev/disk/by-uuid/283A97C03A978988  /mnt/D  ntfs-3g  rw,uid=1000,gid=1000,user_id=1000,group_id=1000,umask=002,nosuid,nodev,nofail,x-systemd.device-timeout=5  0  0
 
 # auto-mount old Ubuntu SSD partition 
 /dev/disk/by-uuid/612c5a63-0dcf-450d-a58b-ac0d8fee27d0 /mnt/S auto nosuid,nodev,nofail,x-gvfs-show 0 0

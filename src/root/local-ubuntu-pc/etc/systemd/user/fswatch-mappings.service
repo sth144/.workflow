@@ -1,0 +1,13 @@
+[Unit]
+Description=Watch files from ~/.config/fswatch/mappings.conf
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/fs/fswatch_mappings.sh
+Restart=always
+RestartSec=2
+Environment=FSWATCH_LATENCY=0.3
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+[Install]
+WantedBy=default.target
