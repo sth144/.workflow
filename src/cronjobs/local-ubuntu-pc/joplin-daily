@@ -1,1 +1,1 @@
-15 5 * * * sthinds /home/sthinds/bin/joplin/daily/run_joplin_daily.sh >> /home/sthinds/.cache/.workflow/cronjob.log 2>&1
+15 5 * * * sthinds /home/sthinds/bin/Joplin/daily/run_joplin_daily.sh >> /home/sthinds/.cache/.workflow/cronjob.log 2>&1
