@@ -1,19 +1,28 @@
 #!/bin/bash
 
 TARGET_PANES=9
-current_panes=$(tmux list-panes -F '#{pane_id}' | wc -l | tr -d ' ')
+target_pane="${TMUX_PANE}"
+if [ -z "$target_pane" ]; then
+  target_pane=$(tmux display-message -p '#{pane_id}' 2>/dev/null)
+fi
+if [ -z "$target_pane" ]; then
+  echo "tmux_ide_setup.sh: must be run from inside tmux." >&2
+  exit 1
+fi
+
+current_panes=$(tmux list-panes -t "$target_pane" -F '#{pane_id}' | wc -l | tr -d ' ')
 
 if [ "$current_panes" -ne "$TARGET_PANES" ]; then
   if [ "$current_panes" -gt "$TARGET_PANES" ]; then
     while [ "$current_panes" -gt "$TARGET_PANES" ]; do
-      pane_to_kill=$(tmux list-panes -F '#{pane_index}:#{pane_id}' | sort -n | tail -n1 | cut -d: -f2)
+      pane_to_kill=$(tmux list-panes -t "$target_pane" -F '#{pane_index}:#{pane_id}' | sort -n | tail -n1 | cut -d: -f2)
       tmux kill-pane -t "$pane_to_kill"
       current_panes=$((current_panes - 1))
     done
   fi
 
   while [ "$current_panes" -lt "$TARGET_PANES" ]; do
-    tmux split-window -t 0
+    tmux split-window -t "$target_pane"
     current_panes=$((current_panes + 1))
   done
 
