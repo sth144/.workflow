@@ -25,6 +25,30 @@ TUNNEL_LOCAL_PORT="${JOPLIN_TUNNEL_LOCAL_PORT:-41185}"
 TUNNEL_REMOTE_HOST="${JOPLIN_TUNNEL_REMOTE_HOST:-127.0.0.1}"
 TUNNEL_REMOTE_PORT="${JOPLIN_TUNNEL_REMOTE_PORT:-41184}"
 
+wait_for_joplin_api() {
+  local base_url="$1"
+  local ping_url="${base_url%/}/ping"
+  local attempt
+
+  if ! command -v curl >/dev/null 2>&1; then
+    return 0
+  fi
+
+  for attempt in 1 2 3 4 5; do
+    if curl -fsS --max-time 5 "${ping_url}" 2>/dev/null | grep -q "JoplinClipperServer"; then
+      return 0
+    fi
+    if [[ -n "${SSH_PID}" ]] && ! kill -0 "${SSH_PID}" >/dev/null 2>&1; then
+      echo "SSH tunnel exited before Joplin API became reachable" >&2
+      return 1
+    fi
+    sleep 1
+  done
+
+  echo "Joplin API did not respond at ${ping_url}. Check that the remote clipper service is running and listening on ${TUNNEL_REMOTE_HOST}:${TUNNEL_REMOTE_PORT}." >&2
+  return 1
+}
+
 docker build \
   -f "${SCRIPT_DIR}/Dockerfile.joplin_daily" \
   -t "${IMAGE_NAME}" \
@@ -70,6 +94,8 @@ if [[ "${TUNNEL_ENABLED}" == "1" || "${TUNNEL_ENABLED}" == "true" ]]; then
     --network host
     -e "JOPLIN_BASE_URL=http://127.0.0.1:${TUNNEL_LOCAL_PORT}"
   )
+
+  wait_for_joplin_api "http://127.0.0.1:${TUNNEL_LOCAL_PORT}"
 fi
 
 if [[ -f "${LOCAL_GOOGLE_CREDS}" ]]; then

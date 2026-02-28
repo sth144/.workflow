@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Any, Optional
@@ -23,6 +24,10 @@ except Exception:
 
 AUTOGEN_START = "<!-- JOPLIN_DAILY_AUTOGEN_START -->"
 AUTOGEN_END = "<!-- JOPLIN_DAILY_AUTOGEN_END -->"
+
+
+class JoplinAPIError(RuntimeError):
+    pass
 
 
 @dataclass
@@ -170,31 +175,42 @@ def day_window(cfg: Config) -> tuple[dt.datetime, dt.datetime, dt.date]:
 
 def joplin_get(cfg: Config, path: str, **params: Any) -> dict[str, Any]:
     params["token"] = cfg.joplin_token
-    resp = requests.get(f"{cfg.joplin_base_url}{path}", params=params, timeout=30)
-    resp.raise_for_status()
-    return resp.json()
+    return _joplin_request("get", cfg, path, params=params)
 
 
 def joplin_post(cfg: Config, path: str, payload: dict[str, Any]) -> dict[str, Any]:
-    resp = requests.post(
-        f"{cfg.joplin_base_url}{path}",
-        params={"token": cfg.joplin_token},
-        json=payload,
-        timeout=30,
+    return _joplin_request(
+        "post", cfg, path, params={"token": cfg.joplin_token}, json=payload
     )
-    resp.raise_for_status()
-    return resp.json()
 
 
 def joplin_put(cfg: Config, path: str, payload: dict[str, Any]) -> dict[str, Any]:
-    resp = requests.put(
-        f"{cfg.joplin_base_url}{path}",
-        params={"token": cfg.joplin_token},
-        json=payload,
-        timeout=30,
+    return _joplin_request(
+        "put", cfg, path, params={"token": cfg.joplin_token}, json=payload
     )
-    resp.raise_for_status()
-    return resp.json()
+
+
+def _joplin_request(
+    method: str, cfg: Config, path: str, **kwargs: Any
+) -> dict[str, Any]:
+    url = f"{cfg.joplin_base_url}{path}"
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            resp = requests.request(method, url, timeout=30, **kwargs)
+            resp.raise_for_status()
+            return resp.json()
+        except requests.RequestException as exc:
+            last_error = exc
+            if attempt < 2:
+                time.sleep(attempt + 1)
+                continue
+            raise JoplinAPIError(
+                f"Unable to reach Joplin API at {url}: {exc}"
+            ) from exc
+        except ValueError as exc:
+            raise JoplinAPIError(f"Invalid JSON returned by Joplin API at {url}") from exc
+    raise JoplinAPIError(f"Unable to reach Joplin API at {url}: {last_error}")
 
 
 def ensure_notebook(cfg: Config) -> str:
@@ -755,6 +771,9 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
+    except RuntimeError as exc:
+        print(json.dumps({"status": "error", "error": str(exc)}), file=sys.stderr)
+        raise SystemExit(1)
     except Exception as exc:
         print(json.dumps({"status": "error", "error": str(exc)}), file=sys.stderr)
         raise
