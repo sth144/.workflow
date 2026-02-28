@@ -10,9 +10,11 @@ The script is idempotent per date/title. If the note already exists, it does not
 ## Files
 
 - `daily_log.py`: main integration script
+- `daily_log.joplin_cli.py`: alternate integration script that starts `joplin-cli server`
 - `requirements.txt`: Python dependencies
 - `Dockerfile.joplin_daily`: image build file
 - `run_joplin_daily.sh`: wrapper to build image and run one-shot container
+- `run_joplin_daily_cli.sh`: wrapper to run the CLI-based script directly on the host
 - `$HOME/.env.joplin_daily`: runtime secrets and config (create locally, do not commit)
 
 ## Required env vars
@@ -72,6 +74,18 @@ JOPLIN_BASE_URL=http://127.0.0.1:41184
 ```
 
 When `JOPLIN_BASE_URL` points to `127.0.0.1` or `localhost`, the wrapper automatically uses Docker host networking so the container can reach the host clipper service.
+
+## Joplin CLI wrapper
+
+If you want to avoid Joplin Desktop/Web Clipper entirely, use:
+
+- `src/utils/local-ha-raspbian/joplin/daily/run_joplin_daily_cli.sh`
+
+It runs `daily_log.joplin_cli.py` directly on the host, starts `joplin-cli server` if needed, and defaults `STATE_PATH` to:
+
+- `$HOME/.local/state/joplin_daily/state.json`
+
+If `JOPLIN_CLI_BIN` is not set, the wrapper tries `joplin-cli` first, then `joplin`.
 
 ## Cron
 
