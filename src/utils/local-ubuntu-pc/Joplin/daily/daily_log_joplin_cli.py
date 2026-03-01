@@ -57,6 +57,8 @@ def _get_cli_value(key: str, default: str = "") -> str:
     first_line = value.splitlines()[0].strip()
     if "=" in first_line:
         first_line = first_line.split("=", 1)[-1].strip()
+    if first_line.lower() in {"", "null", "none", "undefined"}:
+        return default
     return first_line or default
 
 
