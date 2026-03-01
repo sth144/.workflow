@@ -133,7 +133,7 @@ def _load_cli_config() -> base.Config:
         window_label = f"{start.isoformat()} -> {end.isoformat()} ({cfg.timezone})"
 
         headlines = base.fetch_headlines(cfg)
-        trello_cards = base.fetch_trello_cards(cfg)
+        trello_cards = base.fetch_trello_cards(cfg, start, end)
         events = base.fetch_google_events(cfg, start, end)
         ha_snapshot = base.fetch_home_assistant_snapshot(cfg)
         ha_history = (

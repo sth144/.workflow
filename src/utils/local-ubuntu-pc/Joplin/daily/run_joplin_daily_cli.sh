@@ -9,6 +9,7 @@ VENV_DIR="${JOPLIN_DAILY_VENV_DIR:-${SCRIPT_DIR}/.venv}"
 VENV_PYTHON="${VENV_DIR}/bin/python"
 VENV_STAMP="${VENV_DIR}/.requirements-installed"
 PYTHON_BIN="${JOPLIN_DAILY_PYTHON_BIN:-}"
+LOCAL_GOOGLE_CREDS="${HOME}/.config/google_service_account.json"
 
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "Missing env file: ${ENV_FILE}" >&2
@@ -33,6 +34,18 @@ if [[ -z "${JOPLIN_CLI_BIN:-}" ]]; then
     echo "Missing joplin-cli executable. Set JOPLIN_CLI_BIN or install joplin-cli." >&2
     exit 1
   fi
+fi
+
+if [[ -n "${GOOGLE_SERVICE_ACCOUNT_FILE:-}" ]]; then
+  case "${GOOGLE_SERVICE_ACCOUNT_FILE}" in
+    /run/secrets/google_service_account.json|run/secrets/google_service_account.json)
+      if [[ -f "${LOCAL_GOOGLE_CREDS}" ]]; then
+        export GOOGLE_SERVICE_ACCOUNT_FILE="${LOCAL_GOOGLE_CREDS}"
+      else
+        unset GOOGLE_SERVICE_ACCOUNT_FILE
+      fi
+      ;;
+  esac
 fi
 
 if [[ -z "${PYTHON_BIN}" ]]; then

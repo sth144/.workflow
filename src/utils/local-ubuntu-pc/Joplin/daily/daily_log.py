@@ -326,30 +326,80 @@ def resolve_trello_board_id(cfg: Config) -> str | None:
     return None
 
 
-def fetch_trello_cards(cfg: Config) -> list[dict[str, str]]:
+def _trello_action_summary(action: dict[str, Any]) -> str:
+    data = action.get("data", {}) or {}
+    action_type = str(action.get("type", "")).strip() or "action"
+    member = str(
+        (action.get("memberCreator", {}) or {}).get("fullName", "")
+    ).strip()
+    card = str((data.get("card", {}) or {}).get("name", "")).strip()
+    list_before = str((data.get("listBefore", {}) or {}).get("name", "")).strip()
+    list_after = str((data.get("listAfter", {}) or {}).get("name", "")).strip()
+    list_name = str((data.get("list", {}) or {}).get("name", "")).strip()
+    board_name = str((data.get("board", {}) or {}).get("name", "")).strip()
+    text = str(data.get("text", "")).strip()
+
+    if action_type == "commentCard":
+        detail = f"commented on {card}" if card else "added a comment"
+        if text:
+            detail = f'{detail}: "{text}"'
+    elif action_type == "createCard":
+        detail = f"created {card}" if card else "created a card"
+        if list_name:
+            detail = f"{detail} in {list_name}"
+    elif action_type == "updateCard" and list_before and list_after:
+        target = card or "a card"
+        detail = f"moved {target} from {list_before} to {list_after}"
+    elif action_type == "updateCard" and card:
+        detail = f"updated {card}"
+    elif action_type == "deleteCard":
+        detail = f"deleted {card}" if card else "deleted a card"
+    else:
+        detail = action_type
+        if card:
+            detail = f"{detail}: {card}"
+        elif list_name:
+            detail = f"{detail}: {list_name}"
+        elif board_name:
+            detail = f"{detail}: {board_name}"
+
+    if member:
+        return f"{member} {detail}"
+    return detail
+
+
+def fetch_trello_cards(
+    cfg: Config, start: dt.datetime, end: dt.datetime
+) -> list[dict[str, str]]:
     if not (cfg.trello_key and cfg.trello_token):
         return []
     board_id = resolve_trello_board_id(cfg)
     if not board_id:
         return []
 
-    url = f"https://api.trello.com/1/boards/{board_id}/cards/open"
+    url = f"https://api.trello.com/1/boards/{board_id}/actions"
     params = {
         "key": cfg.trello_key,
         "token": cfg.trello_token,
-        "fields": "name,shortUrl,due,idList",
+        "filter": "all",
+        "limit": str(cfg.trello_limit),
+        "since": start.astimezone(dt.UTC).isoformat(),
+        "before": end.astimezone(dt.UTC).isoformat(),
+        "memberCreator_fields": "fullName,url",
     }
 
     resp = requests.get(url, params=params, timeout=30)
     resp.raise_for_status()
-    cards = resp.json() or []
+    actions = resp.json() or []
     out: list[dict[str, str]] = []
-    for c in cards[: cfg.trello_limit]:
+    for action in actions[: cfg.trello_limit]:
+        action_date = str(action.get("date", "")).strip()
+        action_url = str((action.get("memberCreator", {}) or {}).get("url", "")).strip()
         out.append(
             {
-                "name": c.get("name", "Untitled"),
-                "url": c.get("shortUrl", ""),
-                "due": c.get("due") or "",
+                "name": _trello_action_summary(action),
+                "url": action_url,
+                "due": action_date,
             }
         )
     return out
@@ -663,13 +713,16 @@ def build_generated_md(
         lines.append("- (No headlines fetched)")
     lines.append("")
 
-    lines += [f"## Trello ({cfg.trello_board_name})"]
+    lines += [f"## Trello Activity ({cfg.trello_board_name})"]
     if trello_cards:
         for c in trello_cards:
-            due = f" (due: {c['due']})" if c.get("due") else ""
-            lines.append(f"- [{c['name']}]({c['url']}){due}")
+            due = f" ({c['due']})" if c.get("due") else ""
+            if c.get("url"):
+                lines.append(f"- [{c['name']}]({c['url']}){due}")
+            else:
+                lines.append(f"- {c['name']}{due}")
     else:
-        lines.append("- (No cards fetched)")
+        lines.append("- (No activity fetched)")
     lines.append("")
 
     lines += ["## Home Assistant — Snapshot"]
@@ -729,7 +782,7 @@ def main() -> int:
     window_label = f"{start.isoformat()} → {end.isoformat()} ({cfg.timezone})"
 
     headlines = fetch_headlines(cfg)
-    trello_cards = fetch_trello_cards(cfg)
+    trello_cards = fetch_trello_cards(cfg, start, end)
     events = fetch_google_events(cfg, start, end)
     ha_snapshot = fetch_home_assistant_snapshot(cfg)
     ha_history = (
