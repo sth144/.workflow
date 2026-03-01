@@ -31,4 +31,4 @@ if [[ -z "${JOPLIN_CLI_BIN:-}" ]]; then
   fi
 fi
 
-exec "${PYTHON_BIN}" "${SCRIPT_DIR}/daily_log.joplin_cli.py"
+exec "${PYTHON_BIN}" "${SCRIPT_DIR}/daily_log_cli.py"
