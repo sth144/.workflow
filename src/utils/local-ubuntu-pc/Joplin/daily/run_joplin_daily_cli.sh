@@ -3,8 +3,12 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${JOPLIN_DAILY_ENV_FILE:-$HOME/.env.joplin_daily}"
-PYTHON_BIN="${JOPLIN_DAILY_PYTHON_BIN:-python3}"
 STATE_DIR="${JOPLIN_DAILY_STATE_DIR:-$HOME/.local/state/joplin_daily}"
+REQUIREMENTS_FILE="${SCRIPT_DIR}/requirements.txt"
+VENV_DIR="${JOPLIN_DAILY_VENV_DIR:-${SCRIPT_DIR}/.venv}"
+VENV_PYTHON="${VENV_DIR}/bin/python"
+VENV_STAMP="${VENV_DIR}/.requirements-installed"
+PYTHON_BIN="${JOPLIN_DAILY_PYTHON_BIN:-}"
 
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "Missing env file: ${ENV_FILE}" >&2
@@ -31,4 +35,17 @@ if [[ -z "${JOPLIN_CLI_BIN:-}" ]]; then
   fi
 fi
 
-exec "${PYTHON_BIN}" "${SCRIPT_DIR}/daily_log_cli.py"
+if [[ -z "${PYTHON_BIN}" ]]; then
+  if [[ ! -x "${VENV_PYTHON}" ]]; then
+    python3 -m venv "${VENV_DIR}"
+  fi
+
+  if [[ ! -f "${VENV_STAMP}" || "${REQUIREMENTS_FILE}" -nt "${VENV_STAMP}" ]]; then
+    "${VENV_PYTHON}" -m pip install -r "${REQUIREMENTS_FILE}"
+    touch "${VENV_STAMP}"
+  fi
+
+  PYTHON_BIN="${VENV_PYTHON}"
+fi
+
+exec "${PYTHON_BIN}" "${SCRIPT_DIR}/daily_log_joplin_cli.py"
