@@ -86,6 +86,7 @@ It runs `daily_log.joplin_cli.py` directly on the host, starts `joplin-cli serve
 - `$HOME/.local/state/joplin_daily/state.json`
 
 If `JOPLIN_CLI_BIN` is not set, the wrapper tries `joplin-cli` first, then `joplin`.
+After the note is created or updated, the CLI flow runs `joplin sync` so the change is pushed to the configured remote target.
 
 ## Cron
 

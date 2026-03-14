@@ -37,4 +37,4 @@ admin/config/**/*
 
 **/ansible/vault/**/*
 
-~
+**/.venv*

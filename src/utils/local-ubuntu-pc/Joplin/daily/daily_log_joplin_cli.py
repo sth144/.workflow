@@ -62,6 +62,10 @@ def _get_cli_value(key: str, default: str = "") -> str:
     return first_line or default
 
 
+def _sync_remote() -> None:
+    _run_cli_command(["sync"])
+
+
 def _ping(url: str) -> bool:
     try:
         resp = requests.get(f"{url.rstrip('/')}/ping", timeout=3)
@@ -74,7 +78,7 @@ class JoplinCliServer:
     def __init__(self) -> None:
         self.process: subprocess.Popen[str] | None = None
         self.port = int(_get_cli_value("api.port", "41184"))
-        self.token = os.getenv("JOPLIN_TOKEN", "").strip() or _get_cli_value("api.token")
+        self.token = _get_cli_value("api.token") or os.getenv("JOPLIN_TOKEN", "").strip()
         self.base_url = f"http://127.0.0.1:{self.port}"
 
         if not self.token:
@@ -123,8 +127,10 @@ class JoplinCliServer:
 
 
 def _load_cli_config() -> base.Config:
-    cfg = base.load_config()
+    sync_status = "pending"
     with JoplinCliServer() as server:
+        os.environ["JOPLIN_TOKEN"] = server.token
+        cfg = base.load_config()
         cfg.joplin_base_url = server.base_url
         cfg.joplin_token = server.token
 
@@ -163,19 +169,23 @@ def _load_cli_config() -> base.Config:
 
         state["last_run"] = dt.datetime.now(dt.UTC).isoformat()
         base.save_state(cfg, state)
+        sync_status = "pending"
 
-        print(
-            json.dumps(
-                {
-                    "status": "ok",
-                    "action": action,
-                    "note_id": note_id,
-                    "title": title,
-                    "joplin_mode": "cli_server",
-                    "joplin_base_url": server.base_url,
-                }
-            )
+    _sync_remote()
+    sync_status = "ok"
+    print(
+        json.dumps(
+            {
+                "status": "ok",
+                "action": action,
+                "note_id": note_id,
+                "title": title,
+                "joplin_mode": "cli_server",
+                "joplin_base_url": server.base_url,
+                "sync_status": sync_status,
+            }
         )
+    )
     return cfg
 
 

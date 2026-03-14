@@ -1,1 +1,5 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/sthinds/.local/bin:/home/sthinds/bin
+HOME=/home/sthinds
+
 15 5 * * * sthinds /home/sthinds/bin/Joplin/daily/run_joplin_daily_cli.sh >> /home/sthinds/.cache/.workflow/cronjob.log 2>&1

@@ -10,6 +10,13 @@ VENV_PYTHON="${VENV_DIR}/bin/python"
 VENV_STAMP="${VENV_DIR}/.requirements-installed"
 PYTHON_BIN="${JOPLIN_DAILY_PYTHON_BIN:-}"
 LOCAL_GOOGLE_CREDS="${HOME}/.config/google_service_account.json"
+DEFAULT_PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${HOME}/.local/bin:${HOME}/bin"
+
+if [[ -n "${PATH:-}" ]]; then
+  export PATH="${PATH}:${HOME}/.local/bin:${HOME}/bin"
+else
+  export PATH="${DEFAULT_PATH}"
+fi
 
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "Missing env file: ${ENV_FILE}" >&2
@@ -23,6 +30,20 @@ set +a
 if [[ -z "${STATE_PATH:-}" ]]; then
   mkdir -p "${STATE_DIR}"
   export STATE_PATH="${STATE_DIR}/state.json"
+fi
+
+if [[ -z "${JOPLIN_CLI_BIN:-}" ]]; then
+  for candidate in \
+    "${SCRIPT_DIR}/../joplin-cli" \
+    "${SCRIPT_DIR}/../joplin" \
+    "${HOME}/bin/Joplin/joplin-cli" \
+    "${HOME}/bin/Joplin/joplin"
+  do
+    if [[ -x "${candidate}" ]]; then
+      export JOPLIN_CLI_BIN="${candidate}"
+      break
+    fi
+  done
 fi
 
 if [[ -z "${JOPLIN_CLI_BIN:-}" ]]; then
