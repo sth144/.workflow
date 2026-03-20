@@ -217,3 +217,11 @@ unset __conda_setup
 # <<< conda initialize <<<
 
 LS_COLORS+=':ow=01;33'
+
+if command -v fzf >/dev/null 2>&1; then
+  eval "$(fzf --bash 2>/dev/null)" 2>/dev/null
+fi
+
+if command -v atuin >/dev/null 2>&1; then
+  eval "$(atuin init bash 2>/dev/null)" 2>/dev/null
+fi

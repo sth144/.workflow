@@ -143,7 +143,7 @@ def _load_cli_config() -> base.Config:
         events = base.fetch_google_events(cfg, start, end)
         ha_snapshot = base.fetch_home_assistant_snapshot(cfg)
         ha_history = (
-            base.fetch_home_assistant_history(cfg, start)
+            base.fetch_home_assistant_history(cfg, start, end)
             if cfg.ha_include_history
             else []
         )

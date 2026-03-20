@@ -1,0 +1,42 @@
+
+version: "3"
+services:
+  pushgateway:
+    image: prom/pushgateway:v1.0.1
+    restart: always
+    command:
+      - --persistence.file=/data/pushgateway.data
+      - --persistence.interval=1h
+    expose:
+      - 9091
+    ports:
+      - 9091:9091
+    volumes:
+      - /User/<USER>/tmp/pushgateway:/data
+  promtail:
+    image: grafana/promtail:2.9.2
+    restart: always
+    volumes:
+      - /var/log:/var/log:ro
+      - /Users/sthinds/.config/promtail/promtail-config.yaml:/etc/promtail/config.yml
+      - /Users/sthinds/.cache:/Users/sthinds/.cache
+    command: -config.file=/etc/promtail/config.yml
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    ports:
+      - "18070:8080"
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=30s
+      - --store_container_labels=false

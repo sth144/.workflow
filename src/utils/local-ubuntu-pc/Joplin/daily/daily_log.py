@@ -537,49 +537,71 @@ def fetch_home_assistant_snapshot(cfg: Config) -> list[dict[str, str]]:
 
 
 def fetch_home_assistant_history(
-    cfg: Config, start: dt.datetime
+    cfg: Config, start: dt.datetime, end: dt.datetime
 ) -> list[dict[str, str]]:
     """
     Pulls state changes since `start` (best-effort). Uses HA history API:
     /api/history/period/<iso>?filter_entity_id=a,b,c&minimal_response
     """
-    if not (cfg.ha_base_url and cfg.ha_token and cfg.ha_entities):
+    if not (cfg.ha_base_url and cfg.ha_token):
         return []
     base = cfg.ha_base_url.rstrip("/")
     headers = {"Authorization": f"Bearer {cfg.ha_token}"}
 
     # HA expects local-ish ISO; timezone offset is fine.
     start_iso = start.isoformat()
+    end_iso = end.isoformat()
 
-    params = {
-        "filter_entity_id": ",".join(cfg.ha_entities),
-        "minimal_response": "1",
-        "significant_changes_only": "1",
-    }
+    if cfg.ha_entities:
+        params = {
+            "filter_entity_id": ",".join(cfg.ha_entities),
+            "minimal_response": "1",
+            "significant_changes_only": "1",
+        }
+        resp = requests.get(
+            f"{base}/api/history/period/{start_iso}",
+            headers=headers,
+            params=params,
+            timeout=40,
+        )
+        if resp.status_code != 200:
+            return []
+
+        data = resp.json() or []
+        out: list[dict[str, str]] = []
+        for entity_states in data:
+            for st in entity_states[-5:]:
+                out.append(
+                    {
+                        "entity_id": str(st.get("entity_id", "")),
+                        "state": str(st.get("state", "")),
+                        "last_changed": str(st.get("last_changed", "")),
+                    }
+                )
+        return out[-cfg.ha_history_max :]
+
     resp = requests.get(
-        f"{base}/api/history/period/{start_iso}",
+        f"{base}/api/logbook/{start_iso}",
         headers=headers,
-        params=params,
+        params={"end_time": end_iso},
         timeout=40,
     )
     if resp.status_code != 200:
         return []
 
     data = resp.json() or []
-    # Data format: list per entity, each is list of states
     out: list[dict[str, str]] = []
-    for entity_states in data:
-        # keep only last few changes per entity
-        for st in entity_states[-5:]:
-            out.append(
-                {
-                    "entity_id": str(st.get("entity_id", "")),
-                    "state": str(st.get("state", "")),
-                    "last_changed": str(st.get("last_changed", "")),
-                }
-            )
-    # cap
-    out = out[-cfg.ha_history_max :]
+    for entry in data[-cfg.ha_history_max :]:
+        name = str(entry.get("name", "")).strip()
+        entity_id = str(entry.get("entity_id", "")).strip()
+        message = str(entry.get("message", "")).strip() or "event"
+        out.append(
+            {
+                "entity_id": name or entity_id or "Home Assistant",
+                "state": message,
+                "last_changed": str(entry.get("when", "")).strip(),
+            }
+        )
     return out
 
 
@@ -725,16 +747,17 @@ def build_generated_md(
         lines.append("- (No activity fetched)")
     lines.append("")
 
-    lines += ["## Home Assistant — Snapshot"]
-    if ha_snapshot:
-        for r in ha_snapshot:
-            lines.append(f"- {r['friendly_name']}: `{r['state']}`")
-    else:
-        lines.append("- (No entities configured)")
-    lines.append("")
+    if cfg.ha_entities:
+        lines += ["## Home Assistant — Snapshot"]
+        if ha_snapshot:
+            for r in ha_snapshot:
+                lines.append(f"- {r['friendly_name']}: `{r['state']}`")
+        else:
+            lines.append("- (No entities fetched)")
+        lines.append("")
 
     if cfg.ha_include_history:
-        lines += ["## Home Assistant — Recent changes"]
+        lines += ["## Home Assistant — Recent events"]
         if ha_history:
             for h in ha_history:
                 lines.append(
@@ -786,7 +809,7 @@ def main() -> int:
     events = fetch_google_events(cfg, start, end)
     ha_snapshot = fetch_home_assistant_snapshot(cfg)
     ha_history = (
-        fetch_home_assistant_history(cfg, start) if cfg.ha_include_history else []
+        fetch_home_assistant_history(cfg, start, end) if cfg.ha_include_history else []
     )
     git_summary = fetch_git_summary(cfg, start, end)
     docker_rows = fetch_docker_snapshot(cfg)

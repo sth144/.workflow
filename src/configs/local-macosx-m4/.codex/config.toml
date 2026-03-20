@@ -1,0 +1,18 @@
+personality = "pragmatic"
+model = "gpt-5.4"
+
+[projects."/Users/sthinds"]
+trust_level = "trusted"
+
+[projects."/Users/sthinds/Coding/Projects/Personal/workflow-macm4"]
+trust_level = "trusted"
+
+[projects."/Users/sthinds/Coding/Research/joplin-mcp-server"]
+trust_level = "trusted"
+
+[notice.model_migrations]
+"gpt-5.3-codex" = "gpt-5.4"
+
+[mcp_servers.joplin]
+command = "/opt/homebrew/bin/uv"
+args = ["--directory", "/usr/local/src/joplin_mcp", "run", "src/mcp/joplin_mcp.py"]
