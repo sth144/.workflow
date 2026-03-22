@@ -3,6 +3,7 @@
 # log rotation
 0 0 * * * <USER> /usr/bin/echo "Log Rotate $(date)" >> /home/<USER>/.cache/.workflow/cronjob.log && /home/<USER>/bin/cron/log_rotate.sh
 * * * * * <USER> /home/<USER>/bin/promtail/service_discovery.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
+0 * * * * <USER> /usr/local/bin/cron/bucket_files_by_date_targets.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
 0 2 * * * <USER> /usr/bin/docker system prune -af
 # removes all the contents of `~/tmp/` every Monday at 4am
 0 4 * * 1 <USER> /usr/bin/rm -r ~/tmp/*
