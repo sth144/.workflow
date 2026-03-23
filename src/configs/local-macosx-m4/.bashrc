@@ -13,6 +13,14 @@ esac
 # append to the history file, don't overwrite it
 shopt -s histappend
 
+export PATH="$PATH:/Applications/Docker.app/Contents/Resources/bin/"
+export PATH=$PATH:/opt/homebrew/bin
+# add all utils (and scripts within .config) to PATH
+for d in ~/bin; do export PATH="$PATH:$d"; done
+export PATH="$HOME/bin:$HOME/bin/*:$PATH"
+#export PATH="$(find ~/.config/ -type d -printf ":%p"):$PATH"
+export PATH=$PATH:/opt/sonar/bin
+
 # don't put duplicate lines or lines starting with space in the history.
 # See bash(1) for more options
 export HISTCONTROL=ignoreboth
@@ -93,6 +101,23 @@ if ! shopt -oq posix; then
   fi
 fi
 
+if [ -f $(brew --prefix)/etc/bash_completion ]; then
+    . $(brew --prefix)/etc/bash_completion
+fi
+
+if [ -z "${BASH_COMPLETION_COMPAT_DIR}" ]; then
+    export BASH_COMPLETION_COMPAT_DIR="/usr/local/etc/bash_completion.d"
+fi
+
+[[ -r "/usr/local/etc/profile.d/bash_completion.sh" ]] && . "/usr/local/etc/profile.d/bash_completion.sh"
+if [ -f ~/.git-completion.bash ]; then
+    . ~/.git-completion.bash
+fi
+
+if command -v pyenv 1>/dev/null 2>&1; then
+    eval "$(pyenv init -)"
+fi
+
 #########################################################################################################
 #################################### Custom Configurations (Shared) #####################################
 #########################################################################################################
@@ -120,8 +145,12 @@ BLUE="\[\e[36m\]"
 GREEN="\[\e[32m\]"
 RED="\[\e[31m\]"
 YELLOW="\[\e[33m\]"
+GREY="\[\e[1m\]"
 WHITE="\[\e[m\]"
 DOLLAR_SIGN="\\$"
+BACKGROUND="\[\e[0;48;5;30m\]"
+TRIANGLE=$(printf "\xee\x82\xB0")
+# export PS1="${BLUE}[${RED}\u${GREEN}@${YELLOW}MacBook-Pro${GREY}-${BLUE}\t${GREY}:${BLUE}\w${GREEN}\$(parse_git_branch)${BLUE}]${TRIANGLE}\n${WHITE}${DOLLAR_SIGN} "
 export PS1="${BLUE}[${YELLOW}\u${RED}@${BLUE}\h${RED}-${GREEN}\t${WHITE}:${BLUE}\w${GREEN}\$(parse_git_branch)${BLUE}]${DOLLAR_SIGN} ${WHITE}"
 # Save original prompt
 ORIG_PS1="$PS1"
@@ -153,7 +182,7 @@ precmd_invoke_cmd() {
     END_TIME=$(gdate +%s%N)
 
     # Calculate the elapsed time in milliseconds
-    ELAPSED_TIME=$((($END_TIME - $START_TIME) / 10000))
+    ELAPSED_TIME=$((($END_TIME - $START_TIME) / 1000000))
 
     if (($ELAPSED_TIME > 1000)); then
       # Display the elapsed time for the command
@@ -246,3 +275,6 @@ fi
 if command -v atuin >/dev/null 2>&1; then
   eval "$(atuin init bash 2>/dev/null)" 2>/dev/null
 fi
+
+source $HOME/.env.global
+

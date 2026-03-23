@@ -85,7 +85,7 @@ stage() {
 	$CP -r $BASE_ABS/src/docker/local $BASE_ABS/stage/docker/
 
 	echo "staging root"
-        mkdir -p $BASE_ABS/stage/root
+	mkdir -p $BASE_ABS/stage/root
 	if [ "$USE_SHARED" == "true" ]; then
 		$CP -R $BASE_ABS/src/root/shared/ $BASE_ABS/stage/root/
 	fi
@@ -100,7 +100,7 @@ stage() {
 	# change <USER> tag to $USER wherever it appears in files
 
 	if [[ $(uname) == "Darwin" ]]; then
-		find ./stage -type f -exec sed -i '' 's|/home/<USER>|/Users/<USER>|g' {} +
+		find ./stage -type f -exec sed -i 's|/home/<USER>|/Users/<USER>|g' {} +
 	fi
 
 	find stage -type f -exec sed -i -e "s@<USER>@$USER@g" {} \;
@@ -143,7 +143,9 @@ update_home() {
 		sudo rm -rf ~/systemd
 	fi
 
+	echo "Creating workflow cache"
 	mkdir -p ~/.cache/.workflow
+	echo "Enabling executables"
 	find ~/bin/ -type f -exec chmod u+x {} \;
 }
 

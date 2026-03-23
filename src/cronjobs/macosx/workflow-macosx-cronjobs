@@ -1,1 +1,2 @@
 0 0 * * * <USER> /bin/bash /usr/local/bin/cron/archive_desktop_screen_recordings.sh >> ~/.cronjob.log 2>&1
+0 0 * * 0 root /bin/bash /usr/local/bin/cron/clear_system_icons_cache.sh

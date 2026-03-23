@@ -233,3 +233,7 @@ export CLICOLOR=1
 
 # Define colors for file types (directories, symbolic links, etc.)
 export LSCOLORS=ExFxBxDxCxegedabagacad
+
+eval "$(direnv hook bash)"
+
+source $HOME/.env.global
