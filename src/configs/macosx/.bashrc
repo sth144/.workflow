@@ -19,6 +19,9 @@ export HISTIGNORE='ls:ll:cd:pwd:bg:fg:history'
 export HISTSIZE=1000000
 export HISTFILESIZE=10000000
 
+# for Apple Silicon
+export PATH=$PATH:/opt/homebrew/bin
+
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
 shopt -s checkwinsize
@@ -84,11 +87,11 @@ fi
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).
 if ! shopt -oq posix; then
-  if [ -f /usr/share/bash-completion/bash_completion ]; then
-    . /usr/share/bash-completion/bash_completion
-  elif [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
-  fi
+    if [ -f /usr/share/bash-completion/bash_completion ]; then
+        . /usr/share/bash-completion/bash_completion
+    elif [ -f /etc/bash_completion ]; then
+        . /etc/bash_completion
+    fi
 fi
 if [ -f $(brew --prefix)/etc/bash_completion ]; then
   . $(brew --prefix)/etc/bash_completion
@@ -217,6 +220,7 @@ export CDPATH=.:..:../..:$HOME:$HOME/src:$HOME/Data:$HOME/Projects
 alias python=python3
 eval "$(direnv hook bash)"
 export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:/usr/local/bin/python3.9:$PATH"
+export PATH="$HOME/.cargo/bin:$PATH"
 export BASH_SILENCE_DEPRECATION_WARNING=1
 export python="/usr/local/bin/python3.9"
 
@@ -229,8 +233,3 @@ export CLICOLOR=1
 
 # Define colors for file types (directories, symbolic links, etc.)
 export LSCOLORS=ExFxBxDxCxegedabagacad
-
-# for Apple Silicon
-export PATH=$PATH:/opt/homebrew/bin
-
-eval "$(direnv hook bash)"

@@ -85,11 +85,11 @@ fi
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).
 if ! shopt -oq posix; then
-  if [ -f /usr/share/bash-completion/bash_completion ]; then
-    . /usr/share/bash-completion/bash_completion
-  elif [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
-  fi
+    if [ -f /usr/share/bash-completion/bash_completion ]; then
+        . /usr/share/bash-completion/bash_completion
+    elif [ -f /etc/bash_completion ]; then
+        . /etc/bash_completion
+    fi
 fi
 
 #########################################################################################################
@@ -130,7 +130,6 @@ ORIG_PS1="$PS1"
 CMD_PID=""
 
 # Function to update prompt with PID
-update_prompt_with_pid() {
   if [[ -n "$CMD_PID" ]]; then
     PS1="[PID:$CMD_PID] $ORIG_PS1"
   else
@@ -142,7 +141,7 @@ update_prompt_with_pid() {
 preexec_invoke_cmd() {
   # Store the start time as soon as the user presses Enter
   export START_TIME=$(date +%s%N)
-  [[ "$BASH_COMMAND" != "$PROMPT_COMMAND" ]] && CMD_PID=$! && update_prompt_with_pid
+  [[ "$BASH_COMMAND" != "$PROMPT_COMMAND" ]] && CMD_PID=$! # && update_prompt_with_pid
 }
 
 # Function to calculate and display the elapsed time after a command finishes
@@ -227,6 +226,7 @@ export PRIVATE_KEY=$(base64 <~/.ssh/id_rsa)
 export PUBLIC_KEY=$(base64 <~/.ssh/id_rsa.pub)
 
 export PATH=$PATH:/opt/homebrew/bin
+export PATH="$HOME/.cargo/bin:$PATH"
 alias python=python3
 
 eval "$(direnv hook bash)"

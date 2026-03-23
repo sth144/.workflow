@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 TARGET_PANES=7
@@ -33,18 +32,18 @@ fi
 # Select the first pane (pane indices start at 0)
 tmux select-pane -t 1
 
-# Send a command to the first pane 
+# Send a command to the first pane
 tmux send-keys 'ranger' C-m
 
 # Select the second pane
 tmux select-pane -t 2
 
-# Send another command to the second pane 
+# Send another command to the second pane
 tmux send-keys 'k9s' C-m
 
 tmux select-pane -t 3
 
-tmux send-keys 'source venv/bin/activate; python src/chatgpt.py' C-m
+tmux send-keys 'source venv/bin/activate; python3.10 src/chatgpt.py' C-m
 
 tmux select-pane -t 4
 
