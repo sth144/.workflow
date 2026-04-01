@@ -91,6 +91,7 @@ Follow this general workflow for large tasks:
 ## Coding Standards
 
 - Python: follow PEP 8, use type hints, write docstrings for public functions
+- Shell scripts: indent with 2 tabs per level
 - Use virtual environments for Python projects
 - Handle errors explicitly — no bare `except:` clauses
 - Log meaningful messages at appropriate levels

@@ -8,6 +8,11 @@ case $- in
 *) return ;;
 esac
 
+# Source environment files from ~ and ~/.config
+if [ -f /usr/local/bin/os/source_env_files.sh ]; then
+  source /usr/local/bin/os/source_env_files.sh
+fi
+
 # don't put duplicate lines or lines starting with space in the history.
 # See bash(1) for more options
 HISTCONTROL=ignoreboth

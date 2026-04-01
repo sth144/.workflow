@@ -10,6 +10,11 @@ case $- in
 *) return ;;
 esac
 
+# Source environment files from ~ and ~/.config
+if [ -f /usr/local/bin/os/source_env_files.sh ]; then
+  source /usr/local/bin/os/source_env_files.sh
+fi
+
 # append to the history file, don't overwrite it
 shopt -s histappend
 
