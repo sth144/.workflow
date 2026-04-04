@@ -40,6 +40,14 @@ def _run_cli_command(args: Sequence[str]) -> str:
     return (result.stdout or "").strip()
 
 
+def _is_sync_lock_error(exc: RuntimeError) -> bool:
+    message = str(exc).lower()
+    return (
+        "synchronization is already in progress" in message
+        or "lock file is already being held" in message
+    )
+
+
 def _get_cli_value(key: str, default: str = "") -> str:
     override_name = f"JOPLIN_CLI_{key.upper().replace('.', '_')}"
     override = os.getenv(override_name, "").strip()
@@ -63,7 +71,23 @@ def _get_cli_value(key: str, default: str = "") -> str:
 
 
 def _sync_remote() -> None:
-    _run_cli_command(["sync"])
+    retries = max(1, int(os.getenv("JOPLIN_SYNC_RETRIES", "12")))
+    delay_seconds = max(1.0, float(os.getenv("JOPLIN_SYNC_RETRY_DELAY_SECONDS", "30")))
+    last_error: RuntimeError | None = None
+
+    for attempt in range(1, retries + 1):
+        try:
+            _run_cli_command(["sync"])
+            return
+        except RuntimeError as exc:
+            if not _is_sync_lock_error(exc) or attempt == retries:
+                raise
+            last_error = exc
+            time.sleep(delay_seconds)
+
+    if last_error is not None:
+        raise last_error
+
 
 
 def _ping(url: str) -> bool:
