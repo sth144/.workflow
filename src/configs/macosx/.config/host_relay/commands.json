@@ -1,0 +1,20 @@
+{
+	"openisland-hooks": {
+		"command": "$HOME/Library/Application Support/OpenIsland/bin/OpenIslandHooks"
+	},
+	"open": {
+		"command": "/usr/bin/open"
+	},
+	"notify": {
+		"command": "/usr/bin/osascript",
+		"prepend_args": [
+			"-e"
+		]
+	},
+	"pbcopy": {
+		"command": "/usr/bin/pbcopy"
+	},
+	"pbpaste": {
+		"command": "/usr/bin/pbpaste"
+	}
+}

@@ -1,0 +1,83 @@
+{
+  "mcpServers": {
+    "joplin": {
+      "command": "/bin/bash",
+      "args": [
+        "-c",
+        "cd /usr/local/src/joplin_mcp && if [ -f /.dockerenv ]; then export JOPLIN_BASE_URL=http://host.docker.internal:41184; export UV_PROJECT_ENVIRONMENT=/tmp/joplin-mcp-venv; else export UV_PROJECT_ENVIRONMENT=$HOME/.cache/joplin-mcp-venv; fi && uv sync >&2 && exec $UV_PROJECT_ENVIRONMENT/bin/python src/mcp/joplin_mcp.py"
+      ],
+      "env": {
+        "JOPLIN_TOKEN": "${JOPLIN_TOKEN}"
+      }
+    },
+    "atlassian": {
+      "type": "http",
+      "url": "https://mcp.atlassian.com/v1/mcp"
+    },
+    "trello": {
+      "command": "node",
+      "args": [
+        "/usr/local/src/claude-mcp-trello/build/index.js"
+      ],
+      "env": {
+        "TRELLO_API_KEY": "${TRELLO_API_KEY}",
+        "TRELLO_TOKEN": "${TRELLO_TOKEN}"
+      }
+    },
+    "slack": {
+      "type": "http",
+      "url": "https://mcp.slack.com/mcp"
+    },
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "chrome-devtools-mcp@latest"
+      ],
+      "env": {}
+    },
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "env": {}
+    },
+    "MCP_DOCKER": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "mcp",
+        "gateway",
+        "run"
+      ],
+      "env": {}
+    },
+    "figma": {
+      "type": "http",
+      "url": "https://mcp.figma.com/mcp"
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "env": {}
+    },
+    "google-docs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@a-bonus/google-docs-mcp"
+      ],
+      "env": {
+        "GOOGLE_CLIENT_ID": "${GOOGLE_CLIENT_ID}",
+        "GOOGLE_CLIENT_SECRET": "${GOOGLE_CLIENT_ID}"
+      }
+    }
+  }
+}
