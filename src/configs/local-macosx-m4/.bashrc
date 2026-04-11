@@ -157,27 +157,10 @@ BACKGROUND="\[\e[0;48;5;30m\]"
 TRIANGLE=$(printf "\xee\x82\xB0")
 # export PS1="${BLUE}[${RED}\u${GREEN}@${YELLOW}MacBook-Pro${GREY}-${BLUE}\t${GREY}:${BLUE}\w${GREEN}\$(parse_git_branch)${BLUE}]${TRIANGLE}\n${WHITE}${DOLLAR_SIGN} "
 export PS1="${BLUE}[${YELLOW}\u${RED}@${BLUE}\h${RED}-${GREEN}\t${WHITE}:${BLUE}\w${GREEN}\$(parse_git_branch)${BLUE}]${DOLLAR_SIGN} ${WHITE}"
-# Save original prompt
-ORIG_PS1="$PS1"
-
-# Variable to hold PID
-CMD_PID=""
-
-# Function to update prompt with PID
-update_prompt_with_pid() {
-  if [[ -n "$CMD_PID" ]]; then
-    PS1="[PID:$CMD_PID] $ORIG_PS1"
-  else
-    PS1="$ORIG_PS1"
-  fi
-}
-
 # Function to capture the start time
 preexec_invoke_cmd() {
   # Store the start time as soon as the user presses Enter
   export START_TIME=$(gdate +%s%N)
-
-  [[ "$BASH_COMMAND" != "$PROMPT_COMMAND" ]] && CMD_PID=$! && update_prompt_with_pid
 }
 
 # Function to calculate and display the elapsed time after a command finishes
@@ -199,14 +182,12 @@ precmd_invoke_cmd() {
   fi
 }
 
-# Add the DEBUG trap to capture the start time for each command
-trap 'preexec_invoke_cmd' DEBUG
-
-# Trap after command finishes
-trap 'CMD_PID=""; update_prompt_with_pid' RETURN
+# Register timing hooks alongside Atuin/bash-preexec rather than replacing them
+preexec_functions+=(preexec_invoke_cmd)
+precmd_functions+=(precmd_invoke_cmd)
 
 # Add the PROMPT_COMMAND to run the function after a command finishes
-export PROMPT_COMMAND='precmd_invoke_cmd; history -a; history -n; update_prompt_with_pid'
+export PROMPT_COMMAND='history -a; history -n'
 
 export BROWSER=/usr/bin/google-chrome-stable
 export EDITOR=/usr/bin/vim
@@ -243,7 +224,7 @@ done
 export PATH=$PATH:/opt/sonar/bin
 
 #~/.config/i3/sh/xrandr-layout.sh
-export WORKFLOW_BASE=/mnt/D/Coding/Projects/Personal/.workflow
+export WORKFLOW_BASE=/Users/sthinds/src/workflow-macm4
 
 if [ -f /usr/local/src/alacritty/extra/completions/alacritty.bash ]; then
   source /usr/local/src/alacritty/extra/completions/alacritty.bash
@@ -283,3 +264,4 @@ fi
 
 source $HOME/.env.global
 
+export PYTHONPATH="${PYTHONPATH}:/Users/sthinds/src/workflow-macm4"
