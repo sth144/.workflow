@@ -127,6 +127,9 @@ update_home() {
 		rm -rf $BASE_ABS/stage/README.md
 		rm -rf $BASE_ABS/stage/.keep
 
+		# unlock immutable files before overwriting
+		chflags nouchg ~/.claude/settings.json 2>/dev/null
+
 		# copy config build and utils to ~
 		sudo $CP -rT $BASE_ABS/stage/docker/ ~/.config/docker
 		rm -rf $BASE_ABS/stage/docker
@@ -135,6 +138,9 @@ update_home() {
 		sudo $CP $BASE_ABS/stage/.bashrc ~/
 		sudo $CP -rT $BASE_ABS/stage/.config ~/.config
 		sudo $CP -rT $BASE_ABS/stage/bin/ /usr/local/bin/
+
+		# lock settings.json to prevent Open Island.app from overwriting it
+		chflags uchg ~/.claude/settings.json
 
 		rm ~/.keep
 		rm ~/README.md
