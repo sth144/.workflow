@@ -1,18 +1,21 @@
 # Skill: Sync Open PRs to Target Branch
 
 ## When to Use
+
 Use this skill when the user wants to update/sync all open pull request branches
 with a target branch (e.g., merge `master` into all open PR branches). Trigger
 phrases include: "sync PRs", "update PRs", "merge master into PRs",
 "sync branches", "update all open PRs".
 
 ## Prerequisites
+
 - Must be inside a git repository with a Bitbucket remote
 - Bitbucket API token available at `~/.config/.env.BITBUCKET_API_TOKEN`
 - The user's Bitbucket email and org are configured in CLAUDE.md
 - Working tree must be clean (no uncommitted changes)
 
 ## Parameters
+
 - **target_branch**: The branch to sync into PR branches (default: `master`).
   Ask the user if not obvious from context.
 - **repo**: The Bitbucket repo slug. Infer from the current git remote if not
@@ -55,6 +58,7 @@ curl -sL -u "{email}:$TOKEN" \
 
 Filter the results to only PRs where `destination.branch.name` equals the
 target branch. Extract for each PR:
+
 - `id` — PR number
 - `title` — PR title
 - `source.branch.name` — the branch to sync
@@ -68,17 +72,21 @@ collect all PRs.
 For each PR branch (in alphabetical order by branch name):
 
 1. **Check if already up to date**:
+
    ```bash
    git merge-base --is-ancestor origin/{target_branch} origin/{source_branch}
    ```
+
    If exit code is 0, the branch is already up to date — skip it and note it
    as "already synced".
 
 2. **Check for merge conflicts** (dry check):
+
    ```bash
    git checkout origin/{source_branch} --detach
    git merge --no-commit --no-ff origin/{target_branch}
    ```
+
    - If this succeeds (exit code 0): the merge is clean.
    - If this fails: there are conflicts. Run `git merge --abort` and record
      the branch as having conflicts.
@@ -106,20 +114,25 @@ git checkout {original_branch}
 Present a summary table grouped by outcome:
 
 **Synced successfully:**
+
 - **PR #123** `feature/foo` — "Add foo feature" (by Alice)
 
 **Already up to date:**
+
 - **PR #456** `fix/bar` — "Fix bar bug" (by Bob)
 
 **Merge conflicts (skipped):**
+
 - **PR #789** `feature/baz` — "Redesign baz" (by Carol)
 
 **Errors:**
+
 - **PR #101** `refactor/qux` — push failed: permission denied
 
 Include totals: "Synced 3, already current 2, conflicts 1, errors 0"
 
 ## Error Handling
+
 - If working tree is dirty: stop immediately, ask user to commit/stash
 - If Bitbucket API returns 401/403: advise checking the API token
 - If no open PRs found: inform user, confirm the repo and target branch
@@ -130,6 +143,7 @@ Include totals: "Synced 3, already current 2, conflicts 1, errors 0"
   pattern: attempt restore after each failure path)
 
 ## Safety
+
 - Never force-push. Only fast-forward or merge-commit pushes.
 - Never modify the target branch itself.
 - Never delete any branches.
