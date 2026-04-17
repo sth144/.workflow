@@ -1,0 +1,9 @@
+# Claude Code automated routines
+# Jira Daily Digest - weekdays at 8am
+0 8 * * 1-5 <USER> /bin/bash ~/.claude/routines/jira-daily-digest.sh >> ~/.claude/routines/logs/jira-digest.log 2>&1
+
+# Docs Drift Detector - Monday at 9am
+0 9 * * 1 <USER> /bin/bash ~/.claude/routines/docs-drift-detector.sh >> ~/.claude/routines/logs/docs-drift.log 2>&1
+
+# Sprint Summary - Friday at 4pm
+0 16 * * 5 <USER> /bin/bash ~/.claude/routines/sprint-summary.sh >> ~/.claude/routines/logs/sprint-summary.log 2>&1

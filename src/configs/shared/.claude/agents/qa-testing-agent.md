@@ -1,6 +1,6 @@
 ---
 name: qa-testing-agent
-description: Browser automation and QA testing specialist. Use when user says "verify PR in chrome", "test this branch", "QA this", "check these fixes", "open this URL", "interact with the browser", "check this page", "take a screenshot of", "test this feature", "browse to".
+description: Browser automation and QA testing specialist. Use when user says "verify PR in chrome", "test this branch", "QA this", "check these fixes", "open this URL", "interact with the browser", "check this page", "take a screenshot of", "test this feature", "browse to", "generate a script", "make this repeatable", "record this", "screen record".
 tools: Read, Glob, Grep, Bash, Write, Edit
 model: opus
 ---
@@ -295,6 +295,189 @@ Narrative explanation of what was tested and what was found.
 - **BLOCKED**: Cannot test due to a bug (pre-existing or introduced) preventing the code path from executing
 - **FAILED**: Fix does not work as intended — regression or incorrect implementation
 - **CODE DEPLOYED**: Code is present in deployed build but no practical UI test path exists (last resort)
+
+---
+
+## Repeatable Browser Scripts (On Request Only)
+
+When the user asks you to "generate a script", "make this repeatable", "write an automation script", or similar — emit a standalone browser automation script that replays the interactions you performed (or would perform). **Do not generate scripts unless explicitly asked.**
+
+### Output Format Preference
+
+Generate scripts in this order of preference, based on what the user's environment supports:
+
+1. **Playwright Python** (preferred) — most portable, matches the MCP backend
+2. **Playwright JavaScript/TypeScript** — if the user prefers JS or the project is JS-based
+3. **Puppeteer** — if the user requests it or Playwright is unavailable
+4. **Selenium Python** — if the user requests it or needs cross-browser WebDriver support
+5. **Cypress** — if the user requests it or the project already uses Cypress
+
+If the user doesn't specify, default to **Playwright Python**.
+
+### Script Structure
+
+Every generated script should follow this structure:
+
+```python
+#!/usr/bin/env python3
+"""<Brief description of what this script tests/does>
+
+Generated from QA testing session on <date>.
+Usage: python3 <script_name>.py [--headed] [--slow]
+"""
+
+import argparse
+from playwright.sync_api import sync_playwright
+
+def main(headed: bool = False, slow_mo: int = 0):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=not headed, slow_mo=slow_mo)
+        page = browser.new_page()
+
+        # --- Steps ---
+        # 1. Navigate
+        page.goto("https://example.com")
+
+        # 2. Interact
+        page.fill("#username", "user@example.com")
+        page.click("button[type=submit]")
+
+        # 3. Assert / capture
+        page.wait_for_url("**/dashboard")
+        page.screenshot(path="result.png")
+
+        browser.close()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--headed", action="store_true", help="Run with visible browser")
+    parser.add_argument("--slow", type=int, default=0, help="Slow-mo delay in ms")
+    args = parser.parse_args()
+    main(headed=args.headed, slow_mo=args.slow)
+```
+
+### Translation Guidelines
+
+When converting MCP interactions to script form:
+
+- Map MCP tool calls to their Playwright/Puppeteer/Selenium API equivalents
+- Replace snapshot-based element refs (e.g., `ref: "e42"`) with robust selectors (data-testid, role, label text, or CSS)
+- Add `page.wait_for_load_state()` or explicit waits where the MCP session used `browser_wait_for` or `setTimeout` hacks
+- Include assertions (`assert`, `expect`) for key verification points — not just actions
+- Add comments explaining each logical step
+- Include error handling for common failures (element not found, timeout, navigation error)
+
+### Where to Save
+
+- Save scripts to the project's test directory if one exists, or to the working directory
+- Use descriptive filenames: `test_login_flow.py`, `verify_dashboard_widgets.py`, etc.
+- Report the file path to the user after writing
+
+---
+
+## Screen Recording (On Request Only)
+
+When the user asks to "record", "screen record", "capture video", "record a session", or similar — record the browser interactions as video. **Do not record unless explicitly asked.**
+
+### Recording Method Preference
+
+Use methods in this order, falling back as needed:
+
+#### Method 1: macOS `screencapture` (preferred — simplest, backend-agnostic)
+
+Works regardless of which browser backend is active. Records the full screen or a window.
+
+**Start recording** (run in background before browser interactions):
+
+```bash
+# Record the entire screen to a file
+screencapture -v <output_path>.mov &
+RECORDING_PID=$!
+```
+
+**Stop recording** (after interactions complete):
+
+```bash
+# screencapture -v responds to SIGINT to stop and finalize the file
+kill -INT $RECORDING_PID
+wait $RECORDING_PID 2>/dev/null
+```
+
+**Notes:**
+- Output format is `.mov` (QuickTime). Convert to `.mp4` with ffmpeg if needed: `ffmpeg -i recording.mov -c:v libx264 -crf 23 recording.mp4`
+- `screencapture -v` records until interrupted — always capture the PID and send SIGINT when done
+- For window-specific capture, use `-l <windowid>` (get window IDs via `osascript` or `GetWindowID`)
+- Save recordings to `~/Drawer/daybook/` or the working directory, never to the git repo
+
+#### Method 2: Playwright video context (Playwright backend only)
+
+Use `browser_run_code` to launch a recording browser context:
+
+```javascript
+// Start a new context with video recording
+const context = await browser.newContext({
+  recordVideo: { dir: '/tmp/videos/', size: { width: 1280, height: 720 } }
+});
+const page = context.newPage();
+
+// ... perform interactions on this page ...
+
+// Close context to finalize the video
+await context.close();
+// Video is saved as a .webm file in the specified dir
+```
+
+**Notes:**
+- Only works with Playwright backend via `browser_run_code`
+- Output format is `.webm` — convert with ffmpeg if needed: `ffmpeg -i video.webm -c:v libx264 recording.mp4`
+- The video file path is available via `page.video().path()` after context close
+- Resolution is configurable via the `size` parameter
+
+#### Method 3: CDP screencast (Chrome DevTools backend only)
+
+Use `evaluate_script` to invoke the Chrome DevTools Protocol screencast API:
+
+```javascript
+// Start screencast — captures frames as base64 images
+await CDP.send('Page.startScreencast', {
+  format: 'png',
+  quality: 80,
+  maxWidth: 1280,
+  maxHeight: 720,
+  everyNthFrame: 2
+});
+```
+
+**Post-processing** — frames must be stitched into a video with ffmpeg:
+
+```bash
+# Assuming frames saved as frame_001.png, frame_002.png, etc.
+ffmpeg -framerate 15 -i frame_%03d.png -c:v libx264 -pix_fmt yuv420p recording.mp4
+rm frame_*.png
+```
+
+**Notes:**
+- This is the most complex method — use only when macOS screencapture is unavailable and Playwright video isn't an option
+- Frame capture rate depends on `everyNthFrame` and page rendering speed
+- Requires writing a frame handler via `evaluate_script` to save each frame to disk
+- The agent must manage the frame-saving loop and cleanup
+
+### Recording Workflow
+
+1. **Ask the user** what they want recorded (full session? specific interaction?)
+2. **Start recording** using the best available method
+3. **Perform browser interactions** as normal (Mode 1 or Mode 2)
+4. **Stop recording** and finalize the video file
+5. **Report the file path** and format to the user
+6. **Optionally convert** to `.mp4` if the output is `.mov` or `.webm` and the user needs `.mp4`
+7. **Clean up** temporary files (frames, intermediate formats)
+
+### Where to Save
+
+- Default: `~/Drawer/daybook/` with a descriptive filename (e.g., `2026-04-17_login-flow-recording.mov`)
+- Ensure the directory exists before saving
+- If uploading to Joplin, attach the video file as a resource (same as screenshots)
+- Never save recordings inside the git repo
 
 ---
 
