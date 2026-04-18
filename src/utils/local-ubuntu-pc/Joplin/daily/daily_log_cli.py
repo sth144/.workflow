@@ -143,6 +143,7 @@ def main() -> int:
         )
         git_summary = base.fetch_git_summary(cfg, start, end)
         docker_rows = base.fetch_docker_snapshot(cfg)
+        network_map = base.fetch_network_map(cfg)
 
         generated_md = base.build_generated_md(
             cfg,
@@ -155,6 +156,7 @@ def main() -> int:
             ha_history,
             git_summary,
             docker_rows,
+            network_map,
         )
 
         folder_id = base.ensure_notebook(cfg)

@@ -163,6 +163,7 @@ def _load_cli_config() -> base.Config:
         window_label = f"{start.isoformat()} -> {end.isoformat()} ({cfg.timezone})"
 
         headlines = base.fetch_headlines(cfg)
+        todo_cards = base.fetch_trello_list_cards(cfg, cfg.trello_todo_list_name)
         trello_cards = base.fetch_trello_cards(cfg, start, end)
         events = base.fetch_google_events(cfg, start, end)
         ha_snapshot = base.fetch_home_assistant_snapshot(cfg)
@@ -173,18 +174,21 @@ def _load_cli_config() -> base.Config:
         )
         git_summary = base.fetch_git_summary(cfg, start, end)
         docker_rows = base.fetch_docker_snapshot(cfg)
+        network_map = base.fetch_network_map(cfg)
 
         generated_md = base.build_generated_md(
             cfg,
             today,
             window_label,
             headlines,
+            todo_cards,
             trello_cards,
             events,
             ha_snapshot,
             ha_history,
             git_summary,
             docker_rows,
+            network_map,
         )
 
         folder_id = base.ensure_notebook(cfg)

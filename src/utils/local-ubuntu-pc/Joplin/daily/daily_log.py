@@ -3,6 +3,7 @@ import base64
 import datetime as dt
 import json
 import os
+from pathlib import Path
 import sys
 import tempfile
 import time
@@ -49,6 +50,8 @@ class Config:
     trello_board_id: Optional[str]
     trello_board_name: str
     trello_limit: int
+    trello_todo_list_name: str
+    trello_todo_limit: int
 
     # Headlines
     headlines_enabled: bool
@@ -74,6 +77,11 @@ class Config:
     # Docker snapshot
     docker_enable: bool
     docker_base_url: str  # usually http://localhost (talks to socket via requests-unixsocket? we keep simple)
+
+    # Network map
+    network_map_enable: bool
+    network_map_target: str
+    network_map_host_limit: int
 
 
 def must_env(name: str) -> str:
@@ -114,13 +122,16 @@ def load_config() -> Config:
         joplin_token=must_env("JOPLIN_TOKEN"),
         joplin_base_url=joplin_base_url,
         joplin_notebook=os.getenv("JOPLIN_NOTEBOOK", "Areas/Journal/").strip(),
-        note_title_fmt="%-d %b, %Y",
+        note_title_fmt=os.getenv("NOTE_TITLE_FMT", "%-d %b, %Y").strip() or "%-d %b, %Y",
         note_time_window=os.getenv("NOTE_TIME_WINDOW", "day").strip().lower(),
         trello_key=os.getenv("TRELLO_KEY"),
         trello_token=os.getenv("TRELLO_TOKEN"),
         trello_board_id=os.getenv("TRELLO_BOARD_ID"),
         trello_board_name=os.getenv("TRELLO_BOARD_NAME", "ToDo").strip() or "ToDo",
         trello_limit=getenv_int("TRELLO_LIMIT", 25),
+        trello_todo_list_name=os.getenv("TRELLO_TODO_LIST_NAME", "Today").strip()
+        or "Today",
+        trello_todo_limit=getenv_int("TRELLO_TODO_LIMIT", 20),
         headlines_enabled=getenv_bool("HEADLINES_ENABLE", True),
         headlines_url=os.getenv(
             "HEADLINES_URL",
@@ -140,6 +151,9 @@ def load_config() -> Config:
         git_repos_csv=os.getenv("GIT_REPOS", "").strip(),
         docker_enable=getenv_bool("DOCKER_ENABLE", False),
         docker_base_url=os.getenv("DOCKER_BASE_URL", "http://localhost").strip(),
+        network_map_enable=getenv_bool("NETWORK_MAP_ENABLE", True),
+        network_map_target=os.getenv("NETWORK_MAP_TARGET", "").strip(),
+        network_map_host_limit=getenv_int("NETWORK_MAP_HOST_LIMIT", 24),
     )
 
 
@@ -405,6 +419,59 @@ def fetch_trello_cards(
     return out
 
 
+def fetch_trello_list_cards(cfg: Config, list_name: str) -> list[dict[str, str]]:
+    if not (cfg.trello_key and cfg.trello_token):
+        return []
+    board_id = resolve_trello_board_id(cfg)
+    if not board_id:
+        return []
+
+    lists_resp = requests.get(
+        f"https://api.trello.com/1/boards/{board_id}/lists",
+        params={
+            "key": cfg.trello_key,
+            "token": cfg.trello_token,
+            "fields": "id,name",
+            "filter": "open",
+        },
+        timeout=30,
+    )
+    lists_resp.raise_for_status()
+    target = list_name.strip().casefold()
+    trello_lists = lists_resp.json() or []
+    matched = next(
+        (item for item in trello_lists if str(item.get("name", "")).strip().casefold() == target),
+        None,
+    )
+    if not matched:
+        return []
+
+    cards_resp = requests.get(
+        f"https://api.trello.com/1/lists/{matched['id']}/cards",
+        params={
+            "key": cfg.trello_key,
+            "token": cfg.trello_token,
+            "fields": "id,name,shortUrl,due,dueComplete,pos",
+            "filter": "open",
+        },
+        timeout=30,
+    )
+    cards_resp.raise_for_status()
+    cards = cards_resp.json() or []
+    cards.sort(key=lambda card: float(card.get("pos", 0) or 0))
+    out: list[dict[str, str]] = []
+    for card in cards[: cfg.trello_todo_limit]:
+        out.append(
+            {
+                "name": str(card.get("name", "")).strip() or "(Untitled card)",
+                "url": str(card.get("shortUrl", "")).strip(),
+                "due": str(card.get("due", "")).strip(),
+                "done": "true" if bool(card.get("dueComplete")) else "false",
+            }
+        )
+    return out
+
+
 # ---------- Headlines ----------
 def fetch_headlines(cfg: Config) -> list[dict[str, str]]:
     if not cfg.headlines_enabled or not cfg.headlines_url:
@@ -510,20 +577,88 @@ def fetch_google_events(
 
 
 # ---------- Home Assistant ----------
+def _ha_headers(cfg: Config) -> dict[str, str]:
+    return {"Authorization": f"Bearer {cfg.ha_token}"}
+
+
+def _ha_fetch_all_states(cfg: Config) -> list[dict[str, Any]]:
+    if not (cfg.ha_base_url and cfg.ha_token):
+        return []
+    base = cfg.ha_base_url.rstrip("/")
+    resp = requests.get(f"{base}/api/states", headers=_ha_headers(cfg), timeout=20)
+    if resp.status_code != 200:
+        return []
+    data = resp.json() or []
+    if not isinstance(data, list):
+        return []
+    return data
+
+
+def _ha_score_candidate(target: str, candidate: dict[str, Any]) -> int:
+    target_norm = target.strip().casefold()
+    entity_id = str(candidate.get("entity_id", "")).strip()
+    entity_norm = entity_id.casefold()
+    friendly_name = str((candidate.get("attributes", {}) or {}).get("friendly_name", "")).strip()
+    friendly_norm = friendly_name.casefold()
+
+    if target_norm == entity_norm:
+        return 1000
+    if target_norm == friendly_norm:
+        return 950
+    if entity_norm.startswith(target_norm):
+        return 900
+    if friendly_norm.startswith(target_norm):
+        return 850
+    if target_norm in entity_norm:
+        return 800
+    if target_norm in friendly_norm:
+        return 750
+
+    target_tail = target_norm.split(".", 1)[-1]
+    entity_tail = entity_norm.split(".", 1)[-1]
+    if target_tail and target_tail == entity_tail:
+        return 700
+    if target_tail and entity_tail.startswith(target_tail):
+        return 650
+    return -1
+
+
+def _ha_resolve_entities(
+    cfg: Config, all_states: list[dict[str, Any]]
+) -> tuple[list[dict[str, Any]], list[str]]:
+    if not cfg.ha_entities:
+        return [], []
+    resolved: list[dict[str, Any]] = []
+    resolved_ids: list[str] = []
+    seen_ids: set[str] = set()
+
+    for target in cfg.ha_entities:
+        best_state: dict[str, Any] | None = None
+        best_score = -1
+        for candidate in all_states:
+            score = _ha_score_candidate(target, candidate)
+            if score > best_score:
+                best_score = score
+                best_state = candidate
+        if best_state is None or best_score < 0:
+            continue
+        entity_id = str(best_state.get("entity_id", "")).strip()
+        if not entity_id or entity_id in seen_ids:
+            continue
+        seen_ids.add(entity_id)
+        resolved.append(best_state)
+        resolved_ids.append(entity_id)
+    return resolved, resolved_ids
+
+
 def fetch_home_assistant_snapshot(cfg: Config) -> list[dict[str, str]]:
     if not (cfg.ha_base_url and cfg.ha_token and cfg.ha_entities):
         return []
-    base = cfg.ha_base_url.rstrip("/")
-    headers = {"Authorization": f"Bearer {cfg.ha_token}"}
-
+    all_states = _ha_fetch_all_states(cfg)
+    resolved_states, _ = _ha_resolve_entities(cfg, all_states)
     rows: list[dict[str, str]] = []
-    for entity_id in cfg.ha_entities:
-        resp = requests.get(
-            f"{base}/api/states/{entity_id}", headers=headers, timeout=20
-        )
-        if resp.status_code != 200:
-            continue
-        data = resp.json() or {}
+    for data in resolved_states:
+        entity_id = str(data.get("entity_id", "")).strip()
         rows.append(
             {
                 "entity_id": entity_id,
@@ -546,17 +681,22 @@ def fetch_home_assistant_history(
     if not (cfg.ha_base_url and cfg.ha_token):
         return []
     base = cfg.ha_base_url.rstrip("/")
-    headers = {"Authorization": f"Bearer {cfg.ha_token}"}
+    headers = _ha_headers(cfg)
 
     # HA expects local-ish ISO; timezone offset is fine.
     start_iso = start.isoformat()
     end_iso = end.isoformat()
 
+    resolved_ids: list[str] = []
     if cfg.ha_entities:
+        _, resolved_ids = _ha_resolve_entities(cfg, _ha_fetch_all_states(cfg))
+
+    if resolved_ids:
         params = {
-            "filter_entity_id": ",".join(cfg.ha_entities),
+            "filter_entity_id": ",".join(resolved_ids),
             "minimal_response": "1",
             "significant_changes_only": "1",
+            "end_time": end_iso,
         }
         resp = requests.get(
             f"{base}/api/history/period/{start_iso}",
@@ -570,10 +710,14 @@ def fetch_home_assistant_history(
         data = resp.json() or []
         out: list[dict[str, str]] = []
         for entity_states in data:
+            fallback_entity_id = ""
+            if entity_states:
+                fallback_entity_id = str(entity_states[0].get("entity_id", "")).strip()
             for st in entity_states[-5:]:
                 out.append(
                     {
-                        "entity_id": str(st.get("entity_id", "")),
+                        "entity_id": str(st.get("entity_id", "")).strip()
+                        or fallback_entity_id,
                         "state": str(st.get("state", "")),
                         "last_changed": str(st.get("last_changed", "")),
                     }
@@ -617,19 +761,121 @@ def fetch_git_summary(
         return []
     import subprocess
 
-    repos = [p.strip() for p in cfg.git_repos_csv.split(",") if p.strip()]
+    repo_entries = [p.strip() for p in cfg.git_repos_csv.split(",") if p.strip()]
     out: list[dict[str, str]] = []
     # Use ISO ranges (git is happy with these)
     since = start.isoformat()
     until = end.isoformat()
 
-    for repo in repos:
+    cwd = Path.cwd().resolve()
+    parent_candidates = [cwd, *cwd.parents]
+    root_candidates = [
+        Path.home() / "src",
+        Path("/usr/local/src"),
+    ]
+
+    def resolve_repo_path(repo: str) -> Path | None:
+        raw_path = Path(repo).expanduser()
+        candidates: list[Path] = []
+        if raw_path.is_absolute():
+            candidates.append(raw_path)
+        else:
+            candidates.append((cwd / raw_path).resolve())
+
+        repo_name = raw_path.name
+        if repo_name:
+            for parent in parent_candidates:
+                candidates.append(parent / repo_name)
+            for root in root_candidates:
+                candidates.append(root / repo_name)
+
+        seen: set[str] = set()
+        for candidate in candidates:
+            candidate_str = str(candidate)
+            if candidate_str in seen:
+                continue
+            seen.add(candidate_str)
+            if candidate.exists() and (candidate / ".git").exists():
+                return candidate
+        return None
+
+    def discover_repo_paths(repo_entry: str) -> list[Path]:
+        resolved = resolve_repo_path(repo_entry)
+        if resolved is not None:
+            return [resolved]
+
+        raw_path = Path(repo_entry).expanduser()
+        dir_candidates: list[Path] = []
+        if raw_path.is_absolute():
+            dir_candidates.append(raw_path)
+        else:
+            dir_candidates.append((cwd / raw_path).resolve())
+
+        repo_name = raw_path.name
+        if repo_name:
+            for parent in parent_candidates:
+                dir_candidates.append(parent / repo_name)
+            for root in root_candidates:
+                dir_candidates.append(root / repo_name)
+
+        seen_dirs: set[str] = set()
+        discovered: list[Path] = []
+        for candidate in dir_candidates:
+            candidate_str = str(candidate)
+            if candidate_str in seen_dirs:
+                continue
+            seen_dirs.add(candidate_str)
+            if not candidate.exists() or not candidate.is_dir():
+                continue
+            if (candidate / ".git").exists():
+                discovered.append(candidate)
+                continue
+
+            # Treat a plain directory entry as a repo root collection and scan a few levels.
+            root_depth = len(candidate.parts)
+            for dirpath, dirnames, _filenames in os.walk(candidate):
+                current_path = Path(dirpath)
+                relative_depth = len(current_path.parts) - root_depth
+                if relative_depth > 3:
+                    dirnames[:] = []
+                    continue
+                if ".git" in dirnames:
+                    discovered.append(current_path)
+                    dirnames[:] = []
+                    continue
+                dirnames[:] = [
+                    dirname
+                    for dirname in dirnames
+                    if dirname not in {".git", ".venv", "node_modules", "__pycache__"}
+                ]
+
+        unique: list[Path] = []
+        seen_repo_paths: set[str] = set()
+        for repo_path in discovered:
+            repo_str = str(repo_path.resolve())
+            if repo_str in seen_repo_paths:
+                continue
+            seen_repo_paths.add(repo_str)
+            unique.append(repo_path.resolve())
+        return unique
+
+    repo_paths: list[Path] = []
+    seen_repo_paths: set[str] = set()
+    for repo_entry in repo_entries:
+        for repo_path in discover_repo_paths(repo_entry):
+            repo_str = str(repo_path)
+            if repo_str in seen_repo_paths:
+                continue
+            seen_repo_paths.add(repo_str)
+            repo_paths.append(repo_path)
+
+    for resolved_repo in repo_paths:
         try:
             r = subprocess.run(
                 [
                     "git",
                     "-C",
-                    repo,
+                    str(resolved_repo),
                     "log",
                     f"--since={since}",
                     f"--until={until}",
@@ -646,7 +892,7 @@ def fetch_git_summary(
                 continue
             out.append(
                 {
-                    "repo": repo,
+                    "repo": str(resolved_repo),
                     "count": str(len(lines)),
                     "top": lines[0].split("|", 1)[-1],
                 }
@@ -685,29 +931,86 @@ def fetch_docker_snapshot(cfg: Config) -> list[dict[str, str]]:
         return []
 
 
+# ---------- Network map ----------
+def fetch_network_map(cfg: Config) -> dict[str, Any] | None:
+    if not cfg.network_map_enable:
+        return None
+    import subprocess
+
+    script_path = Path(__file__).resolve().with_name("network_map.py")
+    if not script_path.exists():
+        return None
+
+    cmd = [sys.executable, str(script_path), "--host-limit", str(cfg.network_map_host_limit)]
+    if cfg.network_map_target:
+        cmd += ["--target", cfg.network_map_target]
+
+    try:
+        result = subprocess.run(
+            cmd,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+    except Exception:
+        return None
+
+    if result.returncode != 0:
+        return {
+            "status": "error",
+            "error": (result.stderr or result.stdout or "network map script failed").strip(),
+        }
+
+    try:
+        payload = json.loads(result.stdout or "{}")
+    except json.JSONDecodeError:
+        return {
+            "status": "error",
+            "error": "network map script returned invalid JSON",
+        }
+    if not isinstance(payload, dict):
+        return {
+            "status": "error",
+            "error": "network map script returned unexpected payload",
+        }
+    return payload
+
+
 # ---------- Markdown rendering ----------
 def build_generated_md(
     cfg: Config,
     today: dt.date,
     window_label: str,
     headlines: list[dict[str, str]],
+    todo_cards: list[dict[str, str]],
     trello_cards: list[dict[str, str]],
     events: list[dict[str, str]],
     ha_snapshot: list[dict[str, str]],
     ha_history: list[dict[str, str]],
     git_summary: list[dict[str, str]],
     docker_rows: list[dict[str, str]],
+    network_map: dict[str, Any] | None,
 ) -> str:
     lines: list[str] = []
 
     lines += [
-        f"# Daily Log — {today.isoformat()}",
+        f"# Daily Log — {today.strftime('%A, %Y-%m-%d')}",
         "",
         f"_Autogenerated: {window_label}_",
         "",
-        "## Plan",
-        "- [ ] Top priorities",
-        "- [ ] One annoying thing to fix",
+        "## ToDo",
+    ]
+    if todo_cards:
+        for card in todo_cards:
+            due = f" ({card['due']})" if card.get("due") else ""
+            if card.get("url"):
+                lines.append(f"- [ ] [{card['name']}]({card['url']}){due}")
+            else:
+                lines.append(f"- [ ] {card['name']}{due}")
+    else:
+        lines.append(f"- (No cards found in `{cfg.trello_todo_list_name}`)")
+    lines += [
         "",
         "## Calendar",
     ]
@@ -721,7 +1024,14 @@ def build_generated_md(
             else:
                 lines.append(f"- {start}: {summ}")
     else:
-        lines.append("- (No events fetched)")
+        if cfg.google_calendar_id == "primary" and (
+            cfg.google_service_account_file or cfg.google_service_account_json
+        ):
+            lines.append(
+                "- (No events fetched. `GOOGLE_CALENDAR_ID=primary` uses the service account's own empty primary calendar unless your real calendar is explicitly shared with that service account.)"
+            )
+        else:
+            lines.append("- (No events fetched)")
     lines.append("")
 
     lines += ["## Top Headlines"]
@@ -787,6 +1097,31 @@ def build_generated_md(
             lines.append("- (No snapshot / docker not available)")
         lines.append("")
 
+    if cfg.network_map_enable:
+        lines += ["## Network — Diagram"]
+        if network_map and network_map.get("status") == "ok" and network_map.get("plantuml"):
+            target = str(network_map.get("target", "")).strip()
+            interface = str(network_map.get("interface", "")).strip()
+            lines.append(
+                f"- Scan target: `{target or 'auto'}`"
+                + (f" on `{interface}`" if interface else "")
+            )
+            tools = network_map.get("tools", {})
+            if isinstance(tools, dict) and tools:
+                tool_status = ", ".join(
+                    f"{name}={status}" for name, status in sorted(tools.items())
+                )
+                lines.append(f"- Tools: `{tool_status}`")
+            lines.append("")
+            lines.append("```plantuml")
+            lines.append(str(network_map["plantuml"]).strip())
+            lines.append("```")
+        elif network_map and network_map.get("error"):
+            lines.append(f"- (Network map unavailable: {network_map['error']})")
+        else:
+            lines.append("- (Network map unavailable)")
+        lines.append("")
+
     lines += [
         "## Reflection",
         "- What moved forward today?",
@@ -805,6 +1140,7 @@ def main() -> int:
     window_label = f"{start.isoformat()} → {end.isoformat()} ({cfg.timezone})"
 
     headlines = fetch_headlines(cfg)
+    todo_cards = fetch_trello_list_cards(cfg, cfg.trello_todo_list_name)
     trello_cards = fetch_trello_cards(cfg, start, end)
     events = fetch_google_events(cfg, start, end)
     ha_snapshot = fetch_home_assistant_snapshot(cfg)
@@ -813,18 +1149,21 @@ def main() -> int:
     )
     git_summary = fetch_git_summary(cfg, start, end)
     docker_rows = fetch_docker_snapshot(cfg)
+    network_map = fetch_network_map(cfg)
 
     generated_md = build_generated_md(
         cfg,
         today,
         window_label,
         headlines,
+        todo_cards,
         trello_cards,
         events,
         ha_snapshot,
         ha_history,
         git_summary,
         docker_rows,
+        network_map,
     )
 
     folder_id = ensure_notebook(cfg)

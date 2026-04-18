@@ -26,11 +26,21 @@ The script is idempotent per date/title. If the note already exists, it does not
 - `JOPLIN_BASE_URL` default: `http://joplin:41184`
 - `JOPLIN_NOTEBOOK` default: `Areas/Journal/`
 - `TRELLO_KEY`, `TRELLO_TOKEN`
+- `TRELLO_TODO_LIST_NAME` default: `Today`
 - `GOOGLE_CALENDAR_ID`
 - `GOOGLE_SERVICE_ACCOUNT_FILE` default in wrapper: `/run/secrets/google_service_account.json`
-- `HA_BASE_URL`, `HA_TOKEN`, `HA_ENTITIES` (comma-separated)
+- `HA_BASE_URL`, `HA_TOKEN`, `HA_ENTITIES` (comma-separated; exact IDs or close matches)
 - `TIMEZONE`
+- `GIT_ENABLE`, `GIT_REPOS` (comma-separated repo paths or parent directories of repos)
+- `NETWORK_MAP_ENABLE`, `NETWORK_MAP_TARGET`, `NETWORK_MAP_HOST_LIMIT`
 - `JOPLIN_DAILY_ENV_FILE` default: `$HOME/.env.joplin_daily`
+
+## Notes
+
+- The daily note `ToDo` section is sourced from the Trello list named by `TRELLO_TODO_LIST_NAME` and defaults to `Today`.
+- If you use a Google service account, `GOOGLE_CALENDAR_ID=primary` refers to that service account's own primary calendar. To see your real calendar events, share the target calendar with the service account email and set `GOOGLE_CALENDAR_ID` to that calendar's ID or email.
+- Home Assistant entity lookups are resilient to minor ID drift, but stale `HA_ENTITIES` entries should still be refreshed occasionally.
+- The network diagram section emits a PlantUML block. It prefers `arp-scan` and `nmap` when installed, and falls back to `ip neigh` when they are missing.
 
 ### Optional SSH tunnel settings (for clipper bound to 127.0.0.1 on remote host)
 
