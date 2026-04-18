@@ -259,8 +259,13 @@ if command -v fzf >/dev/null 2>&1; then
 fi
 
 if command -v atuin >/dev/null 2>&1; then
-  eval "$(atuin init bash 2>/dev/null)" 2>/dev/null
+  eval "$(atuin init bash --disable-up-arrow 2>/dev/null)" 2>/dev/null
 fi
+
+bind '"\e[A": previous-history'
+bind '"\eOA": previous-history'
+bind '"\e[B": next-history'
+bind '"\eOB": next-history'
 
 source $HOME/.env.global
 
