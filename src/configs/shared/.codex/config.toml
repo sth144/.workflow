@@ -1,0 +1,22 @@
+personality = "pragmatic"
+model = "gpt-5.4"
+
+[projects."/home/sthinds"]
+trust_level = "trusted"
+
+[projects."/usr/local/src/joplin_mcp"]
+trust_level = "trusted"
+
+[notice.model_migrations]
+"gpt-5.3-codex" = "gpt-5.4"
+
+[mcp_servers.trello]
+command = "bash"
+args = ["-lc", 'source ~/.config/.env.TRELLO_API_KEY && source ~/.config/.env.TRELLO_API_TOKEN && export TRELLO_TOKEN="$TRELLO_API_TOKEN" && exec npx -y @delorenj/mcp-server-trello']
+
+[mcp_servers.home-assistant]
+url = "http://192.168.1.243:8086/mcp-secret"
+enabled = true
+
+[tui.model_availability_nux]
+"gpt-5.3-codex-spark" = 4

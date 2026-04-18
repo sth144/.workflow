@@ -1,0 +1,37 @@
+model = "gpt-5.4"
+[projects."/mnt/D/Coding/Projects/Personal/trello-groomer"]
+trust_level = "trusted"
+
+[projects."/mnt/D/Volumes/System/Ubuntu-PC3/usr/local/src/.workflow"]
+trust_level = "trusted"
+
+[projects."/media/pi/Projects"]
+trust_level = "trusted"
+
+[projects."/media/pc0/Projects"]
+trust_level = "trusted"
+
+[projects."/mnt/D/Coding/Projects/Personal/gitlab-devops-hub"]
+trust_level = "trusted"
+
+[projects."/mnt/D/Volumes/System/Ubuntu-PC3/usr/local/src/freecad-client"]
+trust_level = "trusted"
+
+[projects."/mnt/D/Coding/Research/CAD/freecad-mcp"]
+trust_level = "trusted"
+
+[projects."/mnt/D/Volumes/System/Ubuntu-PC3/usr/local/src/workflow-ubuntu3"]
+trust_level = "trusted"
+
+[notice.model_migrations]
+"gpt-5.3-codex" = "gpt-5.4"
+
+[tui.model_availability_nux]
+"gpt-5.3-codex-spark" = 1
+
+[mcp_servers.home-assistant]
+url = "http://192.168.1.243:8086/mcp-secret"
+enabled = true
+
+[plugins."gmail@openai-curated"]
+enabled = true

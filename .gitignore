@@ -4,7 +4,6 @@ backup/*
 
 # build
 stage/*
-!stage/.keep
 
 # ignore any contents within local directory
 src/configs/local/*
