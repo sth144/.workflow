@@ -93,7 +93,18 @@ Entry format: `- HH:MM — <one-sentence summary of what was done>`
 
 ## Skills
 
-@~/.claude/skills/fetch-jira-tickets.md
+Skills in `~/.claude/skills/<name>/SKILL.md` are auto-discovered and invokable via `/<name>`.
+
+Available skills:
+- `fetch-jira-tickets` — fetch assigned Jira tickets, sprint work
+- `slack` — read/send Slack messages, DMs, search (use form data, not JSON!)
+- `playwright-screenshot-to-joplin` — capture screenshots and save to Joplin
+- `sync-prs-to-branch` — sync PRs to a branch
+- `trello-daybook-sync` — sync Trello Today list to Joplin daybook To Do section
+
+Key skills (always in context):
+@~/.claude/skills/fetch-jira-tickets/SKILL.md
+@~/.claude/skills/slack/SKILL.md
 
 ## Agents
 
@@ -119,6 +130,10 @@ Entry format: `- HH:MM — <one-sentence summary of what was done>`
 
 - Bitbucket API token: `~/.config/.env.BITBUCKET_API_TOKEN`
   - This file contains the raw token value (no `export` prefix)
+- Slack tokens (see `slack` skill for usage):
+  - `~/.config/.env.SLACK_WEBHOOK_URL` — webhook for simple posting
+  - `~/.config/.env.SLACK_BOT_TOKEN` — bot token (`xoxb-...`)
+  - `~/.config/.env.SLACK_USER_TOKEN` — user token (`xoxp-...`) for broader access
 
 ## Bitbucket API
 

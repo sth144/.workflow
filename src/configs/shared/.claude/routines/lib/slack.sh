@@ -3,6 +3,7 @@
 
 SLACK_WEBHOOK_URL_FILE="$HOME/.config/.env.SLACK_WEBHOOK_URL"
 SLACK_BOT_TOKEN_FILE="$HOME/.config/.env.SLACK_BOT_TOKEN"
+SLACK_USER_TOKEN_FILE="$HOME/.config/.env.SLACK_USER_TOKEN"
 
 # Post a message to Slack via webhook
 # Usage: slack_post "message text"
@@ -48,4 +49,52 @@ slack_api_post() {
   else
     echo "[slack] No bot token configured at $SLACK_BOT_TOKEN_FILE" >&2
   fi
+}
+
+# Read messages from a channel (requires user token)
+# Usage: slack_read "C12345" [limit]
+# Returns JSON array of messages
+slack_read() {
+    local channel="$1"
+    local limit="${2:-10}"
+    if [[ -f "$SLACK_USER_TOKEN_FILE" ]]; then
+        local token
+        token=$(cat "$SLACK_USER_TOKEN_FILE")
+        curl -s -H "Authorization: Bearer $token" \
+            "https://slack.com/api/conversations.history?channel=$channel&limit=$limit"
+    else
+        echo "[slack] No user token configured at $SLACK_USER_TOKEN_FILE" >&2
+        return 1
+    fi
+}
+
+# List channels the user is in
+# Usage: slack_channels [limit]
+slack_channels() {
+    local limit="${1:-100}"
+    if [[ -f "$SLACK_USER_TOKEN_FILE" ]]; then
+        local token
+        token=$(cat "$SLACK_USER_TOKEN_FILE")
+        curl -s -H "Authorization: Bearer $token" \
+            "https://slack.com/api/conversations.list?limit=$limit&types=public_channel,private_channel"
+    else
+        echo "[slack] No user token configured at $SLACK_USER_TOKEN_FILE" >&2
+        return 1
+    fi
+}
+
+# Search messages
+# Usage: slack_search "query"
+slack_search() {
+    local query="$1"
+    if [[ -f "$SLACK_USER_TOKEN_FILE" ]]; then
+        local token
+        token=$(cat "$SLACK_USER_TOKEN_FILE")
+        curl -s -H "Authorization: Bearer $token" \
+            --data-urlencode "query=$query" \
+            "https://slack.com/api/search.messages"
+    else
+        echo "[slack] No user token configured at $SLACK_USER_TOKEN_FILE" >&2
+        return 1
+    fi
 }

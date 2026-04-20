@@ -7,3 +7,6 @@
 
 # Sprint Summary - Friday at 4pm
 0 16 * * 5 <USER> /bin/bash ~/.claude/routines/sprint-summary.sh >> ~/.claude/routines/logs/sprint-summary.log 2>&1
+
+# Trello Today → Daybook Sync - weekdays at 7am
+0 7 * * 1-5 <USER> /bin/bash ~/.claude/routines/trello-daybook-sync.sh >> ~/.claude/routines/logs/trello-daybook-sync.log 2>&1
