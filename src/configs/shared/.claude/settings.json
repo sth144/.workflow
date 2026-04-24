@@ -143,7 +143,17 @@
   },
   "permissions": {
     "allow": [
-      "Bash(claude:*)"
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "Task(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "NotebookEdit(*)",
+      "mcp__*"
     ]
   },
   "skipDangerousModePermissionPrompt": true,
