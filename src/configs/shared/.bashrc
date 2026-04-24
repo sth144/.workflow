@@ -204,8 +204,7 @@ source ~/.nvm/nvm.sh
 export CDPATH=.:..:../..:$HOME:$HOME/src:$HOME/Projects:$HOME/Coding
 
 # add all utils (and scripts within .config) to PATH
-export PATH="$(find ~/bin/ -type d -printf ":%p"):$PATH"
-export PATH="$HOME/bin:$HOME/bin/*:$PATH"
+export PATH="$(find ~/bin -type d | paste -sd: -):$PATH"
 #export PATH="$(find ~/.config/ -type d -printf ":%p"):$PATH"
 export PATH=$PATH:/opt/sonar/bin
 

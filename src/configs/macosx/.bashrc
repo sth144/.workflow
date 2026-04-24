@@ -204,8 +204,7 @@ if [ -d ~/.nvm ]; then
 fi
 
 # add all utils (and scripts within .config) to PATH
-for d in ~/bin; do PATH="$PATH:$d"; done
-export PATH="$HOME/bin:$HOME/bin/*:$PATH"
+export PATH="$(find ~/bin -type d | paste -sd: -):$PATH"
 #export PATH="$(find ~/.config/ -type d -printf ":%p"):$PATH"
 export PATH=$PATH:/opt/sonar/bin
 

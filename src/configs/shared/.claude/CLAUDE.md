@@ -100,11 +100,13 @@ Available skills:
 - `slack` — read/send Slack messages, DMs, search (use form data, not JSON!)
 - `playwright-screenshot-to-joplin` — capture screenshots and save to Joplin
 - `sync-prs-to-branch` — sync PRs to a branch
-- `trello-daybook-sync` — sync Trello Today list to Joplin daybook To Do section
+- `trello-daybook-sync` — bidirectional sync: Trello Today list <-> Joplin daybook To Do section
+- `jupyter-notebook` — create Jupyter notebooks from templates, promote SQL/analysis to notebooks ("notebook this", "notebook for ESP-456")
 
 Key skills (always in context):
 @~/.claude/skills/fetch-jira-tickets/SKILL.md
 @~/.claude/skills/slack/SKILL.md
+@~/.claude/skills/jupyter-notebook/SKILL.md
 
 ## Agents
 
@@ -160,6 +162,20 @@ Given a URL like `https://bitbucket.org/{organization}/{repo}/pull-requests/{id}
 - `repo` = the repo slug
 - `id` = the PR number
   Then use the API endpoints above (note: API uses `pullrequests`, URLs use `pull-requests`)
+
+## Browser Automation
+
+When browser automation is needed (E2E testing, visual verification, web scraping):
+
+- **Prefer Chrome DevTools MCP** (`mcp__chrome-devtools__*`) over Playwright MCP (`mcp__playwright__*`)
+  - Chrome DevTools MCP connects to the user's real Chrome browser — no instrumented/slow dev browser
+  - Much faster: real Chrome loads pages at normal speed, Playwright's instrumented browser is 100-200x slower
+  - AskL7 and other ESP bundles load reliably in real Chrome (they often fail to load in Playwright's fresh browser instance)
+  - Use `evaluate_script` for DOM interactions, `take_snapshot` for accessibility tree, `take_screenshot` for visual verification
+- **Playwright MCP** is acceptable as a fallback if Chrome DevTools MCP is unavailable
+- **For long-running test sequences**, batch multiple actions into a single `evaluate_script` call to avoid CDP protocol timeouts
+- **Screen recording**: Use `ffmpeg -f avfoundation -capture_cursor 1 -i "1:none"` on macOS (requires Screen Recording permission for the terminal app in System Settings > Privacy & Security)
+- **Launching Chrome with CDP**: Quit Chrome completely first, then: `/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222`
 
 ## Git Workflow
 

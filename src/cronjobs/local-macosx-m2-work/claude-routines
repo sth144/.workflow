@@ -10,3 +10,9 @@
 
 # Trello Today → Daybook Sync - weekdays at 7am
 0 7 * * 1-5 <USER> /bin/bash ~/.claude/routines/trello-daybook-sync.sh >> ~/.claude/routines/logs/trello-daybook-sync.log 2>&1
+
+# Weekly Daybook Notebook - Friday at 3pm
+0 15 * * 5 <USER> /bin/bash ~/.claude/routines/weekly-notebook.sh >> ~/.claude/routines/logs/weekly-notebook.log 2>&1
+
+# Sprint Review Notebook - Friday at 4:15pm
+15 16 * * 5 <USER> /bin/bash ~/.claude/routines/sprint-notebook.sh >> ~/.claude/routines/logs/sprint-notebook.log 2>&1
