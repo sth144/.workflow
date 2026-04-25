@@ -178,9 +178,17 @@ def parse_ip_neigh(stdout: str) -> list[dict[str, str]]:
 
 
 def resolve_hostname(ip_value: str) -> str:
+    code, stdout, _stderr = run_command(["avahi-resolve", "-a", ip_value], timeout=10)
+    if code == 0:
+        parts = stdout.strip().split(maxsplit=1)
+        if len(parts) == 2:
+            hostname = parts[1].strip().rstrip(".")
+            if hostname:
+                return hostname
+
     try:
         host, _aliases, _ips = socket.gethostbyaddr(ip_value)
-        return host.strip()
+        return host.strip().rstrip(".")
     except Exception:
         return ""
 

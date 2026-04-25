@@ -1,0 +1,52 @@
+BACKUP_NAME="local-ubuntu-pc"
+BACKUP_HOSTNAME="$(hostname)"
+BACKUP_OWNER="sthinds"
+BACKUP_GROUP="sthinds"
+BACKUP_HOME="/home/sthinds"
+
+LOCAL_MOUNTPOINT="/mnt/D"
+REMOTE_MOUNTPOINT="/media/omv"
+LOCAL_BACKUP_ROOT="/mnt/D/Archives/Backups/local-ubuntu-pc"
+REMOTE_BACKUP_ROOT="/media/omv/Archives/Backups/local-ubuntu-pc"
+REQUIRE_REMOTE_MIRROR="true"
+
+LOCAL_MIN_FREE_GB=20
+REMOTE_MIN_FREE_GB=50
+
+KEEP_DAILY_DAYS=14
+KEEP_WEEKLY_WEEKS=8
+KEEP_MONTHLY_MONTHS=6
+
+HOME_INCLUDE_PATHS=(
+    "/home/sthinds/.bash_profile"
+    "/home/sthinds/.bashrc"
+    "/home/sthinds/.profile"
+    "/home/sthinds/.ssh"
+    "/home/sthinds/.gnupg"
+    "/home/sthinds/.config"
+    "/home/sthinds/.local/share"
+    "/home/sthinds/bin"
+    "/home/sthinds/Coding"
+    "/home/sthinds/Documents"
+)
+
+HOME_EXCLUDE_PATTERNS=(
+    ".cache/"
+    ".local/share/Trash/"
+    ".local/share/containers/"
+    ".mozilla/firefox/*/cache2/"
+    "Downloads/"
+    "tmp/"
+)
+
+ETC_INCLUDE_PATHS=(
+    "/etc/fstab"
+    "/etc/hosts"
+    "/etc/hostname"
+    "/etc/crontab"
+    "/etc/cron.d"
+    "/etc/systemd/system"
+    "/etc/default"
+    "/etc/NetworkManager"
+    "/etc/samba"
+)

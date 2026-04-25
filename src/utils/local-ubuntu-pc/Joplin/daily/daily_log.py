@@ -419,7 +419,7 @@ def fetch_trello_cards(
     return out
 
 
-def fetch_trello_list_cards(cfg: Config, list_name: str) -> list[dict[str, str]]:
+def fetch_trello_list_cards(cfg: Config, list_name: str) -> list[dict[str, Any]]:
     if not (cfg.trello_key and cfg.trello_token):
         return []
     board_id = resolve_trello_board_id(cfg)
@@ -452,6 +452,7 @@ def fetch_trello_list_cards(cfg: Config, list_name: str) -> list[dict[str, str]]
             "key": cfg.trello_key,
             "token": cfg.trello_token,
             "fields": "id,name,shortUrl,due,dueComplete,pos",
+            "checklists": "all",
             "filter": "open",
         },
         timeout=30,
@@ -459,14 +460,29 @@ def fetch_trello_list_cards(cfg: Config, list_name: str) -> list[dict[str, str]]
     cards_resp.raise_for_status()
     cards = cards_resp.json() or []
     cards.sort(key=lambda card: float(card.get("pos", 0) or 0))
-    out: list[dict[str, str]] = []
+    out: list[dict[str, Any]] = []
     for card in cards[: cfg.trello_todo_limit]:
+        checklist_items: list[dict[str, str]] = []
+        for checklist in card.get("checklists", []) or []:
+            for item in checklist.get("checkItems", []) or []:
+                name = str(item.get("name", "")).strip()
+                if not name:
+                    continue
+                checklist_items.append(
+                    {
+                        "name": name,
+                        "done": "true"
+                        if str(item.get("state", "")).strip() == "complete"
+                        else "false",
+                    }
+                )
         out.append(
             {
                 "name": str(card.get("name", "")).strip() or "(Untitled card)",
                 "url": str(card.get("shortUrl", "")).strip(),
                 "due": str(card.get("due", "")).strip(),
                 "done": "true" if bool(card.get("dueComplete")) else "false",
+                "checklist_items": checklist_items,
             }
         )
     return out
@@ -983,7 +999,7 @@ def build_generated_md(
     today: dt.date,
     window_label: str,
     headlines: list[dict[str, str]],
-    todo_cards: list[dict[str, str]],
+    todo_cards: list[dict[str, Any]],
     trello_cards: list[dict[str, str]],
     events: list[dict[str, str]],
     ha_snapshot: list[dict[str, str]],
@@ -1008,6 +1024,10 @@ def build_generated_md(
                 lines.append(f"- [ ] [{card['name']}]({card['url']}){due}")
             else:
                 lines.append(f"- [ ] {card['name']}{due}")
+            if str(card.get("name", "")).strip().casefold() == "sprint":
+                for item in card.get("checklist_items", []) or []:
+                    marker = "x" if item.get("done") == "true" else " "
+                    lines.append(f"    - [{marker}] {item['name']}")
     else:
         lines.append(f"- (No cards found in `{cfg.trello_todo_list_name}`)")
     lines += [

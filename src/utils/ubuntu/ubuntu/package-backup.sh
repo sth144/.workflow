@@ -1,41 +1,36 @@
 #!/bin/bash
 
+set -euo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null && pwd)
+
 make_backup() {
-    BACKUP_TMP_DIR="$HOME/tmp/$(whoami)@$(hostname).apt.$(date +%Y-%m-%d)"
-    mkdir -p $BACKUP_TMP_DIR
-    dpkg --get-selections > "$BACKUP_TMP_DIR/Package.list"
-    sudo cp -R /etc/apt/sources.list* "$BACKUP_TMP_DIR"
-    sudo apt-key exportall > "$BACKUP_TMP_DIR/Repo.keys"
-    mkdir -p $BACKUP_TMP_DIR/profile
-    rsync --progress /home/`whoami` $BACKUP_TMP_DIR/profile
-    
-    zip -r "$BACKUP_TMP_DIR.zip" $BACKUP_TMP_DIR
-    # move zip to backup location
-    mkdir -p $HOME/Drive/D/Archives/Backups/$(whoami)@$(hostname)
-    mv "$BACKUP_TMP_DIR.zip" $HOME/Drive/D/Archives/Backups/$(whoami)@$(hostname)/
-    sudo rm -rf $BACKUP_TMP_DIR
+    exec "$SCRIPT_DIR/run_local_backup.sh"
 }
 
 revert_to_backup() {
-    ARCHIVE_ZIP_NAME=$1
+    local snapshot_dir="${1:-}"
 
-    echo "Revert $ARCHIVE_ZIP_NAME"
+    if [[ -z "$snapshot_dir" ]]; then
+        echo "Usage: $0 revert_to_backup <snapshot-dir>" >&2
+        exit 1
+    fi
 
-    cp $ARCHIVE_ZIP_NAME $HOME/tmp/
-    cd $HOME/tmp
-
-    unzip $ARCHIVE_ZIP_NAME -d ./archive
-
-    sudo apt-key add ./archive/Repo.keys
-    sudo cp -R ./archive/sources.list* /etc/apt/
-    sudo apt-get update
-    sudo apt-get install dselect
-    sudo dpkg --set-selections < ./archive/Package.list
-    sudo dselect
-
-    # TODO: cleanup
-    rm -rf archive
-    rm -rf $ARCHIVE_ZIP_NAME
+    exec "$SCRIPT_DIR/restore_local_backup.sh" restore-packages "$snapshot_dir"
 }
 
-$1 $2 $3
+command_name="${1:-make_backup}"
+shift || true
+
+case "$command_name" in
+    make_backup)
+        make_backup "$@"
+        ;;
+    revert_to_backup)
+        revert_to_backup "$@"
+        ;;
+    *)
+        echo "Unknown command: $command_name" >&2
+        exit 1
+        ;;
+esac
