@@ -185,6 +185,28 @@ update_cronjobs() {
 	fi
 }
 
+update_launchagents() {
+	if [[ $(uname) != "Darwin" ]]; then
+		echo "Skipping LaunchAgents (not macOS)"
+		return
+	fi
+
+	AGENTS_DIR="$HOME/Library/LaunchAgents"
+	mkdir -p "$AGENTS_DIR"
+
+	for plist in "$BASE_ABS/stage/Library/LaunchAgents/com.workflow."*; do
+		[ -f "$plist" ] || continue
+		label=$(basename "$plist" .plist)
+		# Unload if already loaded (ignore errors for agents not yet registered)
+		launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true
+		cp "$plist" "$AGENTS_DIR/"
+		launchctl bootstrap "gui/$(id -u)" "$AGENTS_DIR/$(basename "$plist")"
+		echo "  loaded: $label"
+	done
+
+	echo "LaunchAgents updated"
+}
+
 update_systemd_services() {
 	if [ -d /etc/systemd ]; then
 

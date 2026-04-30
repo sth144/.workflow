@@ -17,7 +17,7 @@ stage: clean
 	./admin/install.sh stage
 
 .PHONY: install
-install: update_cronjobs update_systemd_services copy_staged_to_home enable_utils update_bashrc update_root refresh
+install: update_cronjobs update_launchagents update_systemd_services copy_staged_to_home enable_utils update_bashrc update_root refresh
 	@echo "installing configs and utils"
 
 # copy config build to ~/.config dot directory
@@ -32,6 +32,10 @@ copy_staged_to_home:
 update_cronjobs:
 	@echo "installing cronjobs in /etc/cron.d/"
 	./admin/install.sh update_cronjobs
+
+update_launchagents:
+	@echo "installing LaunchAgents in ~/Library/LaunchAgents/"
+	./admin/install.sh update_launchagents
 
 update_systemd_services:
 	@echo "installing systemd services in /etc/systemd/system/"
@@ -64,6 +68,7 @@ clean:
 	rm -rf ./stage/**/*
 	rm -rf ./stage/bin
 	rm -rf ./stage/.config
+	rm -rf ./stage/Library
 
 .PHONY: backup
 backup:

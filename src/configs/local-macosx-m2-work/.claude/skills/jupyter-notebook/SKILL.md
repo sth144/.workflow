@@ -105,15 +105,102 @@ Created automatically by the `sprint-notebook.sh` routine on Fridays, or on dema
     --title "Sprint Review — Week $(date +%V)"
   ```
 
-## Linking Notebooks to Joplin
+## Linking Notebooks & Images to Joplin
 
-After creating a notebook, offer to add a reference in the Joplin daybook:
+After creating a notebook, offer to add a reference in the Joplin daybook.
+
+### Notebook Links
+Plain markdown links work for notebook files:
 ```
 [notebook: <title>](file:///Users/seanhinds/Coding/Research/notebooks/<path>)
 ```
 
+### Embedding Images in Joplin Notes
+**Do NOT use `file://` links for images** — Joplin will not render them inline.
+Instead, upload the image as a Joplin resource via the REST API and reference
+it with the `:/<resource_id>` syntax.
+
+```bash
+# 1. Get the Joplin API token
+JOPLIN_TOKEN=$(python3 -c "import json; print(json.load(open('$HOME/.config/joplin-desktop/settings.json'))['api.token'])")
+
+# 2. Upload the image as a resource
+RESOURCE_ID=$(curl -s -X POST "http://localhost:41184/resources?token=$JOPLIN_TOKEN" \
+  -F "data=@/path/to/image.png" \
+  -F 'props={"title":"Image Title","mime":"image/png"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+
+# 3. Reference in note body using Joplin resource syntax
+# ![Alt text](:/RESOURCE_ID)
+```
+
+The Joplin MCP server does not have an attach-resource tool, so this must
+be done via curl against the Joplin REST API (port 41184 by default).
+
+## ESP Database Schema Reference
+
+When generating SQL for ESP notebooks, use these correct table and column names.
+**Do not guess column names** — refer to this reference.
+
+### Row-Level Security (RLS)
+All ESP tables enforce `tenant = CURRENT_USER`. The `jupyter_utils.get_db_engine()`
+function auto-detects the correct tenant user (`db_l7esp` or `l7esp`). Do not
+hardcode a user in notebooks — rely on `jupyter_utils`.
+
+### Core Tables & Primary Keys
+| Table | Primary Key | Notes |
+|-------|-------------|-------|
+| `resource` | `resource_id` (int) | Universal entity table — NOT `id` |
+| `resource_action` | `resource_action_id` (int) | Audit trail — NOT `id` |
+| `resource_var` | (resource_id + var) | Attribute/variable definitions |
+| `resource_val` | (resource_id + var) | Attribute values |
+| `resource_group` | `resource_group_id` | Groups |
+| `resource_tag` | composite | Tag associations |
+| `esp_cls_definition` | `clsid` (int) | Class/type registry — NOT `id` |
+| `lab7_user` | (resource_id FK) | User accounts |
+| `user_session` | `user_session_id` | Login sessions |
+| `notifications` | `id` | System notifications |
+| `workflow_definition` | `workflow_id` | Workflow templates |
+| `protocol_definition` | `protocol_id` | Protocol templates |
+| `workflow_instance` | `workflow_id` | Running/completed workflows |
+| `protocol_instance` | `protocol_id` | Running/completed protocols |
+| `sample` | `sample_id` | Sample records |
+| `sample_type_definition` | `sample_type_id` | Sample type templates |
+
+### Key Columns on `resource`
+`resource_id`, `uuid`, `name`, `url`, `desc`, `barcode`, `cls` (FK to
+`esp_cls_definition.clsid`), `archived`, `created_timestamp`,
+`updated_timestamp`, `owner_resource_id`, `r_state`, `tenant`
+
+### Key Columns on `resource_action`
+`resource_action_id`, `resource_id` (FK), `agent_id` (FK to resource),
+`desc`, `timestamp`, `level`, `meta` (jsonb), `tenant`
+
+### Common Join Pattern
+```sql
+-- Resource with its class name
+SELECT r.name, cd.name AS type
+FROM resource r
+JOIN esp_cls_definition cd ON r.cls = cd.clsid
+```
+
+### `pg_stat_user_tables` Warning
+`n_live_tup` is **unreliable under RLS** — it may show 0 or 1 for tables
+that actually have thousands of rows. When accurate counts matter, run
+`SELECT COUNT(*) FROM <table>` instead.
+
+### Pandas Type Casting
+SQL `COUNT(*)` / `bigint` columns may arrive as `float64` in pandas. Cast
+with `.astype(int)` before passing to matplotlib bar/barh charts to avoid
+`TypeError: 'value' must be an instance of str or bytes, not a float`.
+
+### Required Python Packages
+The notebook kernel (`.venv`) must have: `matplotlib`, `seaborn`, `plotly`,
+`pandas`, `numpy`, `sqlalchemy`, `psycopg2-binary`, `nbformat`.
+Install via: `pip install matplotlib seaborn plotly pandas sqlalchemy psycopg2-binary nbformat`
+
 ## Error Handling
-- **Missing dependencies**: Suggest `pip install pandas matplotlib plotly seaborn sqlalchemy psycopg2-binary jupyter`
-- **DB connection fails**: Check ESP is running and `ESP_DB_*` env vars are set
+- **Missing dependencies**: Suggest `pip install pandas matplotlib plotly seaborn sqlalchemy psycopg2-binary nbformat jupyter`
+- **DB connection fails**: Check ESP is running; `jupyter_utils` auto-detects the tenant user
 - **Template not found**: Run `python ~/.claude/skills/jupyter-notebook/lib/jupyter_utils.py list` to show available templates
 - **Directory doesn't exist**: The CLI creates parent directories automatically

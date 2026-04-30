@@ -29,25 +29,64 @@ DEFAULT_DAYBOOK_DIR = Path.home() / "Coding" / "Research" / "daybook"
 
 # ESP database defaults (override via environment)
 ESP_DB_HOST = os.getenv("ESP_DB_HOST", "localhost")
-ESP_DB_PORT = os.getenv("ESP_DB_PORT", "5432")
-ESP_DB_NAME = os.getenv("ESP_DB_NAME", "esp")
-ESP_DB_USER = os.getenv("ESP_DB_USER", "postgres")
-ESP_DB_PASS = os.getenv("ESP_DB_PASSWORD", "postgres")
+ESP_DB_PORT = os.getenv("ESP_DB_PORT", "1487")
+ESP_DB_NAME = os.getenv("ESP_DB_NAME", "lab7")
+ESP_DB_USER = os.getenv("ESP_DB_USER", "db_l7esp")
+ESP_DB_PASS = os.getenv("ESP_DB_PASSWORD", "db_l7esp")
+
+# Candidate DB users to try, in order.  ESP uses row-level security keyed
+# on ``tenant = CURRENT_USER``, so only the user whose name matches the
+# tenant column will see data.  We try the common tenant users and pick
+# the first one that actually has rows in ``resource``.
+_ESP_DB_USER_CANDIDATES = ["db_l7esp", "l7esp"]
 
 
 # ---------------------------------------------------------------------------
 # Library functions (imported within notebooks)
 # ---------------------------------------------------------------------------
 
+def _db_url(user: str, password: str) -> str:
+    """Build a SQLAlchemy PostgreSQL URL."""
+    return f"postgresql://{user}:{password}@{ESP_DB_HOST}:{ESP_DB_PORT}/{ESP_DB_NAME}"
+
+
 def get_db_url() -> str:
     """Return a SQLAlchemy-compatible PostgreSQL URL for the ESP database."""
-    return f"postgresql://{ESP_DB_USER}:{ESP_DB_PASS}@{ESP_DB_HOST}:{ESP_DB_PORT}/{ESP_DB_NAME}"
+    return _db_url(ESP_DB_USER, ESP_DB_PASS)
 
 
 def get_db_engine():
-    """Create and return a SQLAlchemy engine for the ESP database."""
-    from sqlalchemy import create_engine
-    return create_engine(get_db_url())
+    """Create and return a SQLAlchemy engine for the ESP database.
+
+    If the configured user sees no rows in ``resource`` (likely an RLS
+    tenant mismatch), automatically tries other known ESP tenant users.
+    """
+    from sqlalchemy import create_engine, text
+
+    engine = create_engine(get_db_url())
+    try:
+        with engine.connect() as conn:
+            count = conn.execute(text("SELECT COUNT(*) FROM resource")).scalar()
+            if count and count > 1:
+                return engine
+    except Exception:
+        pass
+
+    # Try alternate tenant users
+    for user in _ESP_DB_USER_CANDIDATES:
+        if user == ESP_DB_USER:
+            continue
+        try:
+            candidate = create_engine(_db_url(user, user))
+            with candidate.connect() as conn:
+                count = conn.execute(text("SELECT COUNT(*) FROM resource")).scalar()
+                if count and count > 1:
+                    return candidate
+        except Exception:
+            continue
+
+    # Fall back to originally configured engine
+    return engine
 
 
 def query_df(sql: str, params=None):

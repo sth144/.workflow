@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.workflow.sprint-notebook</string>
+
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/cron/run_once_daily.sh</string>
+		<string>/bin/bash</string>
+		<string>/Users/<USER>/.claude/routines/sprint-notebook.sh</string>
+	</array>
+
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Weekday</key>
+		<integer>5</integer>
+		<key>Hour</key>
+		<integer>16</integer>
+		<key>Minute</key>
+		<integer>15</integer>
+	</dict>
+
+	<key>StandardOutPath</key>
+	<string>/Users/<USER>/.claude/routines/logs/sprint-notebook.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/<USER>/.claude/routines/logs/sprint-notebook.log</string>
+</dict>
+</plist>

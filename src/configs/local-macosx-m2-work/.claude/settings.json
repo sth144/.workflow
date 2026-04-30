@@ -1,0 +1,174 @@
+{
+  "alwaysThinkingEnabled": true,
+  "extraKnownMarketplaces": {
+    "l7esp": {
+      "source": {
+        "source": "directory",
+        "path": "/usr/local/src/l7esp-claude-plugins"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "l7esp@l7esp": true,
+    "frontend-design@claude-plugins-official": true
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/openisland-wrapper.sh --source claude",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/openisland-wrapper.sh --source claude",
+            "timeout": 86400,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/openisland-wrapper.sh --source claude",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/openisland-wrapper.sh --source claude",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/openisland-wrapper.sh --source claude",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/openisland-wrapper.sh --source claude",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/openisland-wrapper.sh --source claude",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/openisland-wrapper.sh --source claude",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME\/.claude\/hooks\/daybook-reminder.sh",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      },
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/openisland-wrapper.sh --source claude",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/openisland-wrapper.sh --source claude",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/openisland-wrapper.sh --source claude",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/openisland-wrapper.sh --source claude",
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "Task(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "NotebookEdit(*)",
+      "mcp__*"
+    ]
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "statusLine": {
+    "command": "npx -y ccstatusline@latest",
+    "padding": 0,
+    "type": "command"
+  }
+}
