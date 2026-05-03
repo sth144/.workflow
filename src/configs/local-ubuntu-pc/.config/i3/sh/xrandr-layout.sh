@@ -7,53 +7,54 @@ is_connected() {
 }
 
 cmd=(xrandr)
+aoc_connected=false
+dell_connected=false
+ktc_connected=false
 
-left_output="HDMI-1-0"
-center_output="HDMI-1"
-right_output="DVI-D-1-0"
-
-left_connected=false
-center_connected=false
-right_connected=false
-
-if is_connected "$left_output"; then
-  left_connected=true
+if is_connected "DVI-D-1-0"; then
+  aoc_connected=true
 fi
 
-if is_connected "$center_output"; then
-  center_connected=true
+if is_connected "HDMI-1-0"; then
+  dell_connected=true
 fi
 
-if is_connected "$right_output"; then
-  right_connected=true
+if is_connected "HDMI-1"; then
+  ktc_connected=true
 fi
 
-if "$left_connected"; then
-  cmd+=(--output "$left_output" --mode 1680x1050 --rotate left)
+# Known monitor mapping on this host:
+# HDMI-1-0   = Dell P2210 (left, 1680x1050)
+# HDMI-1     = KTC (primary, middle, 3840x2160)
+# DVI-D-1-0  = AOC (right, 2560x1440)
+if "$ktc_connected"; then
+  cmd+=(--output HDMI-1 --primary --mode 3840x2160 --rotate normal)
 else
-  cmd+=(--output "$left_output" --off)
+  cmd+=(--output HDMI-1 --off)
 fi
 
-if "$center_connected"; then
-  if "$left_connected"; then
-    cmd+=(--output "$center_output" --primary --mode 3840x2160 --rotate normal --right-of "$left_output")
+if "$dell_connected"; then
+  if "$ktc_connected"; then
+    cmd+=(--output HDMI-1-0 --mode 1680x1050 --rotate left --left-of HDMI-1)
+  elif "$aoc_connected"; then
+    cmd+=(--output HDMI-1-0 --primary --mode 1680x1050 --rotate left --left-of DVI-D-1-0)
   else
-    cmd+=(--output "$center_output" --primary --mode 3840x2160 --rotate normal)
+    cmd+=(--output HDMI-1-0 --primary --mode 1680x1050 --rotate left)
   fi
 else
-  cmd+=(--output "$center_output" --off)
+  cmd+=(--output HDMI-1-0 --off)
 fi
 
-if "$right_connected"; then
-  if "$center_connected"; then
-    cmd+=(--output "$right_output" --mode 2560x1440 --rotate normal --right-of "$center_output")
-  elif "$left_connected"; then
-    cmd+=(--output "$right_output" --mode 2560x1440 --rotate normal --right-of "$left_output")
+if "$aoc_connected"; then
+  if "$ktc_connected"; then
+    cmd+=(--output DVI-D-1-0 --mode 2560x1440 --rotate normal --right-of HDMI-1)
+  elif "$dell_connected"; then
+    cmd+=(--output DVI-D-1-0 --mode 2560x1440 --rotate normal --right-of HDMI-1-0)
   else
-    cmd+=(--output "$right_output" --primary --mode 2560x1440 --rotate normal)
+    cmd+=(--output DVI-D-1-0 --primary --mode 2560x1440 --rotate normal)
   fi
 else
-  cmd+=(--output "$right_output" --off)
+  cmd+=(--output DVI-D-1-0 --off)
 fi
 
 "${cmd[@]}"
