@@ -1,0 +1,98 @@
+---
+- name: Bootstrap LAN hosts for Ansible management
+  hosts: all
+  gather_facts: false
+
+  vars:
+    bootstrap_manage_user: "{{ ansible_user | default('root') }}"
+    bootstrap_authorized_key_file: ""
+    bootstrap_baseline_packages:
+      - python3
+      - python3-apt
+      - sudo
+    bootstrap_manage_home: >-
+      {{
+        '/root'
+        if bootstrap_manage_user == 'root'
+        else '/home/' ~ bootstrap_manage_user
+      }}
+
+  tasks:
+    - name: Ensure python3 is available for Ansible modules
+      raw: |
+        set -eu
+        if command -v python3 >/dev/null 2>&1; then
+          exit 0
+        fi
+
+        if command -v apt-get >/dev/null 2>&1; then
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-apt sudo
+          exit 0
+        fi
+
+        if command -v dnf >/dev/null 2>&1; then
+          sudo dnf install -y python3 sudo
+          exit 0
+        fi
+
+        if command -v yum >/dev/null 2>&1; then
+          sudo yum install -y python3 sudo
+          exit 0
+        fi
+
+        if command -v zypper >/dev/null 2>&1; then
+          sudo zypper --non-interactive install python3 sudo
+          exit 0
+        fi
+
+        if command -v apk >/dev/null 2>&1; then
+          sudo apk add --no-cache python3 sudo
+          exit 0
+        fi
+
+        echo "Unsupported package manager for bootstrap" >&2
+        exit 1
+      changed_when: false
+
+    - name: Verify Ansible can connect after python bootstrap
+      ping:
+
+    - name: Gather minimal facts
+      setup:
+        gather_subset:
+          - min
+
+    - name: Install baseline packages
+      become: true
+      package:
+        name: "{{ bootstrap_baseline_packages }}"
+        state: present
+      when: bootstrap_baseline_packages | length > 0
+
+    - name: Ensure SSH directory exists for managed user
+      become: true
+      file:
+        path: "{{ bootstrap_manage_home }}/.ssh"
+        state: directory
+        owner: "{{ bootstrap_manage_user }}"
+        mode: "0700"
+      when: bootstrap_authorized_key_file | length > 0
+
+    - name: Install authorized public key for managed user
+      become: true
+      lineinfile:
+        path: "{{ bootstrap_manage_home }}/.ssh/authorized_keys"
+        line: "{{ lookup('file', bootstrap_authorized_key_file) }}"
+        create: true
+        owner: "{{ bootstrap_manage_user }}"
+        mode: "0600"
+      when: bootstrap_authorized_key_file | length > 0
+
+    - name: Summarize bootstrap target
+      debug:
+        msg:
+          host: "{{ inventory_hostname }}"
+          address: "{{ ansible_host | default(inventory_hostname) }}"
+          user: "{{ bootstrap_manage_user }}"
+          key_managed: "{{ bootstrap_authorized_key_file | length > 0 }}"

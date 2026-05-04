@@ -60,6 +60,20 @@ Do not manually maintain duplicate behavior across layers unless required; prefe
 - Avoid destructive git operations (`reset --hard`, checkout discard) unless explicitly requested.
 - Assume existing uncommitted user edits are intentional; do not revert unrelated changes.
 
+## LAN Ops
+- Local-network Codex workflows live under `src/configs/local-macosx-m4/.codex/{agents,skills}` and `src/utils/local-macosx-m4/lan/`.
+- Treat `src/utils/local-macosx-m4/lan/inventory/lan.yml` as the default LAN inventory for this workstation configuration unless the user explicitly overrides it.
+- Prefer the tracked wrappers over ad hoc commands:
+  - `bin/lan/lan-network-map.py`
+  - `bin/lan/lan-ops.sh`
+  - `bin/lan/lan-bootstrap.sh`
+  - `bin/lan/lan-control-node.sh`
+- Default to discovery or preview mode for remote operations.
+- If local Ansible tooling is missing, bootstrap the control node first with `bin/lan/lan-control-node.sh doctor` and then `bin/lan/lan-control-node.sh install --approve` when explicitly approved.
+- Require explicit user approval before any remote state-changing action, including approved Ansible playbook applies.
+- Prefer Ansible playbooks for changes and direct SSH only for narrow diagnostics.
+- Keep SSH keys, secrets, and password material out of tracked files.
+
 ## Validation Expectations
 For content changes:
 1. Run `make stage` (and `make prune` if relevant).

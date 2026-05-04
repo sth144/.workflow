@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bootstrap Host"
+  short_description: "Prepare LAN hosts for SSH and Ansible safely"
+  default_prompt: "Use $bootstrap-host to preview the bootstrap playbook for a specific LAN host, then apply it only after explicit approval."

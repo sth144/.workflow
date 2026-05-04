@@ -1,0 +1,4 @@
+interface:
+  display_name: "Network Map"
+  short_description: "Map known LAN systems and simple reachability"
+  default_prompt: "Use $network-map to show which known LAN hosts appear reachable right now and summarize the inventory groups."

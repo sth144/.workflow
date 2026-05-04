@@ -1,0 +1,4 @@
+interface:
+  display_name: "Control Node Bootstrap"
+  short_description: "Prepare this Mac for LAN Ansible control"
+  default_prompt: "Use $control-node-bootstrap to diagnose local LAN control-node prerequisites, preview the install plan, and only install after explicit approval."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ansible Ops"
+  short_description: "Inspect inventory and run safer LAN playbooks"
+  default_prompt: "Use $ansible-ops to inspect the LAN inventory, preview the right playbook, and only apply it after explicit approval."
