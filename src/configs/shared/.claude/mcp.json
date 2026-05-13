@@ -4,7 +4,7 @@
       "command": "/bin/bash",
       "args": [
         "-c",
-        "cd /usr/local/src/joplin_mcp && if [ -f /.dockerenv ]; then export JOPLIN_BASE_URL=http://host.docker.internal:41184; export UV_PROJECT_ENVIRONMENT=/tmp/joplin-mcp-venv; else export UV_PROJECT_ENVIRONMENT=$HOME/.cache/joplin-mcp-venv; fi && uv sync >&2 && exec $UV_PROJECT_ENVIRONMENT/bin/python src/mcp/joplin_mcp.py"
+        "cd /usr/local/src/joplin_mcp && if [ -f /.dockerenv ]; then export JOPLIN_BASE_URL=http://host.docker.internal:41184; export UV_PROJECT_ENVIRONMENT=$HOME/.cache/joplin-mcp-venv; else export UV_PROJECT_ENVIRONMENT=$HOME/.cache/joplin-mcp-venv; fi && uv sync >&2 && exec $UV_PROJECT_ENVIRONMENT/bin/python src/mcp/joplin_mcp.py"
       ],
       "env": {
         "JOPLIN_TOKEN": "${JOPLIN_TOKEN}"
