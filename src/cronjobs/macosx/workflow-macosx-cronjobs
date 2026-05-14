@@ -1,3 +1,11 @@
+# Daily: Archive desktop screen recordings and screenshots
 0 0 * * * <USER> /bin/bash /usr/local/bin/cron/archive_desktop_screen_recordings.sh >> ~/.cronjob.log 2>&1
+
+# Weekly (Sunday midnight): Clear system icon cache if bloated
 0 0 * * 0 root /bin/bash /usr/local/bin/cron/clear_system_icons_cache.sh
+
+# Weekly (Sunday 1am): Clean up old files in ~/Drawer
+0 1 * * 0 <USER> /bin/bash /usr/local/bin/cron/cleanup_drawer.sh
+
+# Every 30 minutes: Memory watchdog
 */30 * * * * <USER> /bin/bash /usr/local/bin/cron/mem_watchdog.sh

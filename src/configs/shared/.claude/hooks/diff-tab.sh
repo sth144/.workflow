@@ -58,14 +58,41 @@ if [ "$success" = "false" ] || [ "$success" = "error" ]; then
   exit 0
 fi
 
-# Resolve the VSCode CLI. Prefer the active vscode-server install (matches the
-# IDE the user is actually attached to). Fall back to PATH.
+# Resolve the VSCode CLI.
+# Priority order:
+# 1. VSCODE_GIT_ASKPASS_NODE points to the active VSCode's node; derive CLI from it
+# 2. Remote/devcontainer vscode-server paths
+# 3. macOS host app bundle
+# 4. PATH fallback
+# 5. Dynamic search as last resort
 code_bin=""
-for candidate in \
-  "$HOME/.vscode-server/bin"/*/bin/remote-cli/code \
-  "$(command -v code 2>/dev/null)"; do
-  [ -n "$candidate" ] && [ -x "$candidate" ] && { code_bin="$candidate"; break; }
-done
+
+# Method 1: Derive from VSCODE_GIT_ASKPASS_NODE (most reliable for active connection)
+if [ -n "${VSCODE_GIT_ASKPASS_NODE:-}" ]; then
+  # Path looks like: ~/.vscode-server/bin/<hash>/node
+  # CLI is at:       ~/.vscode-server/bin/<hash>/bin/remote-cli/code
+  vscode_dir=$(dirname "$(dirname "$VSCODE_GIT_ASKPASS_NODE")")
+  candidate="$vscode_dir/bin/remote-cli/code"
+  [ -x "$candidate" ] && code_bin="$candidate"
+fi
+
+# Method 2: Check known static paths
+if [ -z "$code_bin" ]; then
+  for candidate in \
+    "$HOME/.vscode-server/bin"/*/bin/remote-cli/code \
+    /vscode/vscode-server/bin/*/bin/remote-cli/code \
+    "$HOME/.vscode-remote/bin"/*/bin/remote-cli/code \
+    "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" \
+    "$(command -v code 2>/dev/null)"; do
+    [ -n "$candidate" ] && [ -x "$candidate" ] && { code_bin="$candidate"; break; }
+  done
+fi
+
+# Method 3: Dynamic search (devcontainers with non-standard user homes)
+if [ -z "$code_bin" ]; then
+  candidate=$(find /home -maxdepth 5 -path '*/.vscode-server/bin/*/bin/remote-cli/code' -type f 2>/dev/null | head -1)
+  [ -n "$candidate" ] && [ -x "$candidate" ] && code_bin="$candidate"
+fi
 
 if [ -z "$code_bin" ]; then
   rm -f "$snapshot"
