@@ -5,6 +5,10 @@
 
 set -euo pipefail
 mkdir -p ~/.claude/routines/logs
+
+# LaunchAgents have a minimal environment — load secrets and PATH
+source /usr/local/bin/os/source_env_files.sh 2>/dev/null || true
+export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 mkdir -p ~/Coding/Research/notebooks/sprints
 
 WEEK=$(date +%V)

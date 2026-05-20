@@ -147,12 +147,13 @@ update_home() {
 		sudo rm -rf ~/stage
 		sudo rm -rf ~/cronjobs
 		sudo rm -rf ~/systemd
+		echo "Creating workflow cache and log directories"
+		mkdir -p ~/.cache/.workflow
+		mkdir -p ~/.claude/routines/logs
+		echo "Enabling executables"
+		find ~/bin/ -type f -exec chmod u+x {} \;
+		sudo find /usr/local/bin/ -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
 	fi
-
-	echo "Creating workflow cache"
-	mkdir -p ~/.cache/.workflow
-	echo "Enabling executables"
-	find ~/bin/ -type f -exec chmod u+x {} \;
 }
 
 update_root() {
@@ -170,10 +171,13 @@ update_cronjobs() {
 		COMBINED="/etc/cron.d/workflow_crontab"
 		# Combine, strip comments/blanks, and remove the "user" field (6th field)
 
-		find /etc/cron.d -type f ! -name 'workflow_crontab' -exec cat {} + |
-			grep -vE '^($|#)' |
-			awk 'NF >= 6 { print $1, $2, $3, $4, $5, substr($0, index($0, $7)) }' |
-			sort -u >"$TMP_CRON"
+		ALL_CRON=$(find /etc/cron.d -type f ! -name 'workflow_crontab' -exec cat {} + | grep -vE '^($|#)')
+		# Variable assignments (PATH=, SHELL=, etc.) go first
+		echo "$ALL_CRON" | grep -E '^[A-Z_]+=' | sort -u > "$TMP_CRON"
+		# Then cron entries with the user field stripped
+		echo "$ALL_CRON" | grep -vE '^[A-Z_]+=' |
+			awk 'NF >= 6 { cmd=""; for(i=7;i<=NF;i++) cmd=cmd (i>7?" ":"") $i; print $1,$2,$3,$4,$5,cmd }' |
+			sort -u >> "$TMP_CRON"
 
 		# Optional: Save the combined version
 		sudo cp "$TMP_CRON" "$COMBINED"

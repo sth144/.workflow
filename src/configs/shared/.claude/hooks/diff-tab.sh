@@ -34,7 +34,7 @@ fi
 
 # Map file_path -> snapshot path. md5sum keeps the filename stable across
 # pre/post invocations without colliding on paths with slashes.
-hash=$(printf '%s' "$file_path" | md5sum | awk '{print $1}')
+hash=$(printf '%s' "$file_path" | md5 2>/dev/null || printf '%s' "$file_path" | md5sum 2>/dev/null | awk '{print $1}')
 snapshot="$SNAPSHOT_DIR/$hash.before"
 
 # Detect phase: PostToolUse payloads include tool_response, PreToolUse don't.
@@ -110,4 +110,20 @@ cp "$snapshot" "$labeled" 2>/dev/null || true
 # Don't leave the original-keyed snapshot lying around; the labeled copy is
 # what the diff tab now references.
 rm -f "$snapshot"
+
+# The diff tab steals focus from the integrated terminal. Send Ctrl+`
+# after a short delay to refocus the terminal panel in VSCode.
+# Works natively on macOS (osascript) or in Docker via host-relay.
+if [ -n "${VSCODE_GIT_ASKPASS_NODE:-}" ]; then
+  REFOCUS_SCRIPT='tell application "System Events" to tell process "Code" to keystroke "`" using control down'
+  (
+    sleep 0.5
+    if [ "$(uname)" = "Darwin" ]; then
+      osascript -e "$REFOCUS_SCRIPT" 2>/dev/null
+    elif [ -f "/.dockerenv" ] && [ -x "/usr/local/bin/os/host_relay_client.sh" ]; then
+      /usr/local/bin/os/host_relay_client.sh notify "$REFOCUS_SCRIPT" 2>/dev/null
+    fi
+  ) &
+fi
+
 exit 0
