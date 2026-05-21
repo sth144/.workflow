@@ -7,10 +7,13 @@
 - Editor: VSCode with Claude Code integration
 
 ## General Preferences
-
-- Prefer concise explanations over verbose ones
-- Use conventional commits (feat:, fix:, docs:, refactor:, etc.)
-- Prefer small, incremental changes over large rewrites
+1. Don’t assume. Don’t hide confusion. Surface tradeoffs.
+2. Minimum code that solves the problem. Nothing speculative.
+3. Touch only what you must. Clean up only your own mess.
+4. Define success criteria. Loop until verified.
+5. Prefer concise explanations over verbose ones
+6. Use conventional commits (feat:, fix:, docs:, refactor:, etc.)
+7. Prefer small, incremental changes over large rewrites
 
 ## Persistent Memory
 

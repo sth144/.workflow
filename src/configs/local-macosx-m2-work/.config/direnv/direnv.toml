@@ -1,0 +1,5 @@
+# Auto-trust .envrc files under common development workspace mounts.
+# The /opt/l7esp/data/workspace path is the devcontainer workspace mount —
+# harmless on hosts where this path doesn't exist.
+[whitelist]
+prefix = ["/opt/l7esp/data/workspace"]
