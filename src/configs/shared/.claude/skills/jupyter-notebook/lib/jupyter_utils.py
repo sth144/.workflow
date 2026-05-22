@@ -24,8 +24,8 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 TEMPLATE_DIR = Path(__file__).parent.parent / "templates"
-DEFAULT_NOTEBOOK_DIR = Path.home() / "Coding" / "Research" / "notebooks"
-DEFAULT_DAYBOOK_DIR = Path.home() / "Coding" / "Research" / "daybook"
+DEFAULT_NOTEBOOK_DIR = Path.home() / "notebooks"
+DEFAULT_DAYBOOK_DIR = Path.home() / "notebooks" / "daybook"
 
 # ESP database defaults (override via environment)
 ESP_DB_HOST = os.getenv("ESP_DB_HOST", "localhost")
