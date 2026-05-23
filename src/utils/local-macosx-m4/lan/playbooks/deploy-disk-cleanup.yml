@@ -1,0 +1,20 @@
+- name: Deploy disk cleanup cron script
+  hosts: all
+  gather_facts: false
+  become: true
+  vars:
+    disk_cleanup_src: "{{ playbook_dir }}/../../../shared/cron/disk_cleanup.sh"
+    disk_cleanup_dest: /usr/local/bin/cron/disk_cleanup.sh
+    disk_cleanup_home_user: "{{ ansible_user | default(lookup('env', 'USER')) }}"
+  tasks:
+    - name: Ensure cron script directory exists
+      file:
+        path: "{{ disk_cleanup_dest | dirname }}"
+        state: directory
+
+    - name: Install disk cleanup cron script
+      copy:
+        content: "{{ lookup('file', disk_cleanup_src) | replace('/home/<USER>', '/home/' ~ disk_cleanup_home_user) | replace('<USER>', disk_cleanup_home_user) }}"
+        dest: "{{ disk_cleanup_dest }}"
+        mode: "0755"
+        backup: true

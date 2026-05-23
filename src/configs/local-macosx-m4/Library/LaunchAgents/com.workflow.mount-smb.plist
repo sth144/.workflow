@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.workflow.mount-smb</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/sthinds/bin/smb/mount_smb_shares.sh</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>SMB_STABLE_ROOT</key>
+        <string>/Users/sthinds/media</string>
+        <key>SMB_DRIVE_ROOT</key>
+        <string>/Users/sthinds/Drive</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StartInterval</key>
+    <integer>60</integer>
+    <key>StandardOutPath</key>
+    <string>/Users/sthinds/.cache/workflow/launchagent.mount-smb.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/sthinds/.cache/workflow/launchagent.mount-smb.err.log</string>
+</dict>
+</plist>

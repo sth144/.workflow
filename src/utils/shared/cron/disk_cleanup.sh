@@ -2,6 +2,10 @@
 
 docker system prune -af
 
+if command -v crictl >/dev/null 2>&1; then
+  crictl rmi --prune
+fi
+
 # Clean up unused Anaconda packages
 conda clean -y --all
 
