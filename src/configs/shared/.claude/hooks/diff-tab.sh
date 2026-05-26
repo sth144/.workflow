@@ -100,9 +100,17 @@ if [ -z "$code_bin" ]; then
 fi
 
 # Stamp the snapshot with a recognizable name so the diff tab title is useful.
-# `code --diff` shows the basenames as "<left> ↔ <right>", so we copy the
-# snapshot next to a name like `<basename>.before`.
-labeled="$SNAPSHOT_DIR/$(basename "$file_path").before"
+# `code --diff` shows the basenames as "<left> ↔ <right>", so we insert
+# `.before` before the extension to preserve syntax highlighting.
+# e.g., script.py -> script.before.py
+base=$(basename "$file_path")
+if [[ "$base" == *.* ]]; then
+  name="${base%.*}"
+  ext="${base##*.}"
+  labeled="$SNAPSHOT_DIR/$name.before.$ext"
+else
+  labeled="$SNAPSHOT_DIR/$base.before"
+fi
 cp "$snapshot" "$labeled" 2>/dev/null || true
 
 "$code_bin" --diff "$labeled" "$file_path" >/dev/null 2>&1 &
