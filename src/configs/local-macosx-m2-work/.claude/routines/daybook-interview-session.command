@@ -41,7 +41,9 @@ if [ ! -f "$PROMPT_FILE" ]; then
 		pause_and_exit
 fi
 
-# Launch Claude Code interactively, seeded with the interview prompt. The
-# session inherits the user's normal global MCP config (Joplin + Trello). If
+# Launch Claude Code interactively, seeded with the interview prompt.
+# --dangerously-skip-permissions: this is an unattended, self-launched morning
+# session, so don't stop to confirm every tool call (Joplin/Trello/subagents).
+# The session inherits the user's normal global MCP config (Joplin + Trello). If
 # those tools are ever missing here, add: --mcp-config "$HOME/.claude/mcp.json"
-exec claude "$(cat "$PROMPT_FILE")"
+exec claude --dangerously-skip-permissions "$(cat "$PROMPT_FILE")"
