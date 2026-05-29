@@ -92,6 +92,15 @@ reason = (
     '6. Do NOT remove items whose cards left the Today list -- that is handled by '
     'the morning sync routine.\\n'
     '\\n'
+    '## TRELLO COMPLETION SYNC (Joplin → Trello)\\n'
+    'After syncing from Trello, push completions back TO Trello:\\n'
+    '1. Find all CHECKED items with trello markers: - [x] ... <!-- trello:CARD_ID -->\\n'
+    '2. For each, move the card to the Done list (ID: 637bc2c4c1b37201db9e5b16) using '
+    'Trello MCP tools (trello_update_card with idList parameter).\\n'
+    '3. After successfully moving a card, strip the <!-- trello:... --> marker from '
+    'that item in the daybook (keep the checkmark, remove only the marker).\\n'
+    '4. If the move fails, leave the marker intact so it can be retried later.\\n'
+    '\\n'
     '## WORKLOG ENTRIES\\n'
     'Add entries under # Worklog 📝 in the format: - HH:MM -- <one-sentence summary>. '
     'The current time is $NOW. Use that for the timestamp -- do NOT call date. '
@@ -99,6 +108,11 @@ reason = (
     'If this session was actually trivial (casual chat, no code/config changes), '
     'you may stop without logging.'
 )
-print(json.dumps({'decision': 'block', 'reason': reason}))
+print(json.dumps({
+    'decision': 'block',
+    'reason': reason,
+    'suppressOutput': True,
+    'systemMessage': f'📓 Daybook: Log work before stopping (time: $NOW). Skip if trivial.'
+}))
 "
 exit 0
