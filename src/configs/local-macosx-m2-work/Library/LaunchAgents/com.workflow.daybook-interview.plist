@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.workflow.daybook-interview</string>
+
+	<!-- run_once_daily.sh guards a single launch per calendar day (lock keyed on
+	     daybook-interview.sh). The launcher opens iTerm so the interactive
+	     claude session gets a real TTY (launchd has none). -->
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/cron/run_once_daily.sh</string>
+		<string>/bin/bash</string>
+		<string>/Users/<USER>/.claude/routines/daybook-interview.sh</string>
+	</array>
+
+	<!-- Weekday mornings at 08:30. If the Mac is asleep / the user is logged
+	     out at 08:30, launchd runs this missed interval once when the agent
+	     loads at login — so a later login still gets the interview. -->
+	<key>StartCalendarInterval</key>
+	<array>
+		<dict>
+			<key>Weekday</key>
+			<integer>1</integer>
+			<key>Hour</key>
+			<integer>8</integer>
+			<key>Minute</key>
+			<integer>30</integer>
+		</dict>
+		<dict>
+			<key>Weekday</key>
+			<integer>2</integer>
+			<key>Hour</key>
+			<integer>8</integer>
+			<key>Minute</key>
+			<integer>30</integer>
+		</dict>
+		<dict>
+			<key>Weekday</key>
+			<integer>3</integer>
+			<key>Hour</key>
+			<integer>8</integer>
+			<key>Minute</key>
+			<integer>30</integer>
+		</dict>
+		<dict>
+			<key>Weekday</key>
+			<integer>4</integer>
+			<key>Hour</key>
+			<integer>8</integer>
+			<key>Minute</key>
+			<integer>30</integer>
+		</dict>
+		<dict>
+			<key>Weekday</key>
+			<integer>5</integer>
+			<key>Hour</key>
+			<integer>8</integer>
+			<key>Minute</key>
+			<integer>30</integer>
+		</dict>
+	</array>
+
+	<key>StandardOutPath</key>
+	<string>/Users/<USER>/.claude/routines/logs/daybook-interview.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/<USER>/.claude/routines/logs/daybook-interview.log</string>
+</dict>
+</plist>
