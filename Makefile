@@ -1,4 +1,4 @@
-all: commission stage prune
+all: commission stage prune install
 
 .PHONY: commission
 commission:
