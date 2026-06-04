@@ -4,7 +4,7 @@ PATH=/usr/local/bin:/usr/bin:/bin:/home/<USER>/bin
 */10 * * * * <USER> date >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
 # log rotation
 0 0 * * * <USER> echo "Log Rotate $(date)" >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1 && /home/<USER>/bin/cron/log_rotate.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
-* * * * * <USER> /home/<USER>/bin/promtail/service_discovery.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
+* * * * * <USER> flock -n /tmp/workflow-promtail-service-discovery.lock /home/<USER>/bin/promtail/service_discovery.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
 # bucket files into date-based directories every Monday and Thursday at 1am
 0 1 * * 1,4 <USER> /usr/local/bin/cron/bucket_files_by_date_targets.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
 0 2 * * * <USER> docker system prune -af

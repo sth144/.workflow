@@ -79,29 +79,29 @@ cmd=(xrandr)
 
 # Known monitor targets on this host:
 # Dell P2210 = 1680x1050, rotated left, leftmost
-# KTC        = 3840x2160, primary, middle
-# AOC        = 2560x1440, rightmost
-if [[ -n $ktc_output ]]; then
-  cmd+=(--output "$ktc_output" --primary --mode 3840x2160 --rotate normal)
+# AOC        = 2560x1440, primary, middle
+# KTC        = 3840x2160, rightmost
+if [[ -n $aoc_output ]]; then
+  cmd+=(--output "$aoc_output" --primary --mode 2560x1440 --rotate normal)
 fi
 
 if [[ -n $dell_output ]]; then
-  if [[ -n $ktc_output ]]; then
-    cmd+=(--output "$dell_output" --mode 1680x1050 --rotate left --left-of "$ktc_output")
-  elif [[ -n $aoc_output ]]; then
-    cmd+=(--output "$dell_output" --primary --mode 1680x1050 --rotate left --left-of "$aoc_output")
+  if [[ -n $aoc_output ]]; then
+    cmd+=(--output "$dell_output" --mode 1680x1050 --rotate left --left-of "$aoc_output")
+  elif [[ -n $ktc_output ]]; then
+    cmd+=(--output "$dell_output" --primary --mode 1680x1050 --rotate left --left-of "$ktc_output")
   else
     cmd+=(--output "$dell_output" --primary --mode 1680x1050 --rotate left)
   fi
 fi
 
-if [[ -n $aoc_output ]]; then
-  if [[ -n $ktc_output ]]; then
-    cmd+=(--output "$aoc_output" --mode 2560x1440 --rotate normal --right-of "$ktc_output")
+if [[ -n $ktc_output ]]; then
+  if [[ -n $aoc_output ]]; then
+    cmd+=(--output "$ktc_output" --mode 3840x2160 --rotate normal --right-of "$aoc_output")
   elif [[ -n $dell_output ]]; then
-    cmd+=(--output "$aoc_output" --mode 2560x1440 --rotate normal --right-of "$dell_output")
+    cmd+=(--output "$ktc_output" --mode 3840x2160 --rotate normal --right-of "$dell_output")
   else
-    cmd+=(--output "$aoc_output" --primary --mode 2560x1440 --rotate normal)
+    cmd+=(--output "$ktc_output" --primary --mode 3840x2160 --rotate normal)
   fi
 fi
 

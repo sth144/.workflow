@@ -1,4 +1,4 @@
-all: commission stage prune install
+all: commission stage prune
 
 .PHONY: commission
 commission:
@@ -65,14 +65,11 @@ refresh:
 # clear config build directory
 clean:
 	@echo "cleaning config build output directory"
-	rm -rf ./stage/**/*
-	rm -rf ./stage/bin
-	rm -rf ./stage/.config
-	rm -rf ./stage/Library
+	rm -rf ./stage
+	mkdir -p ./stage
 
 .PHONY: backup
 backup:
 	@echo "backing up local configs and utils"
 	./admin/backup_local.py
 	rsync -av ./backup ~/Drive/D/Software/Source/workflow/
-

@@ -9,11 +9,42 @@ if [ "$OS" = "Darwin" ]; then
 	CP=gcp
 fi
 
+reset_stage() {
+	rm -rf "$BASE_ABS/stage"
+	mkdir -p "$BASE_ABS/stage"
+}
+
+copy_layer_contents() {
+	local src="$1"
+	local dest="$2"
+
+	[ -d "$src" ] || return 0
+	mkdir -p "$dest"
+	$CP -r "$src"/. "$dest"/
+}
+
+copy_layer_dir() {
+	local src="$1"
+	local dest="$2"
+
+	[ -d "$src" ] || return 0
+	mkdir -p "$dest"
+	$CP -r "$src" "$dest"/
+}
+
+copy_utils_layer() {
+	mkdir -p "$BASE_ABS/stage/bin"
+	rsync -a \
+		--exclude='.venv/' \
+		--exclude='__pycache__/' \
+		--exclude='*.pyc' \
+		"$1"/ "$BASE_ABS/stage/bin"/
+}
+
 echo "BASE_ABS ${BASE_ABS}"
 
 stage() {
-	rm -rf $BASE_ABS/stage/*
-	rm -rf $BASE_ABS/stage/.*
+	reset_stage
 
 	echo "emptied stage/"
 	ls -lA $BASE_ABS/stage/
@@ -22,7 +53,7 @@ stage() {
 	USE_SHARED=$(echo $BUILD_CONFIG | jq .useShared)
 
 	if [ "$USE_SHARED" == "true" ]; then
-		cp -r $BASE_ABS/src/configs/shared/. $BASE_ABS/stage
+		copy_layer_contents "$BASE_ABS/src/configs/shared" "$BASE_ABS/stage"
 	fi
 
 	echo "copied dotfiles"
@@ -30,82 +61,81 @@ stage() {
 
 	for include in $EXTRA_INCLUDES; do
 		if [ -d $BASE_ABS/src/configs/$include ]; then
-			$CP -r $BASE_ABS/src/configs/$include/. $BASE_ABS/stage
-			$CP -rT $BASE_ABS/src/configs/$include/. $BASE_ABS/stage
+			copy_layer_contents "$BASE_ABS/src/configs/$include" "$BASE_ABS/stage"
 		fi
 	done
-	$CP -r $BASE_ABS/src/configs/local/. $BASE_ABS/stage
+	copy_layer_contents "$BASE_ABS/src/configs/local" "$BASE_ABS/stage"
 
 	echo "staging utils (with preference for local utils)"
 
 	if [ "$USE_SHARED" == "true" ]; then
-		$CP -r $BASE_ABS/src/utils/shared/. $BASE_ABS/stage/bin
+		copy_utils_layer "$BASE_ABS/src/utils/shared"
 	fi
 	for include in $EXTRA_INCLUDES; do
 		if [ -d $BASE_ABS/src/utils/$include ]; then
 			echo "Include $BASE_ABS/src/utils/$include"
-			$CP -r $BASE_ABS/src/utils/$include/. $BASE_ABS/stage/bin
+			copy_utils_layer "$BASE_ABS/src/utils/$include"
 		fi
 	done
-	$CP -r $BASE_ABS/src/utils/local/. $BASE_ABS/stage/bin
+	copy_utils_layer "$BASE_ABS/src/utils/local"
 
 	echo "staging cron jobs (with preference for local)"
 	mkdir -p $BASE_ABS/stage/cronjobs
 	if [ "$USE_SHARED" == "true" ]; then
-		$CP -r $BASE_ABS/src/cronjobs/shared/. $BASE_ABS/stage/cronjobs
+		copy_layer_contents "$BASE_ABS/src/cronjobs/shared" "$BASE_ABS/stage/cronjobs"
 	fi
 	for include in $EXTRA_INCLUDES; do
 		if [ -d $BASE_ABS/src/cronjobs/$include ]; then
-			$CP -r $BASE_ABS/src/cronjobs/$include/. $BASE_ABS/stage/cronjobs
+			copy_layer_contents "$BASE_ABS/src/cronjobs/$include" "$BASE_ABS/stage/cronjobs"
 		fi
 	done
-	$CP -r $BASE_ABS/src/cronjobs/local/. $BASE_ABS/stage/cronjobs
+	copy_layer_contents "$BASE_ABS/src/cronjobs/local" "$BASE_ABS/stage/cronjobs"
 
 	echo "staging systemd services (with preference for local)"
 
 	if [ "$USE_SHARED" == "true" ]; then
-		$CP -r $BASE_ABS/src/systemd/shared/. $BASE_ABS/stage/systemd
+		copy_layer_contents "$BASE_ABS/src/systemd/shared" "$BASE_ABS/stage/systemd"
 	fi
 	for include in $EXTRA_INCLUDES; do
 		if [ -d $BASE_ABS/src/systemd/$include ]; then
-			$CP -r $BASE_ABS/src/systemd/$include/. $BASE_ABS/stage/systemd
+			copy_layer_contents "$BASE_ABS/src/systemd/$include" "$BASE_ABS/stage/systemd"
 		fi
 	done
-	$CP -r $BASE_ABS/src/systemd/local/. $BASE_ABS/stage/systemd
+	copy_layer_contents "$BASE_ABS/src/systemd/local" "$BASE_ABS/stage/systemd"
 
 	echo "staging docker-compose.yml files for starting docker services"
 	if [ "$USE_SHARED" == "true" ]; then
-		$CP -r $BASE_ABS/src/docker/shared $BASE_ABS/stage/docker/
+		copy_layer_dir "$BASE_ABS/src/docker/shared" "$BASE_ABS/stage/docker"
 	fi
 	for include in $EXTRA_INCLUDES; do
 		if [ -d $BASE_ABS/src/docker/$include ]; then
-			$CP -r $BASE_ABS/src/docker/$include $BASE_ABS/stage/docker/
+			copy_layer_dir "$BASE_ABS/src/docker/$include" "$BASE_ABS/stage/docker"
 		fi
 	done
-	$CP -r $BASE_ABS/src/docker/local $BASE_ABS/stage/docker/
+	copy_layer_dir "$BASE_ABS/src/docker/local" "$BASE_ABS/stage/docker"
 
 	echo "staging root"
 	mkdir -p $BASE_ABS/stage/root
 	if [ "$USE_SHARED" == "true" ]; then
-		$CP -R $BASE_ABS/src/root/shared/ $BASE_ABS/stage/root/
+		copy_layer_contents "$BASE_ABS/src/root/shared" "$BASE_ABS/stage/root"
 	fi
 	for include in $EXTRA_INCLUDES; do
 		if [ -d $BASE_ABS/src/root/$include ]; then
-			$CP -r $BASE_ABS/src/root/$include/. $BASE_ABS/stage/root/
+			copy_layer_contents "$BASE_ABS/src/root/$include" "$BASE_ABS/stage/root"
 		fi
 	done
-	$CP -r $BASE_ABS/src/root/local/ $BASE_ABS/stage/root/
+	copy_layer_contents "$BASE_ABS/src/root/local" "$BASE_ABS/stage/root"
 
 	# preprocess staged output
 	# change <USER> tag to $USER wherever it appears in files
 
 	if [[ $(uname) == "Darwin" ]]; then
-		find ./stage -type f -exec sed -i 's|/home/<USER>|/Users/<USER>|g' {} +
+		find "$BASE_ABS/stage" -type f -exec sed -i 's|/home/<USER>|/Users/<USER>|g' {} +
 	fi
 
-	find stage -type f -exec sed -i -e "s@<USER>@$USER@g" {} \;
+	find "$BASE_ABS/stage" -type f -exec sed -i -e "s@<USER>@$USER@g" {} +
 
-	find ./stage -type f -name '*-e' -exec rm -f {} +
+	find "$BASE_ABS/stage" -type f -name '*-e' -exec rm -f {} +
 }
 
 update_home() {
