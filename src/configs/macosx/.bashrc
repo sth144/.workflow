@@ -88,6 +88,19 @@ if [ -f ~/.bash_aliases ]; then
   . ~/.bash_aliases
 fi
 
+# Wrap claude to add -y/--yolo shorthand for --dangerously-skip-permissions
+claude() {
+  local args=()
+  for arg in "$@"; do
+    if [[ "$arg" == "-y" || "$arg" == "--yolo" ]]; then
+      args+=("--dangerously-skip-permissions")
+    else
+      args+=("$arg")
+    fi
+  done
+  command claude "${args[@]}"
+}
+
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).

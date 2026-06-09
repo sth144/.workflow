@@ -60,59 +60,9 @@ fi
 touch "$MARKER"
 NOW=$(date '+%H:%M')
 log "Non-trivial session ($LINE_COUNT lines, $TOOL_HITS tool uses) — reminding to log/update daybook"
-python3 -c "
-import json
-reason = (
-    'Before stopping, check the daybook. Search Joplin for today\'s note '
-    'in Areas / Daybook (title format: DD Mon, YYYY). '
-    'If it exists, read it and append any work from this session that is not '
-    'already covered. If it does not exist, create it as follows: '
-    '\\n\\n'
-    '## CREATING A NEW DAYBOOK NOTE\\n'
-    '1. Search Joplin for notes in the Daybook notebook (query: \"notebook:Daybook\").\\n'
-    '2. From the search results, identify the note with the MOST RECENT date in its title. '
-    'Do NOT assume the first search result is the most recent -- compare the dates.\\n'
-    '3. Fetch that note and extract EVERY line matching \"- [ ] ...\" (unchecked items). '
-    'Do NOT skip any. Count them and state the count explicitly.\\n'
-    '4. Create the new note with two sections: # To Do ✅  and # Worklog 📝.\\n'
-    '5. Paste ALL unchecked items under # To Do ✅ -- every single one, preserving '
-    'the original text exactly (including indented sub-items).\\n'
-    '6. After writing the note, re-read it and verify the unchecked item count matches '
-    'what you extracted in step 3. If it does not match, fix it before stopping.\\n'
-    '\\n'
-    '## TRELLO TODAY SYNC\\n'
-    'After creating or finding today\'s note, sync the Trello Today list into ## To Do:\\n'
-    '1. Fetch cards from the Trello \"Today\" list (list ID: 637bc2f8722fe72795105471) '
-    'using the Trello MCP tools.\\n'
-    '2. For each Trello card, check if a matching item already exists in ## To Do '
-    '(look for <!-- trello:CARD_ID --> markers).\\n'
-    '3. Add any NEW cards as: - [ ] Card name <!-- trello:CARD_ID -->\\n'
-    '4. Keep existing trello-marked items (both checked and unchecked) as-is.\\n'
-    '5. Keep all manually-added items (no trello marker) as-is.\\n'
-    '6. Do NOT remove items whose cards left the Today list -- that is handled by '
-    'the morning sync routine.\\n'
-    '\\n'
-    '## TRELLO COMPLETION SYNC (Joplin → Trello)\\n'
-    'After syncing from Trello, push completions back TO Trello:\\n'
-    '1. Find all CHECKED items with trello markers: - [x] ... <!-- trello:CARD_ID -->\\n'
-    '2. For each, move the card to the Done list (ID: 637bc2c4c1b37201db9e5b16) using '
-    'Trello MCP tools (trello_update_card with idList parameter).\\n'
-    '3. After successfully moving a card, strip the <!-- trello:... --> marker from '
-    'that item in the daybook (keep the checkmark, remove only the marker).\\n'
-    '4. If the move fails, leave the marker intact so it can be retried later.\\n'
-    '\\n'
-    '## WORKLOG ENTRIES\\n'
-    'Add entries under # Worklog 📝 in the format: - HH:MM -- <one-sentence summary>. '
-    'The current time is $NOW. Use that for the timestamp -- do NOT call date. '
-    'Include a screenshot link if visual changes were made. '
-    'If this session was actually trivial (casual chat, no code/config changes), '
-    'you may stop without logging.'
-)
-print(json.dumps({
-    'decision': 'block',
-    'reason': reason,
-    'suppressOutput': True,
-    'systemMessage': f'📓 Daybook: Log work before stopping (time: $NOW). Skip if trivial.'
-}))
-"
+
+# Short reason for terminal, detailed instructions in separate file
+cat <<EOF
+{"decision":"block","reason":"Update daybook before stopping. Read ~/.claude/hooks/daybook-instructions.md for details. Time: $NOW"}
+EOF
 exit 0

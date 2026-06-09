@@ -10,6 +10,9 @@
 
 set -u
 
+# Toggle: skip if disabled (use `difftog` alias or Ctrl+Opt+D to toggle)
+[ -f "$HOME/.claude/hooks/diff-tab.disabled" ] && exit 0
+
 SNAPSHOT_DIR="${TMPDIR:-/tmp}/claude-diff-snapshots"
 mkdir -p "$SNAPSHOT_DIR"
 

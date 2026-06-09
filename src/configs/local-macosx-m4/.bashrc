@@ -95,6 +95,19 @@ if [ -f ~/.bash_aliases ]; then
   . ~/.bash_aliases
 fi
 
+# Wrap claude to add -y/--yolo shorthand for --dangerously-skip-permissions
+claude() {
+  local args=()
+  for arg in "$@"; do
+    if [[ "$arg" == "-y" || "$arg" == "--yolo" ]]; then
+      args+=("--dangerously-skip-permissions")
+    else
+      args+=("$arg")
+    fi
+  done
+  command claude "${args[@]}"
+}
+
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).
@@ -215,12 +228,8 @@ if [ -d ~/.nvm ]; then
   source ~/.nvm/nvm.sh
 fi
 
-# add all utils (and scripts within .config) to PATH
-for d in ~/bin; do PATH="$PATH:$d"; done
-export PATH="$HOME/bin:$HOME/bin/*:$HOME/bin/**/*:$PATH"
-for dir in "$HOME/bin"/*/; do
-  [ -d "$dir" ] && PATH="$dir:$PATH"
-done
+# add all utils (and scripts within .config) to PATH, pruning heavy dirs like node_modules
+export PATH="$(find "$HOME/bin" \( -name node_modules -o -name .git \) -prune -o -type d -print 2>/dev/null | paste -sd: -):$PATH"
 export PATH=$PATH:/opt/sonar/bin
 
 #~/.config/i3/sh/xrandr-layout.sh

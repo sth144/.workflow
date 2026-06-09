@@ -185,6 +185,19 @@ alias xdotool='/usr/bin/xdotool'
 alias gitgraph='/usr/bin/git log --all --decorate --graph --oneline'
 alias trello="$(npm list -g | head -1)/node_modules/trello-cli/bin/trello"
 
+# Wrap claude to add -y/--yolo shorthand for --dangerously-skip-permissions
+claude() {
+  local args=()
+  for arg in "$@"; do
+    if [[ "$arg" == "-y" || "$arg" == "--yolo" ]]; then
+      args+=("--dangerously-skip-permissions")
+    else
+      args+=("$arg")
+    fi
+  done
+  command claude "${args[@]}"
+}
+
 # global sendkey function
 grabwindow() { xdotool windowactivate $(xdotool search --name "$1"); }
 keystroketowindow() {

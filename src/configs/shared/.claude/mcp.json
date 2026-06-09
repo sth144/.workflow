@@ -68,6 +68,12 @@
       ],
       "env": {}
     },
+    "1password": {
+      "type": "stdio",
+      "command": "op-mcp",
+      "args": [],
+      "env": {}
+    },
     "google-docs": {
       "command": "npx",
       "args": [

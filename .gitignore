@@ -2,6 +2,10 @@
 backup/*
 !backup/.keep
 
+# cache (transient scratch, e.g. claude-fork launchers)
+cache/*
+!cache/.keep
+
 # build
 stage/*
 

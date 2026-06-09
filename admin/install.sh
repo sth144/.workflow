@@ -269,4 +269,47 @@ refresh() {
 	fi
 }
 
+update_claude_mcp() {
+	# Propagate the repo source-of-truth MCP servers (~/.claude/mcp.json, deployed
+	# by update_home) into ~/.claude.json's top-level mcpServers — the config that
+	# EVERY launch surface (terminal, VS Code extension, desktop app) reads. Without
+	# this, servers present only in mcp.json (e.g. trello, 1password) never load in
+	# plain sessions, which is why Trello "fails" outside the workflow repo.
+	#
+	# Repo definitions win on conflict; servers present only in ~/.claude.json (e.g.
+	# the claude.ai Microsoft 365 server the desktop app adds) are preserved. Also
+	# drops the stale project-scoped trello entry that was a workaround for the gap.
+	SRC="$HOME/.claude/mcp.json"
+	DST="$HOME/.claude.json"
+	for f in "$SRC" "$DST"; do
+		if [ ! -f "$f" ]; then
+			echo "skip update_claude_mcp: $f not found"
+			return
+		fi
+	done
+	if ! jq empty "$SRC" >/dev/null 2>&1 || ! jq empty "$DST" >/dev/null 2>&1; then
+		echo "skip update_claude_mcp: invalid JSON in $SRC or $DST"
+		return
+	fi
+
+	cp "$DST" "$DST.bak"
+	TMP=$(mktemp)
+	jq --slurpfile mcp "$SRC" '
+		.mcpServers = ((.mcpServers // {}) + $mcp[0].mcpServers)
+		| if (.projects["/usr/local/src/workflow-macos-1095"].mcpServers.trello)
+		  then del(.projects["/usr/local/src/workflow-macos-1095"].mcpServers.trello)
+		  else . end
+	' "$DST" > "$TMP"
+
+	# Only replace if jq produced valid, non-empty output (guard against clobbering).
+	if [ -s "$TMP" ] && jq empty "$TMP" >/dev/null 2>&1; then
+		mv "$TMP" "$DST"
+		echo "merged $(jq -r '.mcpServers | keys | length' "$SRC") source-of-truth MCP servers into ~/.claude.json (backup: $DST.bak)"
+	else
+		rm -f "$TMP"
+		echo "update_claude_mcp: jq merge failed, left ~/.claude.json unchanged"
+		return 1
+	fi
+}
+
 $1 "${@:2}"

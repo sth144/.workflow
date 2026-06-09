@@ -17,8 +17,14 @@ stage: clean
 	./admin/install.sh stage
 
 .PHONY: install
-install: update_cronjobs update_launchagents update_systemd_services copy_staged_to_home enable_utils update_bashrc update_root refresh
+install: update_cronjobs update_launchagents update_systemd_services copy_staged_to_home update_claude_mcp enable_utils update_bashrc update_root refresh
 	@echo "installing configs and utils"
+
+# merge repo source-of-truth MCP servers (~/.claude/mcp.json) into ~/.claude.json
+# top-level mcpServers, so they load in every session (not just --mcp-config ones)
+update_claude_mcp:
+	@echo "merging source-of-truth MCP servers into ~/.claude.json"
+	./admin/install.sh update_claude_mcp
 
 # copy config build to ~/.config dot directory
 # add .workflow base directory to path in ~/.bashrc

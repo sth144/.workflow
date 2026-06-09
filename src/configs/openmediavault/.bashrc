@@ -143,9 +143,9 @@ export TERM=xterm-256color
 export NVM_DIR=~/.nvm
 source ~/.nvm/nvm.sh
 
-# add all utils (and scripts within .config) to PATH
-export PATH="$(find ~/bin/ -type d -printf ":%p"):$PATH"
-#export PATH="$(find ~/.config/ -type d -printf ":%p"):$PATH"
+# add all utils (and scripts within .config) to PATH, pruning heavy dirs like node_modules
+export PATH="$(find ~/bin/ \( -name node_modules -o -name .git \) -prune -o -type d -printf ":%p"):$PATH"
+#export PATH="$(find ~/.config/ \( -name node_modules -o -name .git \) -prune -o -type d -printf ":%p"):$PATH"
 export PATH=$PATH:/opt/sonar/bin
 
 #~/.config/i3/sh/xrandr-layout.sh

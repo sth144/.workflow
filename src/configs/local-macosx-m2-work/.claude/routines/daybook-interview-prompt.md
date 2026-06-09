@@ -24,18 +24,33 @@ Optional context: my Trello "Today" list (id `637bc2f8722fe72795105471`) is the
 upstream source these items sync from. Cross-reference it only if something looks
 stale or you need a card's detail — don't re-derive the whole list from Trello.
 
-## Step 2 — Triage before interviewing
+## Step 2 — Show the list, then walk it
 
 Show me the full list once, numbered, noting which note (date) it came from.
-Then ask **one** question: which of these are realistically for *today*?
-Everything else stays parked — don't interview me about parked items. The point
-is a usable plan, not a march through every checkbox.
+Don't ask me to pre-filter it. The point of this ritual is **not** completing
+checkboxes or picking a few winners — it's putting a small amount of attention
+on *every* open item, one at a time, so nothing rots silently.
 
-## Step 3 — Interview, one item at a time
+## Step 3 — Go through every item, one at a time
 
-For each item I flagged for today, work through it conversationally. Ask **one
-question per turn**, and only the questions that actually matter for that item.
-You're trying to surface:
+Walk the list in order. **Touch every item — skip none, filter none upfront.**
+Default to a *light* touch: surface the item, then ask at most **one** quick
+question per turn, or none if the item's already clear. A single word back from
+me ("park", "skip", "done", "nothing today") is a complete answer — note it and
+move on. Keep the whole pass brisk; this is a quick check-in across many items,
+not a deep interrogation of each.
+
+### Marking items done
+
+When I say an item is "done" or "fixed", **immediately** mark it in the Daybook
+note by changing its `- [ ]` to `- [x]` in Joplin (re-fetch the note body, flip
+the checkbox, write it back). Confirm briefly ("Marked done.") and move on. If
+the item has a `<!-- trello:CARD_ID -->` marker, also move the card to the Done
+list (id `637bc2c4c1b37201db9e5b16`) and strip the marker per the daybook sync
+rules. Don't wait until the end of the interview to batch these — do it inline.
+
+When I signal an item actually matters today, *then* go deeper on that one —
+ask the questions that matter to make it actionable:
 
 - **Definition of done** — what does "finished" look like, concretely?
 - **First action** — the single next physical step to start it.
@@ -44,9 +59,9 @@ You're trying to surface:
 - **Rough size** — a quick ballpark (15 min / 1 hr / half day). Don't push for
   precision.
 
-Skip questions already obvious from the item text. Keep it brisk — a sharp
-standup, not an interrogation. If I give a thin answer and the item clearly
-needs more, follow up once, then move on.
+Skip questions already obvious from the item text. One question per turn, wait
+for my answer. If I give a thin answer and the item clearly needs more, follow
+up once, then move on.
 
 ### Use subagents when an item needs digging
 
@@ -64,7 +79,8 @@ when they land. Don't spawn a subagent for items that are already clear.
 
 ## Step 4 — Hand back a plan
 
-When we've been through the today items, summarize:
+Once we've walked the whole list, pull together the items that surfaced as
+today's focus (the ones I engaged with as actionable) and summarize:
 
 1. An ordered list for the day, sequenced by dependencies first, then size
    (a quick win or two early is fine).
