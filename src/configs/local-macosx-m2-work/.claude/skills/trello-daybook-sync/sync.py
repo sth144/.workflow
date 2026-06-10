@@ -40,6 +40,8 @@ CHECKED_TRELLO_RE = re.compile(
 UNCHECKED_TRELLO_RE = re.compile(
     r"^- \[ \]\s+(.+?)\s*<!--\s*trello:(\w+)\s*-->$"
 )
+TODO_HEADING_RE = re.compile(r"^#{1,2}\s+To\s*Do")
+SECTION_HEADING_RE = re.compile(r"^#{1,2}\s+\S")
 
 
 # -- Joplin API helpers --
@@ -152,10 +154,10 @@ def parse_todo_section(body: str) -> tuple[str, list[str], str]:
     todo_end = None
 
     for i, line in enumerate(lines):
-        if line.strip().startswith("## To Do"):
+        if TODO_HEADING_RE.match(line.strip()):
             todo_start = i
             continue
-        if todo_start is not None and line.strip().startswith("## ") and i > todo_start:
+        if todo_start is not None and SECTION_HEADING_RE.match(line.strip()) and i > todo_start:
             todo_end = i
             break
 
@@ -217,8 +219,46 @@ def phase1_push_completions(body: str) -> tuple[str, dict[str, Any]]:
         else:
             new_todo_lines.append(line)
 
-    updated_body = before + "\n## To Do ✅\n" + "\n".join(new_todo_lines) + "\n" + after
+    updated_body = before + "\n# To Do ✅\n" + "\n".join(new_todo_lines) + "\n" + after
     return updated_body, stats
+
+
+# -- Phase 0: Flush completions from prior notes --
+
+
+def flush_prior_completions(exclude_note_id: str | None = None) -> dict[str, Any]:
+    """Move checked trello items from recent prior notes to Done in Trello.
+
+    Scans up to 5 recent daybook notes (excluding the given note ID) for
+    checked items with trello markers that were never pushed to Trello Done.
+    Moves matched cards and strips markers from the source notes.
+    """
+    stats: dict[str, Any] = {"moved": 0, "failed": [], "notes_cleaned": 0}
+
+    result = joplin_get(
+        f"/folders/{DAYBOOK_NOTEBOOK_ID}/notes",
+        fields="id,title",
+        order_by="updated_time",
+        order_dir="DESC",
+        limit=6,
+    )
+
+    for note_info in result.get("items", []):
+        note_id = note_info["id"]
+        if note_id == exclude_note_id:
+            continue
+
+        body = get_note_body(note_id)
+        updated_body, note_stats = phase1_push_completions(body)
+
+        if note_stats["moved"] > 0:
+            joplin_put(f"/notes/{note_id}", {"body": updated_body})
+            stats["notes_cleaned"] += 1
+
+        stats["moved"] += note_stats["moved"]
+        stats["failed"].extend(note_stats["failed"])
+
+    return stats
 
 
 # -- Phase 2: Pull Today list into Joplin --
@@ -253,7 +293,7 @@ def merge_todo_section(
 
     for line in todo_lines:
         stripped = line.strip()
-        if not stripped or stripped.startswith("## "):
+        if not stripped or SECTION_HEADING_RE.match(stripped):
             continue
 
         checked_m = CHECKED_TRELLO_RE.match(stripped)
@@ -314,11 +354,11 @@ def phase2_pull_today(body: str) -> tuple[str, dict[str, int]]:
     merged_lines, stats = merge_todo_section(todo_lines, cards)
 
     # Rebuild body
-    todo_section = "## To Do ✅\n\n" + "\n".join(merged_lines) if merged_lines else "## To Do ✅\n"
+    todo_section = "# To Do ✅\n\n" + "\n".join(merged_lines) if merged_lines else "# To Do ✅\n"
 
     # Ensure Worklog section exists
-    if "## Worklog" not in after and "## Worklog" not in before:
-        after = "\n## Worklog 📋\n\n" + after.lstrip("\n")
+    if "# Worklog" not in after and "# Worklog" not in before:
+        after = "\n# Worklog 📝\n\n" + after.lstrip("\n")
 
     parts = []
     if before.strip():
@@ -327,7 +367,7 @@ def phase2_pull_today(body: str) -> tuple[str, dict[str, int]]:
     if after.strip():
         parts.append(after.lstrip("\n"))
     else:
-        parts.append("## Worklog 📋\n")
+        parts.append("# Worklog 📝\n")
 
     updated_body = "\n\n".join(parts) + "\n"
     return updated_body, stats
@@ -389,7 +429,7 @@ def main() -> int:
         # Create new note, carry forward incomplete items
         carried = carry_forward_items()
         todo_block = "\n".join(carried) if carried else ""
-        body = f"## To Do ✅\n\n{todo_block}\n\n## Worklog 📋\n\n"
+        body = f"# To Do ✅\n\n{todo_block}\n\n# Worklog 📝\n\n"
         result = joplin_post(
             "/notes",
             {"title": title, "parent_id": DAYBOOK_NOTEBOOK_ID, "body": body},
@@ -397,7 +437,10 @@ def main() -> int:
         note_id = result["id"]
         created = True
 
-    # Phase 1: push completions
+    # Phase 0: flush completions from prior notes to Trello
+    flush_stats = flush_prior_completions(exclude_note_id=note_id)
+
+    # Phase 1: push completions from today's note
     if not created:
         body, phase1_stats = phase1_push_completions(body)
         if phase1_stats["moved"] > 0:
@@ -413,6 +456,7 @@ def main() -> int:
         "title": title,
         "note_id": note_id,
         "created": created,
+        "phase0_prior_flush": flush_stats,
         "phase1": phase1_stats,
         "phase2": phase2_stats,
     }

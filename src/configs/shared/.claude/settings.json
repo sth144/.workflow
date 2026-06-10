@@ -153,7 +153,18 @@
       "WebFetch(*)",
       "WebSearch(*)",
       "NotebookEdit(*)",
-      "mcp__*"
+      "mcp__atlassian__*",
+      "mcp__slack__*",
+      "mcp__chrome-devtools__*",
+      "mcp__context7__*",
+      "mcp__MCP_DOCKER__*",
+      "mcp__figma__*",
+      "mcp__playwright__*",
+      "mcp__joplin__*",
+      "mcp__google-docs__*",
+      "mcp__trello__*",
+      "mcp__1password__*",
+      "mcp__sonarqube__*"
     ]
   },
   "skipDangerousModePermissionPrompt": true,

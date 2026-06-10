@@ -16,6 +16,21 @@ assume today's note already exists.
    instead — the one whose title parses to the newest date.
 4. Read that note's body and collect the unchecked items (`- [ ]`) under its
    `## To Do` section. Ignore checked items (`- [x]`) and the `## Worklog`.
+5. **Deduplicate against prior completions.** Fetch the 5 most recent prior
+   Daybook notes (search `notebook:Daybook`, parse titles as dates, take the 5
+   newest before today). Collect every `- [x]` item from their `## To Do`
+   sections. Match by `<!-- trello:CARD_ID -->` marker first, then by item text
+   (ignoring leading/trailing whitespace and markers). For each of today's
+   unchecked items that matches a prior checked item:
+   - Mark it `[x]` in today's note immediately (re-fetch body, flip checkbox,
+     write back).
+   - If it has a `<!-- trello:CARD_ID -->` marker, move the card to the Done
+     list (id `637bc2c4c1b37201db9e5b16`) and strip the marker — same as the
+     "Marking items done" rules in Step 3.
+   - Remove it from the interview list.
+   After processing, report a one-line summary: "Auto-marked N items done
+   (completed in prior days but re-synced): <item names>." If none matched,
+   say nothing and move on.
 
 If Joplin can't be reached (desktop app not running, or `JOPLIN_TOKEN` unset),
 tell me what failed and stop. **Do not invent a to-do list.**
