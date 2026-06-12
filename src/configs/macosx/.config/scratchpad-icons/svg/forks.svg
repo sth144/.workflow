@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a98be8"/>
+      <stop offset="1" stop-color="#7b5bd6"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.5" cy="0.08" r="0.9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.30"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#2a1456" flood-opacity="0.32"/>
+    </filter>
+  </defs>
+  <rect x="46" y="46" width="420" height="420" rx="96" fill="url(#bg)"/>
+  <rect x="46" y="46" width="420" height="420" rx="96" fill="url(#gloss)"/>
+  <g filter="url(#sh)">
+    <!-- tmux split panes: one tall left pane, two stacked right panes -->
+    <rect x="140" y="150" width="108" height="212" rx="16" fill="#ffffff"/>
+    <rect x="264" y="150" width="108" height="98" rx="16" fill="#ffffff" fill-opacity="0.92"/>
+    <rect x="264" y="264" width="108" height="98" rx="16" fill="#ffffff" fill-opacity="0.78"/>
+    <!-- prompt chevron + cursor in the left pane -->
+    <path d="M164 196 l24 18 l-24 18" fill="none" stroke="#7b5bd6" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="196" y="223" width="30" height="11" rx="5.5" fill="#7b5bd6"/>
+    <!-- faint lines in right panes -->
+    <g fill="#7b5bd6" fill-opacity="0.30">
+      <rect x="282" y="188" width="58" height="10" rx="5"/>
+      <rect x="282" y="302" width="58" height="10" rx="5"/>
+    </g>
+  </g>
+</svg>

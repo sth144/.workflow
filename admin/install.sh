@@ -241,6 +241,51 @@ update_launchagents() {
 	echo "LaunchAgents updated"
 }
 
+# Build per-scratchpad .app wrappers in ~/Applications so each Alacritty scratchpad
+# window gets its own Dock/Cmd-Tab icon. Each wrapper just exec's Alacritty, so the
+# windows stay org.alacritty (Hammerspoon's title-based discovery still works) while
+# showing the wrapper's icon. Every prerequisite is optional: if anything is missing
+# the step skips with a warning and the scratchpads fall back to plain Alacritty.
+update_scratchpad_apps() {
+	if [[ $(uname) != "Darwin" ]]; then
+		echo "Skipping scratchpad apps (not macOS)"
+		return 0
+	fi
+
+	local appwrap="/usr/local/bin/os/appwrap.sh"
+	local alacritty="/Applications/Alacritty.app"
+	local icons="$HOME/.config/scratchpad-icons"
+	local apps_dir="$HOME/Applications"
+
+	[ -f "$appwrap" ]    || { echo "scratchpad apps: $appwrap missing; skipping"; return 0; }
+	[ -d "$alacritty" ]  || { echo "scratchpad apps: Alacritty not installed; skipping"; return 0; }
+	[ -d "$icons" ]      || { echo "scratchpad apps: no icons at $icons; skipping"; return 0; }
+	mkdir -p "$apps_dir"
+
+	# "<icns-basename>:<display name>" — wrapper is built as "[Scratchpad] <display name>.app".
+	# That bundle filename is what macOS shows in the Dock/Cmd-Tab for these exec wrappers,
+	# so it doubles as the label. Hammerspoon's scratchApp() must resolve the same name.
+	local specs=( "terminal:Terminal" "ranger:Ranger" "calc:Calculator" "forks:Forks" "claude-yolo:Claude YOLO" "daybook:Daybook" )
+	for spec in "${specs[@]}"; do
+		local name="${spec%%:*}"
+		local display="${spec##*:}"
+		local label="[Scratchpad] $display"
+		local icns="$icons/$name.icns"
+		if [ ! -f "$icns" ]; then
+			echo "  skip $name (no $icns)"
+			continue
+		fi
+		if bash "$appwrap" -b "$alacritty" -t "$label" -i "$icns" \
+			--out "$apps_dir" --name "$label" --build-only >/dev/null; then
+			xattr -dr com.apple.quarantine "$apps_dir/$label.app" 2>/dev/null || true
+			echo "  built $label.app"
+		else
+			echo "  WARN: failed to build $label.app (will fall back to plain Alacritty)"
+		fi
+	done
+	echo "Scratchpad apps updated"
+}
+
 update_systemd_services() {
 	if [ -d /etc/systemd ]; then
 

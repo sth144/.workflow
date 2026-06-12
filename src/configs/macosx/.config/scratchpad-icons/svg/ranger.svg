@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4b15f"/>
+      <stop offset="1" stop-color="#e08433"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.5" cy="0.08" r="0.9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.30"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#5a2f06" flood-opacity="0.30"/>
+    </filter>
+  </defs>
+  <rect x="46" y="46" width="420" height="420" rx="96" fill="url(#bg)"/>
+  <rect x="46" y="46" width="420" height="420" rx="96" fill="url(#gloss)"/>
+  <g filter="url(#sh)">
+    <!-- miller columns (ranger): two translucent side panes, solid active middle -->
+    <rect x="134" y="158" width="74" height="196" rx="16" fill="#ffffff" fill-opacity="0.45"/>
+    <rect x="304" y="158" width="74" height="196" rx="16" fill="#ffffff" fill-opacity="0.45"/>
+    <rect x="219" y="158" width="74" height="196" rx="16" fill="#ffffff"/>
+    <!-- file rows in the active pane; one selected (accent) -->
+    <g fill="#e08433">
+      <rect x="233" y="180" width="46" height="13" rx="6.5" fill-opacity="0.35"/>
+      <rect x="233" y="225" width="46" height="13" rx="6.5"/>
+      <rect x="233" y="270" width="46" height="13" rx="6.5" fill-opacity="0.35"/>
+      <rect x="233" y="315" width="46" height="13" rx="6.5" fill-opacity="0.35"/>
+    </g>
+    <!-- selection highlight on row 2 -->
+    <rect x="223" y="218" width="66" height="27" rx="9" fill="#e0843322"/>
+  </g>
+</svg>

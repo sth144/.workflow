@@ -13,18 +13,26 @@
 #   --icon, -i      Path to .icns or .png icon file (required)
 #   --args, -a      Additional arguments to pass to the binary (optional)
 #   --keep, -k      Keep the wrapper .app after exit (don't auto-cleanup)
+#   --out DIR       Directory to create the bundle in (default: /tmp/appwrap)
+#   --name NAME     Bundle basename without .app (default: sanitized title + pid)
+#   --build-only    Create the bundle but do not launch it (implies --keep);
+#                   prints the bundle path. Use to pre-build persistent wrappers.
 #   --help, -h      Show this help message
 #
-# The wrapper bundle is created under /tmp and cleaned up on exit unless --keep is set.
+# The wrapper bundle is created under /tmp and cleaned up on exit unless --keep is
+# set. With --build-only it is created at a stable path and left in place.
 
 set -euo pipefail
 
 WRAP_DIR="/tmp/appwrap"
+OUT_DIR="$WRAP_DIR"
+BUNDLE_NAME=""
+BUILD_ONLY=false
 CLEANUP=true
 EXTRA_ARGS=()
 
 usage() {
-  sed -n '3,16p' "$0" | sed 's/^# \?//'
+  sed -n '3,23p' "$0" | sed 's/^# \?//'
   exit "${1:-0}"
 }
 
@@ -43,6 +51,9 @@ parse_args() {
       --binary|-b)  BINARY="$2"; shift 2 ;;
       --title|-t)   TITLE="$2"; shift 2 ;;
       --icon|-i)    ICON="$2"; shift 2 ;;
+      --out)        OUT_DIR="$2"; shift 2 ;;
+      --name)       BUNDLE_NAME="$2"; shift 2 ;;
+      --build-only) BUILD_ONLY=true; CLEANUP=false; shift ;;
       --args|-a)    shift; EXTRA_ARGS+=("$@"); break ;;
       --keep|-k)    CLEANUP=false; shift ;;
       --help|-h)    usage 0 ;;
@@ -109,9 +120,12 @@ build_bundle() {
   local safe_name
   safe_name=$(echo "$TITLE" | tr -cs '[:alnum:]._-' '_')
 
-  BUNDLE_PATH="$WRAP_DIR/${safe_name}_$$.app"
+  # Stable name when requested (persistent wrappers); pid-suffixed otherwise.
+  local bundle_base="${BUNDLE_NAME:-${safe_name}_$$}"
+  BUNDLE_PATH="$OUT_DIR/${bundle_base}.app"
   local contents="$BUNDLE_PATH/Contents"
 
+  rm -rf "$BUNDLE_PATH"   # rebuild cleanly if a stale bundle exists
   mkdir -p "$contents/MacOS" "$contents/Resources"
 
   # Copy icon
@@ -148,9 +162,17 @@ PLIST
   local binary_abs
   binary_abs=$(cd "$(dirname "$BINARY")" && pwd)/$(basename "$BINARY")
 
+  # Build the extra-args string only if any were given. Referencing
+  # "${EXTRA_ARGS[@]}" directly errors under `set -u` with an empty array on
+  # bash 3.2 (macOS default), so guard on the element count first.
+  local extra_str=""
+  if (( ${#EXTRA_ARGS[@]} )); then
+    extra_str=$(printf '"%s" ' "${EXTRA_ARGS[@]}")
+  fi
+
   cat > "$contents/MacOS/launcher" <<LAUNCHER
 #!/usr/bin/env bash
-exec "$binary_abs" $(printf '"%s" ' "${EXTRA_ARGS[@]}" 2>/dev/null)"\$@"
+exec "$binary_abs" ${extra_str}"\$@"
 LAUNCHER
   chmod +x "$contents/MacOS/launcher"
 
@@ -168,8 +190,13 @@ main() {
   parse_args "$@"
   resolve_binary
   prepare_icon
-  mkdir -p "$WRAP_DIR"
+  mkdir -p "$OUT_DIR"
   build_bundle
+
+  if $BUILD_ONLY; then
+    echo "appwrap: built '$TITLE' at $BUNDLE_PATH"
+    return 0
+  fi
 
   if $CLEANUP; then
     trap cleanup EXIT INT TERM

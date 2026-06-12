@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e8895f"/>
+      <stop offset="1" stop-color="#cf5f37"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.5" cy="0.08" r="0.9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.30"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#5a2107" flood-opacity="0.32"/>
+    </filter>
+  </defs>
+  <rect x="46" y="46" width="420" height="420" rx="96" fill="url(#bg)"/>
+  <rect x="46" y="46" width="420" height="420" rx="96" fill="url(#gloss)"/>
+  <g filter="url(#sh)">
+    <!-- terminal window -->
+    <rect x="132" y="150" width="248" height="212" rx="26" fill="#2a1c16"/>
+    <rect x="132" y="150" width="248" height="212" rx="26" fill="#ffffff" fill-opacity="0.06"/>
+    <!-- prompt chevron + cursor -->
+    <path d="M168 212 l30 22 l-30 22" fill="none" stroke="#ffb48f" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="208" y="246" width="44" height="14" rx="7" fill="#ffb48f"/>
+    <!-- yolo spark: lightning bolt overlapping top-right -->
+    <path d="M330 120 l-46 86 l34 0 l-26 74 l72 -100 l-38 0 l30 -60 z" fill="#ffd23f" stroke="#cf5f37" stroke-width="6" stroke-linejoin="round"/>
+  </g>
+</svg>

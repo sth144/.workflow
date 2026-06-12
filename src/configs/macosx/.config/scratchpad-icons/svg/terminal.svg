@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5b616e"/>
+      <stop offset="1" stop-color="#343943"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.5" cy="0.08" r="0.9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#10131a" flood-opacity="0.34"/>
+    </filter>
+  </defs>
+  <rect x="46" y="46" width="420" height="420" rx="96" fill="url(#bg)"/>
+  <rect x="46" y="46" width="420" height="420" rx="96" fill="url(#gloss)"/>
+  <g filter="url(#sh)">
+    <!-- terminal window -->
+    <rect x="128" y="146" width="256" height="220" rx="26" fill="#22262e"/>
+    <!-- title bar dots -->
+    <circle cx="158" cy="176" r="8" fill="#ff6058"/>
+    <circle cx="184" cy="176" r="8" fill="#ffbd2e"/>
+    <circle cx="210" cy="176" r="8" fill="#28c840"/>
+    <!-- prompt chevron + cursor -->
+    <path d="M162 232 l30 22 l-30 22" fill="none" stroke="#5fe08a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="204" y="266" width="52" height="14" rx="7" fill="#9aa3b2"/>
+  </g>
+</svg>

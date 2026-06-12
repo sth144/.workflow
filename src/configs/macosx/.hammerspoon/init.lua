@@ -55,8 +55,9 @@ local mod = { "cmd", "ctrl" }
 
 local scratchpads = {
   -- Terminal (i3: Alt+U)
+  -- NOTE: custom handler (like the other terminal pads), launched through the
+  -- "[Scratchpad] Terminal" wrapper so it carries a custom Dock icon/label.
   terminal = {
-    bundleID = "org.alacritty",
     hotkey   = mod,
     key      = "u",
     width    = 0.5,
@@ -281,15 +282,40 @@ end
 -- and findAlacrittyWindowByTitle searches every instance so the window is still
 -- discoverable. dynamic_title is pinned off so the running program (tmux, ranger,
 -- bc) can't rename our marker. (command must not contain a single quote — none do.)
-local function launchAlacritty(marker, command)
+-- Resolve a per-scratchpad wrapper .app (built by `make install`) that gives the
+-- window its own Dock/Cmd-Tab icon AND label. The bundle is named
+-- "[Scratchpad] <displayName>.app" (see install.sh update_scratchpad_apps) and that
+-- filename is what macOS shows in the Dock for these exec wrappers. Returns the path
+-- only if it exists, so callers fall back to plain Alacritty when icons aren't installed.
+local function scratchApp(displayName)
+  local path = os.getenv("HOME") .. "/Applications/[Scratchpad] " .. displayName .. ".app"
+  if hs.fs.attributes(path, "mode") == "directory" then
+    return path
+  end
+  return nil
+end
+
+-- Launch a detached Alacritty window. If `appBundle` is a custom wrapper .app it is
+-- used (so the window carries that wrapper's Dock icon); otherwise we fall back to
+-- plain Alacritty. Either way the wrapper just exec's Alacritty, so the window stays
+-- org.alacritty and findAlacrittyWindowByTitle can still see it.
+-- We launch via `open`, NOT a bare `alacritty &`: a backgrounded child of
+-- hs.execute's helper shell gets SIGHUP'd and dies the moment that shell exits,
+-- whereas `open` hands the process to LaunchServices so it survives. `-n` forces
+-- a fresh instance (Alacritty's `msg` IPC is unreliable on macOS — BrokenPipe),
+-- and findAlacrittyWindowByTitle searches every instance so the window is still
+-- discoverable. dynamic_title is pinned off so the running program (tmux, ranger,
+-- bc) can't rename our marker. (command must not contain a single quote — none do.)
+local function launchAlacritty(marker, command, appBundle)
+  local app = appBundle or "/Applications/Alacritty.app"
   local shellCmd = string.format(
-    "open -na /Applications/Alacritty.app --args "
+    "open -na '%s' --args "
       .. "--title '%s' -o window.dynamic_title=false -e bash -lc '%s'",
-    marker, command)
+    app, marker, command)
   hs.execute(shellCmd, true)  -- `true` => run via login shell
 end
 
-local function toggleTermScratchpad(marker, command, config)
+local function toggleTermScratchpad(marker, command, config, appBundle)
   local scratchWin = findAlacrittyWindowByTitle(marker)
 
   if scratchWin then
@@ -306,8 +332,8 @@ local function toggleTermScratchpad(marker, command, config)
       scratchWin:focus()
     end
   else
-    -- No window found - create one
-    launchAlacritty(marker, command)
+    -- No window found - create one (in its custom-icon wrapper if available)
+    launchAlacritty(marker, command, appBundle)
 
     -- Position after delay
     hs.timer.doAfter(0.5, function()
@@ -319,16 +345,21 @@ local function toggleTermScratchpad(marker, command, config)
   end
 end
 
+local function toggleTerminal()
+  -- Plain interactive login shell in the "[Scratchpad] Terminal" wrapper.
+  toggleTermScratchpad("HS-TERMINAL", 'exec "$SHELL"', scratchpads.terminal, scratchApp("Terminal"))
+end
+
 local function toggleRanger()
-  toggleTermScratchpad("HS-RANGER", "ranger", scratchpads.ranger)
+  toggleTermScratchpad("HS-RANGER", "ranger", scratchpads.ranger, scratchApp("Ranger"))
 end
 
 local function toggleBcCalc()
-  toggleTermScratchpad("HS-CALC", "bc -l", scratchpads.calculator)
+  toggleTermScratchpad("HS-CALC", "bc -l", scratchpads.calculator, scratchApp("Calculator"))
 end
 
 local function toggleClaudeForks()
-  toggleTermScratchpad("HS-FORKS", "tmux new-session -A -s claude-forks", scratchpads.forks)
+  toggleTermScratchpad("HS-FORKS", "tmux new-session -A -s claude-forks", scratchpads.forks, scratchApp("Forks"))
 end
 
 local function toggleClaudeYolo()
@@ -336,7 +367,7 @@ local function toggleClaudeYolo()
   -- Code session, it inherits CLAUDECODE=1, which every child inherits too. claude
   -- then refuses to start ("cannot be launched inside another Claude Code session")
   -- and the window dies instantly. tmux/ranger/bc don't care, so only this pad breaks.
-  toggleTermScratchpad("HS-CLAUDE-YOLO", "unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT && cd ~ && claude --dangerously-skip-permissions", scratchpads.claudeyolo)
+  toggleTermScratchpad("HS-CLAUDE-YOLO", "unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT && cd ~ && claude --dangerously-skip-permissions", scratchpads.claudeyolo, scratchApp("Claude YOLO"))
 end
 
 -- Toggle the morning Daybook interview window. If it's open, focus/hide it like
@@ -363,7 +394,7 @@ local function toggleDaybook()
   end
 
   hs.alert.show("No Daybook window — starting interview…")
-  launchAlacritty(marker, "exec " .. os.getenv("HOME") .. "/.claude/routines/daybook-interview-session.command")
+  launchAlacritty(marker, "exec " .. os.getenv("HOME") .. "/.claude/routines/daybook-interview-session.command", scratchApp("Daybook"))
   hs.timer.doAfter(0.8, function()
     local w = findAlacrittyWindowByTitle(marker)
     if w then positionWindow(w, scratchpads.daybook) end
@@ -376,7 +407,9 @@ end
 
 for name, config in pairs(scratchpads) do
   -- Custom handlers for terminal-based scratchpads
-  if name == "ranger" then
+  if name == "terminal" then
+    hs.hotkey.bind(config.hotkey, config.key, toggleTerminal)
+  elseif name == "ranger" then
     hs.hotkey.bind(config.hotkey, config.key, toggleRanger)
   elseif name == "calculator" then
     hs.hotkey.bind(config.hotkey, config.key, toggleBcCalc)

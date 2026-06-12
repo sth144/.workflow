@@ -17,7 +17,7 @@ stage: clean
 	./admin/install.sh stage
 
 .PHONY: install
-install: update_cronjobs update_launchagents update_systemd_services copy_staged_to_home update_claude_mcp enable_utils update_bashrc update_root refresh
+install: update_cronjobs update_launchagents update_systemd_services copy_staged_to_home update_scratchpad_apps update_claude_mcp enable_utils update_bashrc update_root refresh
 	@echo "installing configs and utils"
 
 # merge repo source-of-truth MCP servers (~/.claude/mcp.json) into ~/.claude.json
@@ -42,6 +42,11 @@ update_cronjobs:
 update_launchagents:
 	@echo "installing LaunchAgents in ~/Library/LaunchAgents/"
 	./admin/install.sh update_launchagents
+
+# build ~/Applications/Scratch-*.app wrappers so terminal scratchpads get custom icons
+update_scratchpad_apps:
+	@echo "building scratchpad app wrappers in ~/Applications"
+	./admin/install.sh update_scratchpad_apps
 
 update_systemd_services:
 	@echo "installing systemd services in /etc/systemd/system/"
