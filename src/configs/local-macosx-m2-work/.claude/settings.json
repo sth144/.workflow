@@ -6,11 +6,20 @@
         "source": "directory",
         "path": "/usr/local/src/l7esp-claude-plugins"
       }
+    },
+    "l7internal": {
+      "source": {
+        "source": "directory",
+        "path": "/usr/local/src/l7internal-claude-plugins"
+      }
     }
   },
   "enabledPlugins": {
     "l7esp@l7esp": true,
-    "frontend-design@claude-plugins-official": true
+    "frontend-design@claude-plugins-official": true,
+    "l7eng@l7internal": true,
+    "l7qa@l7internal": true,
+    "l7release@l7internal": true
   },
   "hooks": {
     "Notification": [

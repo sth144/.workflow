@@ -6,7 +6,7 @@
 	<string>com.workflow.daybook-interview</string>
 
 	<!-- run_once_daily.sh guards a single launch per calendar day (lock keyed on
-	     daybook-interview.sh). The launcher opens iTerm so the interactive
+	     daybook-interview.sh). The launcher opens Alacritty so the interactive
 	     claude session gets a real TTY (launchd has none). -->
 	<key>ProgramArguments</key>
 	<array>

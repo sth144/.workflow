@@ -3,7 +3,7 @@
 #
 # Invoked by com.workflow.daybook-interview (via run_once_daily.sh) on weekday
 # mornings. launchd has no TTY, so it can't run an interactive CLI directly; it
-# opens iTerm with the session script, which runs in a real TTY and seeds an
+# opens Alacritty with the session script, which runs in a real TTY and seeds an
 # interactive Claude session.
 #
 # Schedule: weekdays 08:30 (also fires on login if 08:30 was missed).
@@ -14,4 +14,8 @@ set -euo pipefail
 # here; launchd won't create missing parents).
 mkdir -p "$HOME/.claude/routines/logs"
 
-exec /usr/bin/open -a iTerm "$HOME/.claude/routines/daybook-interview-session.command"
+# launchd's PATH is minimal, so resolve the Alacritty binary directly (cask path)
+# rather than relying on `alacritty` being on PATH. Alacritty runs the executable
+# session script via -e (it does not open .command documents the way iTerm did).
+ALACRITTY="$(command -v alacritty 2>/dev/null || echo /Applications/Alacritty.app/Contents/MacOS/alacritty)"
+exec "$ALACRITTY" --title "Daybook" -e "$HOME/.claude/routines/daybook-interview-session.command"

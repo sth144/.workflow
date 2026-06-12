@@ -1,0 +1,52 @@
+# alacritty.toml — managed by workflow-macos-1095
+# Source: src/configs/macosx/.config/alacritty/alacritty.toml
+# Staged to ~/.config/alacritty/alacritty.toml. Reference: https://alacritty.org/config-alacritty.html
+#
+# Scratchpads (Hammerspoon) and the fork-session helper open windows with a fixed
+# --title and `-o window.dynamic_title=false` so the running program cannot rename
+# them; dynamic_title stays ON globally so ordinary windows still show cwd/program.
+
+[window]
+padding = { x = 8, y = 8 }
+dynamic_padding = true
+opacity = 0.98
+decorations = "buttonless"   # macOS: keep rounded corners, drop the title-bar buttons
+dynamic_title = true
+option_as_alt = "Both"       # macOS: send Alt for Option so readline/TUI bindings work
+
+[font]
+size = 13.0
+normal = { family = "Menlo", style = "Regular" }
+bold = { family = "Menlo", style = "Bold" }
+italic = { family = "Menlo", style = "Italic" }
+
+[scrolling]
+history = 10000
+
+[selection]
+save_to_clipboard = true
+
+# Dark theme (approx. One Dark). Adjust to taste.
+[colors.primary]
+background = "#1e2127"
+foreground = "#abb2bf"
+
+[colors.normal]
+black   = "#1e2127"
+red     = "#e06c75"
+green   = "#98c379"
+yellow  = "#d19a66"
+blue    = "#61afef"
+magenta = "#c678dd"
+cyan    = "#56b6c2"
+white   = "#abb2bf"
+
+[colors.bright]
+black   = "#5c6370"
+red     = "#e06c75"
+green   = "#98c379"
+yellow  = "#d19a66"
+blue    = "#61afef"
+magenta = "#c678dd"
+cyan    = "#56b6c2"
+white   = "#ffffff"

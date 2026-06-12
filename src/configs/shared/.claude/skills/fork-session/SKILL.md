@@ -1,6 +1,6 @@
 ---
 name: fork-session
-description: Fork the current Claude Code conversation into a new pane in a shared "claude-forks" tmux session (in an iTerm2 window), keeping the original thread untouched. Optionally hand the fork a specific task so it works autonomously instead of resuming the parent's activity. Use when the user says "fork this session", "fork the conversation", "branch this into a new terminal", "spawn a fork to do X", or wants to run work in parallel without disturbing the current thread.
+description: Fork the current Claude Code conversation into a new pane in a shared "claude-forks" tmux session (in an Alacritty window), keeping the original thread untouched. Optionally hand the fork a specific task so it works autonomously instead of resuming the parent's activity. Use when the user says "fork this session", "fork the conversation", "branch this into a new terminal", "spawn a fork to do X", or wants to run work in parallel without disturbing the current thread.
 argument-hint: (forks the current session; optionally give it a task)
 ---
 
@@ -10,7 +10,7 @@ Spawns a forked copy of the current conversation as a **pane in a shared
 `claude-forks` tmux session**. The fork inherits the full history up to this
 point but writes to a new session id, so the threads diverge independently —
 **the original session (this one) is never modified.** All forks land as tiled
-panes in the one `claude-forks` session; toggle its iTerm window with
+panes in the one `claude-forks` session; toggle its Alacritty window with
 **Cmd+Ctrl+F** (Hammerspoon). Because it runs in tmux, forks survive the window
 closing and can be reattached.
 
@@ -19,11 +19,12 @@ closing and can be reattached.
 The helper auto-detects its environment:
 
 - **macOS host** (no `/.dockerenv`): if `claude-forks` already exists, it adds a
-  pane via `tmux split-window` (no new window). On the first fork it creates the
-  session in a new iTerm2 window via `osascript`.
+  pane via `tmux split-window` (no new window). On the first fork it opens the
+  session in a new Alacritty window via the `alacritty` CLI (`msg create-window`,
+  falling back to a fresh instance).
 - **Devcontainer** (`/.dockerenv` exists): it writes a `.command` launcher to a
   host-shared path (`/usr/local/src/...`) and asks the host to run it via the
-  `host_relay` bridge (`notify`/osascript key on `host.docker.internal:7899`).
+  `host_relay` bridge (`shell` key on `host.docker.internal:7899`).
   The launcher checks tmux state and either adds a pane or creates the session,
   running `docker exec -it <container> claude --resume <id> --fork-session ...`.
 
@@ -102,9 +103,9 @@ through the inherited history; in handoff mode the brief is all it has.
 - **Scope:** fork mode branches the *current* session by default (pass a
   different id as the first argument to branch another). Handoff mode is
   session-independent — it starts fresh and needs no session id.
-- **Requirements on macOS host:** iTerm2 and tmux on PATH.
-- **Requirements in devcontainer:** the `host_relay` server running on the Mac,
-  plus iTerm2, tmux, and Docker Desktop on the host PATH, reachable via
-  `docker exec`.
-- **Closing the iTerm window only detaches tmux**; reattach with
+- **Requirements on macOS host:** Alacritty and tmux on PATH.
+- **Requirements in devcontainer:** the `host_relay` server running on the Mac
+  (with the `shell` command registered), plus Alacritty, tmux, and Docker Desktop
+  on the host PATH, reachable via `docker exec`.
+- **Closing the Alacritty window only detaches tmux**; reattach with
   `tmux attach -t claude-forks`.

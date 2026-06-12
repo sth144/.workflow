@@ -15,11 +15,11 @@
 #           The caller writes a condensed brief (context + task + done criteria).
 #
 # All workers land as tiled panes in one tmux session (claude-forks); toggle its
-# iTerm window with Cmd+Ctrl+F (Hammerspoon).
+# Alacritty window with Cmd+Ctrl+F (Hammerspoon).
 #
 # Works in two environments:
 #   1. MACOS HOST (no /.dockerenv) — adds a pane via `tmux split-window` if the
-#      session exists, else creates it inside a new iTerm window via osascript.
+#      session exists, else creates it inside a new Alacritty window via the CLI.
 #   2. DEVCONTAINER (/.dockerenv exists) — writes a host-shared .command launcher
 #      and asks the host to run it via the host_relay bridge; the launcher adds a
 #      pane or creates the session, running claude inside this container.
@@ -43,13 +43,27 @@ RELAY_CLIENT="$SCRIPT_DIR/../../shared/os/host_relay_client.sh"
 # Docker Desktop's CLI (and Homebrew tmux) live here; a GUI-launched terminal may
 # have a minimal PATH, so the launcher prepends these to find docker and tmux.
 DOCKER_PATHS="/usr/local/bin:/opt/homebrew/bin"
-# The terminal app to run the launcher in. Unlike Terminal.app, iTerm does NOT
-# execute a .command document when it is already running, so we drive it via
-# AppleScript (see the create-window call below) rather than `open -a`.
-TERMINAL_APP="iTerm"
-# All forks share this tmux session; Hammerspoon finds the iTerm window by marker.
+# Alacritty has no AppleScript dictionary, so (unlike the old iTerm flow) we open
+# windows via its CLI. `alacritty msg create-window` attaches the window to a
+# running instance so Hammerspoon can find it by title; we fall back to starting
+# a fresh instance when none is running. On the host we resolve the binary
+# directly (cask path) in case the caller's PATH is minimal; over the relay we
+# rely on the host login shell's PATH.
+ALACRITTY="$(command -v alacritty 2>/dev/null || echo /Applications/Alacritty.app/Contents/MacOS/alacritty)"
+# All forks share this tmux session; Hammerspoon finds the Alacritty window by marker.
 FORKS_SESSION="claude-forks"
 FORKS_MARKER="HS-FORKS"
+
+# Emit the shell command that opens an Alacritty window titled $2 running the
+# launcher script $1. Non-blocking (the create-window message returns at once;
+# the fresh-instance fallback is nohup-backgrounded) so the caller — or the relay
+# request — returns immediately. $3 (optional) is the alacritty binary for the
+# fallback; defaults to bare `alacritty` (resolved by the executing shell's PATH).
+build_term_cmd() {
+	local launcher="$1" marker="$2" bin="${3:-alacritty}"
+	printf '%q msg create-window --title %q -o window.dynamic_title=false -e %q 2>/dev/null || (nohup %q --title %q -o window.dynamic_title=false -e %q >/dev/null 2>&1 &)' \
+		"$bin" "$marker" "$launcher" "$bin" "$marker" "$launcher"
+}
 
 die() { echo "fork_session: $*" >&2; exit 1; }
 
@@ -170,7 +184,7 @@ LAUNCHER_TAG="${SESSION:-handoff}"
 # --------------------------------------------------------------------------
 if ! $IN_CONTAINER; then
 	if tmux has-session -t "$FORKS_SESSION" 2>/dev/null; then
-		# Session exists — add a pane directly (no new iTerm window).
+		# Session exists — add a pane directly (no new Alacritty window).
 		tmux split-window -t "$FORKS_SESSION" \
 			bash -lc "$INNER_BODY" _ "${INNER_ARGS[@]}"
 		tmux select-layout -t "$FORKS_SESSION" tiled
@@ -179,23 +193,21 @@ if ! $IN_CONTAINER; then
 		exit 0
 	fi
 
-	# First worker — create the forks session inside a new iTerm window.
+	# First worker — create the forks session inside a new Alacritty window.
 	mkdir -p "$LAUNCHER_DIR"
 	LAUNCHER="$LAUNCHER_DIR/fork-${LAUNCHER_TAG}-$$.command"
 	cat > "$LAUNCHER" <<-LAUNCHER_EOF
 	#!/usr/bin/env bash
 	export PATH="$DOCKER_PATHS:\$PATH"
-	printf '\033]0;$FORKS_MARKER\007'
 	tmux new-session -s $FORKS_SESSION \
 	  bash -lc $ESC_INNER _$ESC_ARGS
 	rm -f "\$0"
 	LAUNCHER_EOF
 	chmod +x "$LAUNCHER"
 
-	APPLESCRIPT="tell application \"$TERMINAL_APP\" to create window with default profile command \"'$LAUNCHER'\""
-	osascript -e "$APPLESCRIPT"
+	bash -lc "$(build_term_cmd "$LAUNCHER" "$FORKS_MARKER" "$ALACRITTY")"
 
-	echo "Created '$FORKS_SESSION' session in a new iTerm window ($MODE worker)."
+	echo "Created '$FORKS_SESSION' session in a new Alacritty window ($MODE worker)."
 	echo "Toggle: Cmd+Ctrl+F | Reattach: tmux attach -t $FORKS_SESSION"
 	exit 0
 fi
@@ -213,9 +225,9 @@ mkdir -p "$LAUNCHER_DIR"
 LAUNCHER="$LAUNCHER_DIR/fork-${LAUNCHER_TAG}-$$.command"
 
 # Smart launcher: runs on the host, checks if the forks session exists.
-# If it does, adds a pane and exits (the iTerm window that ran this launcher
+# If it does, adds a pane and exits (the Alacritty window that ran this launcher
 # will close — brief flash). If not, creates the session attached to this
-# terminal (the iTerm window stays open as the tmux client).
+# terminal (the Alacritty window stays open as the tmux client).
 cat > "$LAUNCHER" <<-LAUNCHER_EOF
 #!/usr/bin/env bash
 export PATH="$DOCKER_PATHS:\$PATH"
@@ -226,7 +238,6 @@ if tmux has-session -t $FORKS_SESSION 2>/dev/null; then
     $ESC_INNER _$ESC_ARGS
   tmux select-layout -t $FORKS_SESSION tiled
 else
-  printf '\033]0;$FORKS_MARKER\007'
   tmux new-session -s $FORKS_SESSION \
     docker exec -it -u $ESC_USER $ESC_CONTAINER bash -lc \
     $ESC_INNER _$ESC_ARGS
@@ -235,8 +246,8 @@ rm -f "\$0"
 LAUNCHER_EOF
 chmod +x "$LAUNCHER"
 
-APPLESCRIPT="tell application \"$TERMINAL_APP\" to create window with default profile command \"'$LAUNCHER'\""
-bash "$RELAY_CLIENT" notify "$APPLESCRIPT" </dev/null
+# Ask the host to open the Alacritty window via the relay's `shell` command.
+bash "$RELAY_CLIENT" shell "$(build_term_cmd "$LAUNCHER" "$FORKS_MARKER")" </dev/null
 
 echo "$MODE worker dispatched to '$FORKS_SESSION' session on host."
 echo "Toggle: Cmd+Ctrl+F | Reattach: tmux attach -t $FORKS_SESSION"

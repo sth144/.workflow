@@ -11,6 +11,12 @@
 			"-e"
 		]
 	},
+	"shell": {
+		"command": "/bin/bash",
+		"prepend_args": [
+			"-lc"
+		]
+	},
 	"pbcopy": {
 		"command": "/usr/bin/pbcopy"
 	},

@@ -1,12 +1,12 @@
 #!/bin/bash
 # daybook-interview-session.command
 #
-# Opened in an iTerm window each weekday morning by daybook-interview.sh (via
+# Opened in an Alacritty window each weekday morning by daybook-interview.sh (via
 # launchd). It sets up the environment and launches Claude Code seeded with the
 # Daybook interview prompt, then hands over an interactive session.
 #
-# Why iTerm runs this: launchd has no TTY, so it can't run the interactive CLI
-# itself. It opens iTerm, and iTerm runs this script in a real TTY.
+# Why Alacritty runs this: launchd has no TTY, so it can't run the interactive CLI
+# itself. It opens Alacritty, and Alacritty runs this script in a real TTY.
 
 ROUTINES_DIR="$HOME/.claude/routines"
 PROMPT_FILE="$ROUTINES_DIR/daybook-interview-prompt.md"

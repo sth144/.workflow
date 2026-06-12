@@ -17,11 +17,15 @@
 --
 -- Find bundle ID with: osascript -e 'id of app "AppName"'
 -- Common ones:
---   Alacritty:  io.alacritty
+--   Alacritty:  org.alacritty
 --   kitty:      net.kovidgoyal.kitty
 --   iTerm2:     com.googlecode.iterm2
 --   Terminal:   com.apple.Terminal
 --   Warp:       dev.warp.Warp-Stable
+
+-- Load the IPC module so the `hs` command-line tool can drive/introspect the
+-- running config (used for debugging scratchpad toggles from a shell).
+require("hs.ipc")
 
 -- Modifier used for all scratchpads (Cmd+Ctrl avoids conflicts with macOS/apps)
 local mod = { "cmd", "ctrl" }
@@ -50,7 +54,7 @@ local mod = { "cmd", "ctrl" }
 local scratchpads = {
   -- Terminal (i3: Alt+U)
   terminal = {
-    bundleID = "com.googlecode.iterm2",
+    bundleID = "org.alacritty",
     hotkey   = mod,
     key      = "u",
     width    = 0.5,
@@ -75,14 +79,14 @@ local scratchpads = {
     height   = 0.8,
   },
 
-  -- Ranger file manager in iTerm2 (i3: Alt+I)
+  -- Ranger file manager in Alacritty (i3: Alt+I)
   -- NOTE: This uses a custom handler, not the standard toggleScratchpad
   ranger = {
     hotkey      = mod,
     key         = "i",
     width       = 0.8,
     height      = 0.85,
-    windowTitle = "ranger",  -- iTerm2 window title to look for
+    windowTitle = "ranger",  -- Alacritty window title to look for
   },
 
 
@@ -104,7 +108,7 @@ local scratchpads = {
     height   = 0.7,
   },
 
-  -- bc calculator in iTerm2 (i3: Alt+F11)
+  -- bc calculator in Alacritty (i3: Alt+F11)
   -- NOTE: This uses a custom handler, not the standard toggleScratchpad
   calculator = {
     hotkey      = mod,
@@ -205,8 +209,13 @@ local function toggleScratchpad(config)
 end
 
 --------------------------------------------------------------------------------
--- iTerm2 scratchpad helper
--- Simple approach: iterate windows and match by title
+-- Alacritty scratchpad helper
+-- Alacritty has no AppleScript dictionary (iTerm2 did), so we drive it via its
+-- CLI. To keep every scratchpad window under ONE Alacritty instance — so the
+-- title search below can see all of them — we add windows with
+-- `alacritty msg create-window` and only start a fresh instance when none is
+-- running. Each window gets a fixed --title marker with dynamic_title disabled
+-- so the running program (ranger, tmux, etc.) can't rename it out from under us.
 --------------------------------------------------------------------------------
 
 local function positionWindow(win, config)
@@ -223,21 +232,41 @@ local function positionWindow(win, config)
   })
 end
 
-local function findItermWindowByTitle(marker)
-  local iterm = hs.application.get("com.googlecode.iterm2")
-  if not iterm then return nil end
-
-  for _, win in ipairs(iterm:allWindows()) do
-    local title = win:title()
-    if title and string.find(title, marker, 1, true) then
-      return win
+-- Search EVERY running Alacritty instance, not just one. On macOS a bare
+-- `alacritty ...` launch spawns a *separate* app instance (its own PID/Dock
+-- entry), and `msg create-window` is unreliable here (BrokenPipe), so scratchpad
+-- windows can end up under any of several instances. hs.application.get() only
+-- returns one of them, so we must iterate applicationsForBundleID to find ours.
+local function findAlacrittyWindowByTitle(marker)
+  for _, app in ipairs(hs.application.applicationsForBundleID("org.alacritty")) do
+    for _, win in ipairs(app:allWindows()) do
+      local title = win:title()
+      if title and string.find(title, marker, 1, true) then
+        return win
+      end
     end
   end
   return nil
 end
 
-local function toggleItermScratchpad(titleMarker, command, config)
-  local scratchWin = findItermWindowByTitle(titleMarker)
+-- Open a detached Alacritty window titled `marker` running `command` in a login
+-- shell. We launch via `open`, NOT a bare `alacritty &`: a backgrounded child of
+-- hs.execute's helper shell gets SIGHUP'd and dies the moment that shell exits,
+-- whereas `open` hands the process to LaunchServices so it survives. `-n` forces
+-- a fresh instance (Alacritty's `msg` IPC is unreliable on macOS — BrokenPipe),
+-- and findAlacrittyWindowByTitle searches every instance so the window is still
+-- discoverable. dynamic_title is pinned off so the running program (tmux, ranger,
+-- bc) can't rename our marker. (command must not contain a single quote — none do.)
+local function launchAlacritty(marker, command)
+  local shellCmd = string.format(
+    "open -na /Applications/Alacritty.app --args "
+      .. "--title '%s' -o window.dynamic_title=false -e bash -lc '%s'",
+    marker, command)
+  hs.execute(shellCmd, true)  -- `true` => run via login shell
+end
+
+local function toggleTermScratchpad(marker, command, config)
+  local scratchWin = findAlacrittyWindowByTitle(marker)
 
   if scratchWin then
     -- Window exists
@@ -254,20 +283,11 @@ local function toggleItermScratchpad(titleMarker, command, config)
     end
   else
     -- No window found - create one
-    local createScript = string.format([[
-      tell application "iTerm"
-        activate
-        set newWindow to (create window with default profile)
-        tell current session of newWindow
-          write text "printf '\\033]0;%s\\007'; %s"
-        end tell
-      end tell
-    ]], titleMarker, command)
-    hs.osascript.applescript(createScript)
+    launchAlacritty(marker, command)
 
     -- Position after delay
     hs.timer.doAfter(0.5, function()
-      local win = findItermWindowByTitle(titleMarker)
+      local win = findAlacrittyWindowByTitle(marker)
       if win then
         positionWindow(win, config)
       end
@@ -276,15 +296,15 @@ local function toggleItermScratchpad(titleMarker, command, config)
 end
 
 local function toggleRanger()
-  toggleItermScratchpad("HS-RANGER", "ranger", scratchpads.ranger)
+  toggleTermScratchpad("HS-RANGER", "ranger", scratchpads.ranger)
 end
 
 local function toggleBcCalc()
-  toggleItermScratchpad("HS-CALC", "bc -l", scratchpads.calculator)
+  toggleTermScratchpad("HS-CALC", "bc -l", scratchpads.calculator)
 end
 
 local function toggleClaudeForks()
-  toggleItermScratchpad("HS-FORKS", "tmux new-session -A -s claude-forks", scratchpads.forks)
+  toggleTermScratchpad("HS-FORKS", "tmux new-session -A -s claude-forks", scratchpads.forks)
 end
 
 --------------------------------------------------------------------------------
