@@ -1,0 +1,11 @@
+
+forced_login_method = "api"
+model = "qwen2.5-coder-7b"
+model_provider = "litellm"
+model_context_window = 2048
+
+[model_providers.litellm]
+name = "LiteLLM"
+base_url = "http://openmediavault.local:4001/v1"
+wire_api = "responses"
+http_headers = { Authorization = "Bearer sk-litellm" }

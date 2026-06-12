@@ -4,8 +4,9 @@ set -u
 
 STABLE_ROOT="${SMB_STABLE_ROOT:-$HOME/media}"
 DRIVE_ROOT="${SMB_DRIVE_ROOT:-$HOME/Drive}"
+MOUNT_ROOT="${SMB_MOUNT_ROOT:-$STABLE_ROOT/.mounts}"
 LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/workflow"
-mkdir -p "$STABLE_ROOT" "$DRIVE_ROOT" "$LOG_DIR"
+mkdir -p "$STABLE_ROOT" "$DRIVE_ROOT" "$MOUNT_ROOT" "$LOG_DIR"
 
 log() {
     printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$LOG_DIR/smb-mounts.log"
@@ -72,14 +73,33 @@ remove_link() {
     fi
 }
 
-kick_mount() {
+server_reachable() {
+    local host_tokens_csv="$1"
+    local token
+    local -a tokens
+
+    IFS=',' read -r -a tokens <<<"$host_tokens_csv"
+    for token in "${tokens[@]}"; do
+        if /usr/bin/nc -G 2 -z "$token" 445 >/dev/null 2>&1; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+smbfs_url() {
     local url="$1"
-    /usr/bin/osascript \
-        -e "try" \
-        -e "mount volume \"$url\"" \
-        -e "end try" \
-        >/dev/null 2>&1 &
-    printf '%s\n' "$!"
+    printf '//%s\n' "${url#smb://}"
+}
+
+mount_share() {
+    local alias_name="$1"
+    local url="$2"
+    local mount_dir="$MOUNT_ROOT/$alias_name"
+
+    mkdir -p "$mount_dir"
+    /sbin/mount -t smbfs -o nobrowse,soft,noowners,nopassprompt "$(smbfs_url "$url")" "$mount_dir" >/dev/null 2>&1
 }
 
 ensure_share() {
@@ -87,40 +107,27 @@ ensure_share() {
     local url="$2"
     local host_tokens_csv="$3"
     local share_name="$4"
-    local mount_path pid attempt
+    local mount_path
 
     if mount_path="$(find_mount_path "$host_tokens_csv" "$share_name")"; then
         refresh_link "$alias_name" "$mount_path"
         return 0
     fi
 
-    pid="$(kick_mount "$url")"
+    if ! server_reachable "$host_tokens_csv"; then
+        remove_link "$alias_name"
+        log "server unavailable for $alias_name"
+        return 1
+    fi
 
-    for attempt in {1..15}; do
-        sleep 1
-        if mount_path="$(find_mount_path "$host_tokens_csv" "$share_name")"; then
-            wait "$pid" 2>/dev/null || true
-            refresh_link "$alias_name" "$mount_path"
-            log "mounted $alias_name -> $mount_path"
-            return 0
-        fi
-
-        if ! kill -0 "$pid" 2>/dev/null; then
-            break
-        fi
-    done
-
-    kill "$pid" 2>/dev/null || true
-    wait "$pid" 2>/dev/null || true
-
-    if mount_path="$(find_mount_path "$host_tokens_csv" "$share_name")"; then
+    if mount_share "$alias_name" "$url" && mount_path="$(find_mount_path "$host_tokens_csv" "$share_name")"; then
         refresh_link "$alias_name" "$mount_path"
         log "mounted $alias_name -> $mount_path"
         return 0
     fi
 
     remove_link "$alias_name"
-    log "mount pending or unavailable for $alias_name"
+    log "mount unavailable for $alias_name"
     return 1
 }
 

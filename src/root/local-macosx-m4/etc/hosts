@@ -29,6 +29,8 @@
 192.168.1.243 heimdall
 192.168.1.245 openmediavault
 192.168.1.245 openmediavault.local
+192.168.1.245 open-webui
+192.168.1.245 open-webui.local
 192.168.1.245 plex
 192.168.1.245 nextcloud
 192.168.1.245 calibre
