@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>Label</key>
-	<string>com.user.host-relay</string>
+	<string>com.workflow.host-relay</string>
 
 	<key>ProgramArguments</key>
 	<array>
