@@ -17,5 +17,9 @@ mkdir -p "$HOME/.claude/routines/logs"
 # launchd's PATH is minimal, so resolve the Alacritty binary directly (cask path)
 # rather than relying on `alacritty` being on PATH. Alacritty runs the executable
 # session script via -e (it does not open .command documents the way iTerm did).
+#
+# dynamic_title=false pins the window title to "Daybook" so the running Claude
+# session can't rename it — this is what the Cmd+Ctrl+B Hammerspoon hotkey matches
+# on to jump back to this window.
 ALACRITTY="$(command -v alacritty 2>/dev/null || echo /Applications/Alacritty.app/Contents/MacOS/alacritty)"
-exec "$ALACRITTY" --title "Daybook" -e "$HOME/.claude/routines/daybook-interview-session.command"
+exec "$ALACRITTY" --title "Daybook" -o window.dynamic_title=false -e "$HOME/.claude/routines/daybook-interview-session.command"

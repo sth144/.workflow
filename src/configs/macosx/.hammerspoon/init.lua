@@ -49,6 +49,8 @@ local mod = { "cmd", "ctrl" }
 -- | —       | Slack       | Cmd+Ctrl+S   |
 -- | —       | VS Code     | Cmd+Ctrl+E   |
 -- | —       | Forks       | Cmd+Ctrl+F   |
+-- | —       | Claude YOLO | Cmd+Ctrl+Y   |
+-- | —       | Daybook     | Cmd+Ctrl+B   |
 -- | —       | DiffToggle  | Cmd+Ctrl+D   |
 
 local scratchpads = {
@@ -163,6 +165,28 @@ local scratchpads = {
     width       = 0.85,
     height      = 0.9,
     windowTitle = "claude-forks",
+  },
+
+  -- Claude Code in --yolo (--dangerously-skip-permissions) mode, launched in $HOME.
+  -- NOTE: This uses a custom handler, not the standard toggleScratchpad.
+  claudeyolo = {
+    hotkey      = mod,
+    key         = "y",
+    width       = 0.85,
+    height      = 0.9,
+    windowTitle = "claude-yolo",
+  },
+
+  -- Morning Daybook interview window (i3: none).
+  -- NOTE: custom handler — focuses the interview window if open, otherwise launches
+  -- it on demand (the same session the daily launchd job runs). Title is pinned to
+  -- "Daybook" (by both launchAlacritty here and daybook-interview.sh) so it's findable.
+  daybook = {
+    hotkey      = mod,
+    key         = "b",
+    width       = 0.85,
+    height      = 0.9,
+    windowTitle = "Daybook",
   },
 }
 
@@ -307,6 +331,45 @@ local function toggleClaudeForks()
   toggleTermScratchpad("HS-FORKS", "tmux new-session -A -s claude-forks", scratchpads.forks)
 end
 
+local function toggleClaudeYolo()
+  -- Unset CLAUDECODE first: if Hammerspoon was (re)launched from inside a Claude
+  -- Code session, it inherits CLAUDECODE=1, which every child inherits too. claude
+  -- then refuses to start ("cannot be launched inside another Claude Code session")
+  -- and the window dies instantly. tmux/ranger/bc don't care, so only this pad breaks.
+  toggleTermScratchpad("HS-CLAUDE-YOLO", "unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT && cd ~ && claude --dangerously-skip-permissions", scratchpads.claudeyolo)
+end
+
+-- Toggle the morning Daybook interview window. If it's open, focus/hide it like
+-- the other scratchpads. If it's NOT open, announce that and launch the interview
+-- on demand — the same session the daily launchd job runs — so it can be started
+-- by hotkey too. We launch via launchAlacritty (open -na) rather than calling
+-- daybook-interview.sh: that script uses `exec alacritty`, which is fine under
+-- launchd but would get SIGHUP'd and die when spawned from Hammerspoon. The
+-- session script unsets CLAUDECODE itself, so an inherited env won't kill it.
+local function toggleDaybook()
+  local marker = "Daybook"
+  local win = findAlacrittyWindowByTitle(marker)
+  if win then
+    local focused = hs.window.focusedWindow()
+    if focused and focused:id() == win:id() then
+      win:application():hide()
+    else
+      win:application():unhide()
+      positionWindow(win, scratchpads.daybook)
+      win:raise()
+      win:focus()
+    end
+    return
+  end
+
+  hs.alert.show("No Daybook window — starting interview…")
+  launchAlacritty(marker, "exec " .. os.getenv("HOME") .. "/.claude/routines/daybook-interview-session.command")
+  hs.timer.doAfter(0.8, function()
+    local w = findAlacrittyWindowByTitle(marker)
+    if w then positionWindow(w, scratchpads.daybook) end
+  end)
+end
+
 --------------------------------------------------------------------------------
 -- Bind hotkeys
 --------------------------------------------------------------------------------
@@ -319,6 +382,10 @@ for name, config in pairs(scratchpads) do
     hs.hotkey.bind(config.hotkey, config.key, toggleBcCalc)
   elseif name == "forks" then
     hs.hotkey.bind(config.hotkey, config.key, toggleClaudeForks)
+  elseif name == "claudeyolo" then
+    hs.hotkey.bind(config.hotkey, config.key, toggleClaudeYolo)
+  elseif name == "daybook" then
+    hs.hotkey.bind(config.hotkey, config.key, toggleDaybook)
   elseif config.bundleID then
     hs.hotkey.bind(config.hotkey, config.key, function()
       toggleScratchpad(config)

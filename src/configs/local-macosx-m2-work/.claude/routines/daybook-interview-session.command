@@ -46,4 +46,10 @@ fi
 # session, so don't stop to confirm every tool call (Joplin/Trello/subagents).
 # The session inherits the user's normal global MCP config (Joplin + Trello). If
 # those tools are ever missing here, add: --mcp-config "$HOME/.claude/mcp.json"
+#
+# Unset CLAUDECODE first: claude refuses to start an interactive session if it
+# inherits CLAUDECODE=1 from a parent Claude Code session ("cannot be launched
+# inside another Claude Code session") and exits instantly — closing the window.
+# launchd's env is clean, but unset defensively so manual/inherited launches work.
+unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT
 exec claude --dangerously-skip-permissions "$(cat "$PROMPT_FILE")"
