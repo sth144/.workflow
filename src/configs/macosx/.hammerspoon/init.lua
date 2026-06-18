@@ -163,8 +163,8 @@ local scratchpads = {
   forks = {
     hotkey      = mod,
     key         = "f",
-    width       = 0.85,
-    height      = 0.9,
+    width       = 0.95,
+    height      = 0.95,
     windowTitle = "claude-forks",
   },
 
@@ -355,7 +355,7 @@ local function toggleRanger()
 end
 
 local function toggleBcCalc()
-  toggleTermScratchpad("HS-CALC", "bc -l", scratchpads.calculator, scratchApp("Calculator"))
+  toggleTermScratchpad("HS-CALC", "bc ~/.bcrc -l", scratchpads.calculator, scratchApp("Calculator"))
 end
 
 local function toggleClaudeForks()

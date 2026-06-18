@@ -150,7 +150,7 @@ _detect_skip_perms() {
 		pid="$ppid"
 	done
 }
-_detect_skip_perms
+_detect_skip_perms || true
 
 # ---- Build the inner command + its positional args (per mode) ----------------
 # Orientation system prompts (apostrophe-free so they embed cleanly everywhere).

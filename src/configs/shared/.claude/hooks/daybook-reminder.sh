@@ -63,6 +63,6 @@ log "Non-trivial session ($LINE_COUNT lines, $TOOL_HITS tool uses) — reminding
 
 # Short reason for terminal, detailed instructions in separate file
 cat <<EOF
-{"decision":"block","reason":"Update daybook before stopping. Read ~/.claude/hooks/daybook-instructions.md for details. Time: $NOW"}
+{"decision":"block","reason":"Update daybook before stopping. Read ~/.claude/hooks/daybook-instructions.md for details. Time: $NOW","suppressOutput":true}
 EOF
 exit 0

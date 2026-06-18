@@ -26,7 +26,8 @@
     },
     "slack": {
       "type": "http",
-      "url": "https://mcp.slack.com/mcp"
+      "url": "https://mcp.slack.com/mcp",
+      "disabled": true
     },
     "chrome-devtools": {
       "type": "stdio",
