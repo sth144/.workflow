@@ -3,8 +3,9 @@ from __future__ import annotations
 
 """Bidirectional sync between Trello Today list and Joplin daybook.
 
-Phase 1 (Joplin -> Trello): Moves checked items to Done in Trello.
-Phase 2 (Trello -> Joplin): Pulls current Today cards into the daybook.
+Phase 1  (Joplin -> Trello): Moves checked items to Done in Trello.
+Phase 1b (Joplin -> Trello): Creates Today cards for manual unchecked items.
+Phase 2  (Trello -> Joplin): Pulls current Today cards into the daybook.
 
 Required env vars:
   TRELLO_API_KEY, TRELLO_TOKEN, JOPLIN_TOKEN
@@ -40,6 +41,7 @@ CHECKED_TRELLO_RE = re.compile(
 UNCHECKED_TRELLO_RE = re.compile(
     r"^- \[ \]\s+(.+?)\s*<!--\s*trello:(\w+)\s*-->$"
 )
+MANUAL_UNCHECKED_RE = re.compile(r"^- \[ \]\s+(.+)$")
 TODO_HEADING_RE = re.compile(r"^#{1,2}\s+To\s*Do")
 SECTION_HEADING_RE = re.compile(r"^#{1,2}\s+\S")
 
@@ -97,6 +99,18 @@ def trello_put(path: str, **params: Any) -> bool:
         f"https://api.trello.com/1{path}", params=params, timeout=30
     )
     return resp.status_code == 200
+
+
+def trello_post(path: str, **params: Any) -> dict[str, Any] | None:
+    """Create a Trello resource. Returns the JSON response, or None on failure."""
+    params["key"] = TRELLO_API_KEY
+    params["token"] = TRELLO_TOKEN
+    resp = requests.post(
+        f"https://api.trello.com/1{path}", params=params, timeout=30
+    )
+    if resp.status_code in (200, 201):
+        return resp.json()
+    return None
 
 
 # -- Joplin daybook helpers --
@@ -218,6 +232,46 @@ def phase1_push_completions(body: str) -> tuple[str, dict[str, Any]]:
             new_todo_lines.append(f"- [x] {card_name}")
         else:
             new_todo_lines.append(line)
+
+    updated_body = before + "\n# To Do ✅\n" + "\n".join(new_todo_lines) + "\n" + after
+    return updated_body, stats
+
+
+# -- Phase 1b: Push new Joplin items to Trello --
+
+
+def phase1b_push_new_items(body: str) -> tuple[str, dict[str, Any]]:
+    """Create Today cards for manual unchecked items that lack a marker.
+
+    A "manual" item is an unchecked ``- [ ]`` line with no
+    ``<!-- trello:CARD_ID -->`` marker. Each is created as a card in the
+    Today list, and the new card's ID is stamped back onto the source line
+    so it is tracked on subsequent syncs. Returns (updated_body, stats).
+    """
+    stats: dict[str, Any] = {"created": 0, "failed": []}
+
+    before, todo_lines, after = parse_todo_section(body)
+    if not todo_lines:
+        return body, stats
+
+    new_todo_lines: list[str] = []
+    for line in todo_lines:
+        m = MANUAL_UNCHECKED_RE.match(line.strip())
+        if not m or TRELLO_MARKER_RE.search(line):
+            new_todo_lines.append(line)
+            continue
+
+        card_name = m.group(1).strip()
+        card = trello_post("/cards", idList=TODAY_LIST_ID, name=card_name)
+        if card and card.get("id"):
+            indent = line[: len(line) - len(line.lstrip())]
+            new_todo_lines.append(
+                f"{indent}- [ ] {card_name} <!-- trello:{card['id']} -->"
+            )
+            stats["created"] += 1
+        else:
+            new_todo_lines.append(line)
+            stats["failed"].append(card_name)
 
     updated_body = before + "\n# To Do ✅\n" + "\n".join(new_todo_lines) + "\n" + after
     return updated_body, stats
@@ -420,6 +474,7 @@ def main() -> int:
     note = find_daybook_note(title)
 
     phase1_stats: dict[str, Any] = {"moved": 0, "failed": []}
+    phase1b_stats: dict[str, Any] = {"created": 0, "failed": []}
     created = False
 
     if note:
@@ -446,6 +501,11 @@ def main() -> int:
         if phase1_stats["moved"] > 0:
             joplin_put(f"/notes/{note_id}", {"body": body})
 
+    # Phase 1b: create Trello cards for manual unchecked items
+    body, phase1b_stats = phase1b_push_new_items(body)
+    if phase1b_stats["created"] > 0:
+        joplin_put(f"/notes/{note_id}", {"body": body})
+
     # Phase 2: pull today list
     body, phase2_stats = phase2_pull_today(body)
     joplin_put(f"/notes/{note_id}", {"body": body})
@@ -458,6 +518,7 @@ def main() -> int:
         "created": created,
         "phase0_prior_flush": flush_stats,
         "phase1": phase1_stats,
+        "phase1b_new_to_trello": phase1b_stats,
         "phase2": phase2_stats,
     }
     print(json.dumps(output, indent=2))

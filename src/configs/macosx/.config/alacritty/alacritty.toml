@@ -50,3 +50,11 @@ blue    = "#61afef"
 magenta = "#c678dd"
 cyan    = "#56b6c2"
 white   = "#ffffff"
+
+[keyboard]
+# Ctrl+Shift+5 -> split the tmux pane to the right (VSCode-style).
+# Sends the tmux prefix (C-b, \u0002) then `"`, which this setup binds to
+# `split-window -h`. Outside tmux it just sends `C-b "`, which is harmless.
+bindings = [
+  { key = "5", mods = "Control|Shift", chars = "\u0002\"" },
+]

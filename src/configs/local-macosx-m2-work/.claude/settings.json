@@ -1,5 +1,9 @@
 {
   "alwaysThinkingEnabled": true,
+  "env": {
+    "MCP_TOOL_TIMEOUT": "30000",
+    "MCP_TIMEOUT": "30000"
+  },
   "extraKnownMarketplaces": {
     "l7esp": {
       "source": {
