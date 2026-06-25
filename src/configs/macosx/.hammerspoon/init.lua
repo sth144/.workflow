@@ -27,8 +27,38 @@
 -- running config (used for debugging scratchpad toggles from a shell).
 require("hs.ipc")
 
+-- Prompt for Accessibility on first launch; without it macOS blocks global
+-- hotkeys even though Hammerspoon can load the config successfully.
+hs.accessibilityState(true)
+
 -- Modifier used for all scratchpads (Cmd+Ctrl avoids conflicts with macOS/apps)
 local mod = { "cmd", "ctrl" }
+
+local function fileExists(path)
+  return hs.fs.attributes(path, "mode") ~= nil
+end
+
+local function aiTerminalConfig()
+  local home = os.getenv("HOME")
+  local configPath = home .. "/.hammerspoon/ai_terminal.lua"
+  if fileExists(configPath) then
+    local ok, config = pcall(dofile, configPath)
+    if ok and type(config) == "table" then
+      return config
+    end
+    hs.alert.show("Could not load " .. configPath)
+  end
+
+  return {
+    name = "Shell",
+    yoloMarker = "HS-AI-YOLO",
+    yoloCommand = 'exec "$SHELL"',
+    yoloApp = "Terminal",
+    daybookSession = nil,
+  }
+end
+
+local aiTerminal = aiTerminalConfig()
 
 -- i3 scratchpad mappings for macOS
 -- Key mapping rationale:
@@ -49,7 +79,7 @@ local mod = { "cmd", "ctrl" }
 -- | —       | Slack       | Cmd+Ctrl+S   |
 -- | —       | VS Code     | Cmd+Ctrl+E   |
 -- | —       | Forks       | Cmd+Ctrl+F   |
--- | —       | Claude YOLO | Cmd+Ctrl+Y   |
+-- | —       | AI YOLO     | Cmd+Ctrl+Y   |
 -- | —       | Daybook     | Cmd+Ctrl+B   |
 -- | —       | DiffToggle  | Cmd+Ctrl+D   |
 
@@ -168,14 +198,14 @@ local scratchpads = {
     windowTitle = "claude-forks",
   },
 
-  -- Claude Code in --yolo (--dangerously-skip-permissions) mode, launched in $HOME.
+  -- Local AI CLI in YOLO/permissive mode, launched in $HOME.
   -- NOTE: This uses a custom handler, not the standard toggleScratchpad.
-  claudeyolo = {
+  aiyolo = {
     hotkey      = mod,
     key         = "y",
     width       = 0.85,
     height      = 0.9,
-    windowTitle = "claude-yolo",
+    windowTitle = aiTerminal.yoloMarker,
   },
 
   -- Morning Daybook interview window (i3: none).
@@ -362,12 +392,8 @@ local function toggleClaudeForks()
   toggleTermScratchpad("HS-FORKS", "tmux new-session -A -s claude-forks", scratchpads.forks, scratchApp("Forks"))
 end
 
-local function toggleClaudeYolo()
-  -- Unset CLAUDECODE first: if Hammerspoon was (re)launched from inside a Claude
-  -- Code session, it inherits CLAUDECODE=1, which every child inherits too. claude
-  -- then refuses to start ("cannot be launched inside another Claude Code session")
-  -- and the window dies instantly. tmux/ranger/bc don't care, so only this pad breaks.
-  toggleTermScratchpad("HS-CLAUDE-YOLO", "unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT && cd ~ && claude --dangerously-skip-permissions", scratchpads.claudeyolo, scratchApp("Claude YOLO"))
+local function toggleAiYolo()
+  toggleTermScratchpad(aiTerminal.yoloMarker, aiTerminal.yoloCommand, scratchpads.aiyolo, scratchApp(aiTerminal.yoloApp))
 end
 
 -- Toggle the morning Daybook interview window. If it's open, focus/hide it like
@@ -375,8 +401,7 @@ end
 -- on demand — the same session the daily launchd job runs — so it can be started
 -- by hotkey too. We launch via launchAlacritty (open -na) rather than calling
 -- daybook-interview.sh: that script uses `exec alacritty`, which is fine under
--- launchd but would get SIGHUP'd and die when spawned from Hammerspoon. The
--- session script unsets CLAUDECODE itself, so an inherited env won't kill it.
+-- launchd but would get SIGHUP'd and die when spawned from Hammerspoon.
 local function toggleDaybook()
   local marker = "Daybook"
   local win = findAlacrittyWindowByTitle(marker)
@@ -393,8 +418,13 @@ local function toggleDaybook()
     return
   end
 
+  if not aiTerminal.daybookSession then
+    hs.alert.show("No Daybook session configured for " .. aiTerminal.name)
+    return
+  end
+
   hs.alert.show("No Daybook window — starting interview…")
-  launchAlacritty(marker, "exec " .. os.getenv("HOME") .. "/.claude/routines/daybook-interview-session.command", scratchApp("Daybook"))
+  launchAlacritty(marker, "exec " .. aiTerminal.daybookSession, scratchApp("Daybook"))
   hs.timer.doAfter(0.8, function()
     local w = findAlacrittyWindowByTitle(marker)
     if w then positionWindow(w, scratchpads.daybook) end
@@ -415,8 +445,8 @@ for name, config in pairs(scratchpads) do
     hs.hotkey.bind(config.hotkey, config.key, toggleBcCalc)
   elseif name == "forks" then
     hs.hotkey.bind(config.hotkey, config.key, toggleClaudeForks)
-  elseif name == "claudeyolo" then
-    hs.hotkey.bind(config.hotkey, config.key, toggleClaudeYolo)
+  elseif name == "aiyolo" then
+    hs.hotkey.bind(config.hotkey, config.key, toggleAiYolo)
   elseif name == "daybook" then
     hs.hotkey.bind(config.hotkey, config.key, toggleDaybook)
   elseif config.bundleID then

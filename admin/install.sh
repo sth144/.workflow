@@ -41,6 +41,19 @@ copy_utils_layer() {
 		"$1"/ "$BASE_ABS/stage/bin"/
 }
 
+replace_in_staged_text_files() {
+	local search="$1"
+	local replace="$2"
+	local file
+
+	while IFS= read -r -d '' file; do
+		grep -Iq . "$file" || continue
+		WORKFLOW_SEARCH="$search" WORKFLOW_REPLACE="$replace" perl -0pi -e '
+			s/\Q$ENV{WORKFLOW_SEARCH}\E/$ENV{WORKFLOW_REPLACE}/g
+		' "$file"
+	done < <(find "$BASE_ABS/stage" -type f -print0)
+}
+
 echo "BASE_ABS ${BASE_ABS}"
 
 stage() {
@@ -130,10 +143,10 @@ stage() {
 	# change <USER> tag to $USER wherever it appears in files
 
 	if [[ $(uname) == "Darwin" ]]; then
-		find "$BASE_ABS/stage" -type f -exec sed -i 's|/home/<USER>|/Users/<USER>|g' {} +
+		replace_in_staged_text_files "/home/<USER>" "/Users/<USER>"
 	fi
 
-	find "$BASE_ABS/stage" -type f -exec sed -i -e "s@<USER>@$USER@g" {} +
+	replace_in_staged_text_files "<USER>" "$USER"
 
 	find "$BASE_ABS/stage" -type f -name '*-e' -exec rm -f {} +
 }
@@ -161,12 +174,12 @@ update_home() {
 		chflags nouchg ~/.claude/settings.json 2>/dev/null
 
 		# copy config build and utils to ~
-		sudo $CP -rT $BASE_ABS/stage/docker/ ~/.config/docker
+		$CP -rT $BASE_ABS/stage/docker/ ~/.config/docker
 		rm -rf $BASE_ABS/stage/docker
-		sudo $CP -r $BASE_ABS/stage/ ~/ && sudo chown -R $(whoami) $BASE_ABS/stage
-		sudo $CP -r $BASE_ABS/stage/.[^.]* ~/
-		sudo $CP $BASE_ABS/stage/.bashrc ~/
-		sudo $CP -rT $BASE_ABS/stage/.config ~/.config
+		$CP -r $BASE_ABS/stage/ ~/
+		$CP -r $BASE_ABS/stage/.[^.]* ~/
+		$CP $BASE_ABS/stage/.bashrc ~/
+		$CP -rT $BASE_ABS/stage/.config ~/.config
 		sudo $CP -rT $BASE_ABS/stage/bin/ /usr/local/bin/
 
 		# lock settings.json to prevent Open Island.app from overwriting it
