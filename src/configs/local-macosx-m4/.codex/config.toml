@@ -30,3 +30,15 @@ enabled = true
 
 [tui.model_availability_nux]
 "gpt-5.3-codex-spark" = 4
+
+# Daybook worklog Stop hook — mirrors the Claude Code daybook reminder.
+# Blocks the turn once to nag for a Joplin daybook entry after non-trivial work;
+# the "reason" becomes a continuation prompt. Defined in config.toml (not
+# hooks.json) so it coexists with OpenIsland's ~/.codex/hooks.json instead of
+# clobbering it. Scoped to this layer because the Joplin MCP server lives here.
+# Requires a one-time trust approval via `/hooks` in Codex after install.
+[[hooks.Stop]]
+[[hooks.Stop.hooks]]
+type = "command"
+command = "$HOME/.codex/hooks/daybook-reminder.sh"
+timeout = 10
