@@ -1,0 +1,6 @@
+# Truncate large Docker container JSON logs monthly
+SHELL=/bin/bash
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+# Run at 03:17 on the 1st of every month
+17 3 1 * * root find /var/lib/docker/containers -type f -name "*-json.log" -size +50M -exec truncate -s 0 {} \; >/dev/null 2>&1
