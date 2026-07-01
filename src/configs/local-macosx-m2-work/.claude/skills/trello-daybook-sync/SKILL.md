@@ -38,7 +38,9 @@ incomplete to-do items from the most recent prior entry.
 ### Step 1: Run the sync script
 
 ```bash
-python ~/.claude/skills/trello-daybook-sync/sync.py
+# Use an interpreter that has `requests` — bare `python3` may resolve to one
+# without it (e.g. Homebrew/pyenv). System python (/usr/bin/python3) ships with it.
+/usr/bin/python3 ~/.claude/skills/trello-daybook-sync/sync.py
 ```
 
 Capture the JSON output.

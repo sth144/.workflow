@@ -9,7 +9,8 @@
 0 16 * * 5 <USER> /bin/bash ~/.claude/routines/sprint-summary.sh >> ~/.claude/routines/logs/sprint-summary.log 2>&1
 
 # Trello Today → Daybook Sync - weekdays at 7am
-0 7 * * 1-5 <USER> /bin/bash ~/.claude/routines/trello-daybook-sync.sh >> ~/.claude/routines/logs/trello-daybook-sync.log 2>&1
+# Disabled: launchd com.workflow.trello-daybook-sync handles this (avoids double-run/double Slack post)
+# 0 7 * * 1-5 <USER> /bin/bash ~/.claude/routines/trello-daybook-sync.sh >> ~/.claude/routines/logs/trello-daybook-sync.log 2>&1
 
 # Weekly Daybook Notebook - Friday at 3pm
 0 15 * * 5 <USER> /bin/bash ~/.claude/routines/weekly-notebook.sh >> ~/.claude/routines/logs/weekly-notebook.log 2>&1
