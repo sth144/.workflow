@@ -82,6 +82,7 @@ local aiTerminal = aiTerminalConfig()
 -- | —       | AI YOLO     | Cmd+Ctrl+Y   |
 -- | —       | Daybook     | Cmd+Ctrl+B   |
 -- | —       | DiffToggle  | Cmd+Ctrl+D   |
+-- | —       | ResMonitor  | Cmd+Ctrl+M   |
 
 local scratchpads = {
   -- Terminal (i3: Alt+U)
@@ -477,6 +478,59 @@ hs.pathwatcher.new(os.getenv("HOME") .. "/.hammerspoon/", reloadConfig):start()
 --------------------------------------------------------------------------------
 -- Utility hotkeys
 --------------------------------------------------------------------------------
+
+-- Resource Monitor floating webview (Cmd+Ctrl+M)
+-- Generates a fresh report, then shows/hides it in a borderless floating window.
+local resmonWebview = nil
+local resmonVisible = false
+
+local function toggleResmon()
+  if resmonVisible and resmonWebview then
+    resmonWebview:hide()
+    resmonVisible = false
+    return
+  end
+
+  -- Regenerate the report HTML (fast — reads JSONL, writes HTML)
+  local venvPy = os.getenv("HOME") .. "/.cache/.workflow/resource-monitor/.venv/bin/python3"
+  local script = "/usr/local/bin/monitor/resource_report.py"
+  if not fileExists(script) then
+    script = "/usr/local/src/workflow-macos-1095/src/utils/macosx/monitor/resource_report.py"
+  end
+  hs.execute(venvPy .. " " .. script .. " --no-open 2>/dev/null", true)
+
+  local reportPath = os.getenv("HOME") .. "/.cache/.workflow/resource-monitor/report.html"
+  if not hs.fs.attributes(reportPath) then
+    hs.alert.show("No resource data — run 'resmon' first to bootstrap")
+    return
+  end
+
+  if not resmonWebview then
+    local screen = hs.screen.mainScreen()
+    local f = screen:frame()
+    local w, h = 1450, 1000
+    resmonWebview = hs.webview.new(
+      { x = f.x + (f.w - w) / 2, y = f.y + (f.h - h) / 2, w = w, h = h }
+    )
+    resmonWebview:windowStyle({ "borderless", "closable", "resizable" })
+    resmonWebview:level(hs.drawing.windowLevels.floating)
+    resmonWebview:alpha(0.85)
+    resmonWebview:allowTextEntry(true)
+    resmonWebview:windowCallback(function(action)
+      if action == "closing" then
+        resmonVisible = false
+        resmonWebview = nil
+      end
+    end)
+  end
+
+  resmonWebview:url("file://" .. reportPath)
+  resmonWebview:show()
+  resmonWebview:bringToFront()
+  resmonVisible = true
+end
+
+hs.hotkey.bind(mod, "m", toggleResmon)
 
 -- Toggle Claude Code diff tab hook (Cmd+Ctrl+D)
 hs.hotkey.bind(mod, "d", function()

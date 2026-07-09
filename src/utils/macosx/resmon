@@ -1,0 +1,12 @@
+#!/bin/bash
+# resmon — Resource Monitor
+# Opens a native window with rolling 24h CPU, memory, and disk charts.
+# Usage: resmon [--last 6h] [--browser] [--no-open]
+VENV_PY="$HOME/.cache/.workflow/resource-monitor/.venv/bin/python3"
+SCRIPT="/usr/local/src/workflow-macos-1095/src/utils/macosx/monitor/resource_report.py"
+[ -f "$SCRIPT" ] || SCRIPT="/usr/local/bin/monitor/resource_report.py"
+if [ -x "$VENV_PY" ]; then
+		exec "$VENV_PY" "$SCRIPT" "$@"
+else
+		exec "$SCRIPT" "$@"
+fi

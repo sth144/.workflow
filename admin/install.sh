@@ -299,6 +299,35 @@ update_scratchpad_apps() {
 	echo "Scratchpad apps updated"
 }
 
+update_workflow_apps() {
+	if [[ $(uname) != "Darwin" ]]; then
+		echo "Skipping workflow apps (not macOS)"
+		return 0
+	fi
+
+	local appwrap="/usr/local/bin/os/appwrap.sh"
+	local apps_dir="$HOME/Applications"
+
+	[ -f "$appwrap" ] || { echo "workflow apps: $appwrap missing; skipping"; return 0; }
+	mkdir -p "$apps_dir"
+
+	# Resource Monitor — floating widget for CPU/mem/disk charts
+	local resmon_icon="/System/Applications/Utilities/Activity Monitor.app/Contents/Resources/AppIcon.icns"
+	if [ -f "$resmon_icon" ]; then
+		if bash "$appwrap" -b "/usr/local/bin/resmon" -t "Resource Monitor" -i "$resmon_icon" \
+			--out "$apps_dir" --name "Resource Monitor" --build-only >/dev/null; then
+			xattr -dr com.apple.quarantine "$apps_dir/Resource Monitor.app" 2>/dev/null || true
+			echo "  built Resource Monitor.app"
+		else
+			echo "  WARN: failed to build Resource Monitor.app"
+		fi
+	else
+		echo "  skip Resource Monitor (no Activity Monitor icon found)"
+	fi
+
+	echo "Workflow apps updated"
+}
+
 update_systemd_services() {
 	if [ -d /etc/systemd ]; then
 

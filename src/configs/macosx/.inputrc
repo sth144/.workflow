@@ -1,0 +1,20 @@
+# ~/.inputrc — readline key bindings for bash
+# Fixes Ctrl/Option/Cmd + arrow emitting literal escape junk in Alacritty.
+
+# Pull in system defaults first, if present.
+$include /etc/inputrc
+
+# --- word movement (Ctrl+arrow and Option+arrow) ---
+"\e[1;5C": forward-word      # Ctrl+Right
+"\e[1;5D": backward-word     # Ctrl+Left
+"\e[1;3C": forward-word      # Option+Right
+"\e[1;3D": backward-word     # Option+Left
+
+# --- line movement (Cmd+arrow) ---
+"\e[1;9C": end-of-line       # Cmd+Right
+"\e[1;9D": beginning-of-line # Cmd+Left
+
+# --- word deletion ---
+"\e[3;5~": kill-word         # Ctrl+Delete
+"\e[3;3~": kill-word         # Option+Delete (forward)
+"\e\d": backward-kill-word   # Option+Backspace
