@@ -64,6 +64,6 @@ NOW=$(date '+%H:%M')
 log "Non-trivial session ($LINE_COUNT lines, $TOOL_HITS tool uses) — reminding to log/update daybook"
 
 cat <<EOF
-{"decision":"block","reason":"Update the Joplin daybook before stopping. Read ~/.codex/hooks/daybook-instructions.md for details. Time: $NOW"}
+{"decision":"block","reason":"Daybook log due. Delegate to the daybook-logger subagent if available; otherwise follow ~/.codex/hooks/daybook-instructions.md silently. Keep chat output to final task status. Time: $NOW"}
 EOF
 exit 0
