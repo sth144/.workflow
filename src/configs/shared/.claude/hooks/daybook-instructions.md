@@ -2,14 +2,18 @@
 
 Before stopping, check and update today's daybook note.
 
-Prefer delegating this maintenance to a fresh subagent. Ask it to update the
-Journal daybook note with the hook time and a one-sentence summary of the
-completed task, then use only its compact status in the final task response.
+Delegate this maintenance to a fresh subagent running in the BACKGROUND
+(run_in_background: true). Ask it to update the Journal daybook note with the
+hook time and a one-sentence summary of the completed task. Do NOT wait for it
+and do NOT block the main turn on its result — spawn it, then stop immediately;
+the background agent finishes and notifies on its own. (Only if background
+delegation is unavailable, fall back to a synchronous subagent, or as a last
+resort follow the steps below inline — silently.)
 
 Keep this maintenance step quiet in chat: do not quote note contents, copied to-do
 items, search results, or full Joplin/Trello tool responses unless the user
-asked for them. After the note is updated, continue with the normal final task
-response.
+asked for them. The main chat output stays limited to the normal final task
+response — do not announce the daybook update or paste the subagent's status.
 
 ## Find or Create Today's Note
 
