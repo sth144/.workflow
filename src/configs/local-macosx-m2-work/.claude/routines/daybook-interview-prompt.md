@@ -17,7 +17,7 @@ assume today's note already exists.
 4. Read that note's body and collect the unchecked items (`- [ ]`) under its
    `## To Do` section. Ignore checked items (`- [x]`) and the `## Worklog`.
 5. **Deduplicate against prior completions.** Fetch the 5 most recent prior
-   Daybook notes (search `notebook:Daybook`, parse titles as dates, take the 5
+   Daybook notes (search `notebook:Journal`, parse titles as dates, take the 5
    newest before today). Collect every `- [x]` item from their `## To Do`
    sections. Match by `<!-- trello:CARD_ID -->` marker first, then by item text
    (ignoring leading/trailing whitespace and markers). For each of today's

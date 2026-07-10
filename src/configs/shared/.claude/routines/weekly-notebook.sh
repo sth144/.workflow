@@ -41,7 +41,7 @@ Visual scratchpad for the week. Use this notebook for:
 - SQL query results worth visualizing
 - Any analysis promoted from the terminal via \"notebook this\"
 
-**Joplin daybook**: Search for daily entries in Areas / Daybook
+**Joplin daybook**: Search for daily entries in Areas / Journal
 \`\`\`
 
 ### Cell 2 — Common imports and setup

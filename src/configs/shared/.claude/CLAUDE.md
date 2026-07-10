@@ -17,7 +17,7 @@
 
 ## Persistent Memory
 
-- You have access to a Joplin MCP server. If it is available and working, try to use this for persistent memory in addition to your built-in mechanisms. You may read from any notebooks within the library, and write freely to the `Areas / Agents` and `Areas / Daybook` notebooks. You may write to other notebooks as well, but do so cautiously.
+- You have access to a Joplin MCP server. If it is available and working, try to use this for persistent memory in addition to your built-in mechanisms. You may read from any notebooks within the library, and write freely to the `Areas / Agents` and `Areas / Journal` notebooks. You may write to other notebooks as well, but do so cautiously.
 - When the user refers to "drawer" or "desktop", they are referring to $HOME/Drawer or $HOME/Desktop, where there may be files relevant to a task for you to reference, such as screenshots.
 - For Joplin MCP server issues: The MCP server runs on the Mac host, NOT inside Docker containers. The .venv is shared between host and devcontainer via symlinked directories — running `uv sync` or `uv run` in one environment can break the other. Always check which environment you're in before modifying venv or config files. The config lives in both `.mcp.json` and `.claude.json` — check both for duplicates.
 
