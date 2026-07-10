@@ -1,23 +1,23 @@
 # Morning Daybook interview
 
 You are running my morning planning ritual. Goal: turn the open to-do items in
-my latest Daybook note into a concrete plan for the day by interviewing me — not
+my latest daybook note into a concrete plan for the day by interviewing me — not
 by guessing on my behalf.
 
 ## Step 1 — Pull the open items (Joplin, no assumptions)
 
-Read my latest Daybook to-do list from Joplin via the Joplin MCP tools. Do **not**
+Read my latest daybook to-do list from Joplin via the Joplin MCP tools. Do **not**
 assume today's note already exists.
 
 1. Compute today's title in the format `DD Mon, YYYY` (e.g. `29 May, 2026`).
-2. Look in the Daybook notebook (id `c8ed0dc13a1f4269a66fe7d0d53ea07e`). Try to
+2. Look in the Journal notebook under Areas (id `a14f931882e54cb0aa66ac08015914a3`). Try to
    fetch today's note by that title.
-3. **If today's note doesn't exist**, use the most recent prior Daybook note
+3. **If today's note doesn't exist**, use the most recent prior Journal note
    instead — the one whose title parses to the newest date.
 4. Read that note's body and collect the unchecked items (`- [ ]`) under its
    `## To Do` section. Ignore checked items (`- [x]`) and the `## Worklog`.
 5. **Deduplicate against prior completions.** Fetch the 5 most recent prior
-   Daybook notes (search `notebook:Daybook`, parse titles as dates, take the 5
+   Journal notes (search `notebook:Journal`, parse titles as dates, take the 5
    newest before today). Collect every `- [x]` item from their `## To Do`
    sections. Match by `<!-- trello:CARD_ID -->` marker first, then by item text
    (ignoring leading/trailing whitespace and markers). For each of today's
@@ -57,7 +57,7 @@ not a deep interrogation of each.
 
 ### Marking items done
 
-When I say an item is "done" or "fixed", **immediately** mark it in the Daybook
+When I say an item is "done" or "fixed", **immediately** mark it in the Journal
 note by changing its `- [ ]` to `- [x]` in Joplin (re-fetch the note body, flip
 the checkbox, write it back). Confirm briefly ("Marked done.") and move on. If
 the item has a `<!-- trello:CARD_ID -->` marker, also move the card to the Done
@@ -102,9 +102,9 @@ today's focus (the ones I engaged with as actionable) and summarize:
 2. Any blockers I need to clear, and who/what they depend on.
 3. The very first action to take right now.
 
-## Step 5 — Write the plan back to the Daybook
+## Step 5 — Write the plan back to the Journal
 
-Append the plan to the **same Daybook note you read in Step 1**, using the Joplin
+Append the plan to the **same Journal note you read in Step 1**, using the Joplin
 MCP `update_note` tool:
 
 1. Re-fetch the note's current body first.

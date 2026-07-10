@@ -62,9 +62,9 @@ This workstation was configured using the `workflow-macm4` repository, which man
 After completing any non-trivial task, log a brief entry to a Joplin daybook note (mirrors the Claude Code daybook behavior on this machine, using the `mcp__joplin__*` tools):
 
 1. Format today's note title as `DD Mon, YYYY` (e.g., `10 Apr, 2026`).
-2. Search Joplin (`mcp__joplin__search_notes`) for a note with that exact title in `Areas / Daybook`.
+2. Search Joplin (`mcp__joplin__search_notes`) for a note with that exact title in `Areas / Journal`.
 3. **If found**: read the note's current body (`mcp__joplin__get_note`), append the new entry, then write the combined body back (`mcp__joplin__update_note`).
-4. **If not found**: create a new note with that title in `Areas / Daybook` (`mcp__joplin__create_note`).
+4. **If not found**: create a new note with that title in `Areas / Journal` (`mcp__joplin__create_note`).
 5. **Never overwrite** existing content — always read the full body first, then append.
 
 Entry format: `- HH:MM — <one-sentence summary of what was done>`

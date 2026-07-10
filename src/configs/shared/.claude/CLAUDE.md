@@ -85,9 +85,9 @@ Follow this general workflow for large tasks:
 After completing any non-trivial task, log a brief entry to a Joplin daybook note:
 
 1. Format today's note title as `DD Mon, YYYY` (e.g., `10 Apr, 2026`)
-2. Search Joplin for a note with that exact title in `Areas / Daybook`
+2. Search Joplin for a note with that exact title in `Areas / Journal`
 3. **If found**: get the note's current body, append the new entry, then update with the combined body
-4. **If not found**: create a new note with that title in `Areas / Daybook`
+4. **If not found**: create a new note with that title in `Areas / Journal`
 5. **Never overwrite** existing content — always read the full body first, then append
 
 Entry format: `- HH:MM — <one-sentence summary of what was done>`
