@@ -33,7 +33,7 @@ Parse the JSON response. For each card, extract:
 ### Step 2: Find or create today's Joplin daybook note
 
 1. Format today's date as `DD Mon, YYYY` (e.g., `20 Apr, 2026`)
-2. Search Joplin for a note with that exact title in `Areas / Journal`
+2. Search Joplin for a note with that exact title in `Areas / <DAYBOOK_NOTEBOOK>`
    (notebook ID: `c8ed0dc13a1f4269a66fe7d0d53ea07e`)
 3. If the note does not exist:
    - Find the most recent daybook entry

@@ -1,6 +1,7 @@
 {
-    "build": {
-        "useShared": true,
-        "include": []
-    }
+  "build": {
+    "useShared": true,
+    "include": [],
+    "daybookNotebook": "Journal"
+  }
 }

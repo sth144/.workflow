@@ -3,7 +3,7 @@
 Before stopping, check and update today's daybook note.
 
 Delegate this maintenance to a fresh subagent running in the BACKGROUND
-(run_in_background: true). Ask it to update the Journal daybook note with the
+(run_in_background: true). Ask it to update the <DAYBOOK_NOTEBOOK> daybook note with the
 hook time and a one-sentence summary of the completed task. Do NOT wait for it
 and do NOT block the main turn on its result — spawn it, then stop immediately;
 the background agent finishes and notifies on its own. (Only if background
@@ -17,10 +17,10 @@ response — do not announce the daybook update or paste the subagent's status.
 
 ## Find or Create Today's Note
 
-1. Search Joplin for today's note in `Areas / Journal` (title format: `DD Mon, YYYY`)
+1. Search Joplin for today's note in `Areas / <DAYBOOK_NOTEBOOK>` (title format: `DD Mon, YYYY`)
 2. If it exists, read it and append any work not already covered
 3. If it doesn't exist, create it:
-   - Search `notebook:Journal` and find the MOST RECENT dated note (compare dates, don't assume first result)
+   - Search `notebook:<DAYBOOK_NOTEBOOK>` and find the MOST RECENT dated note (compare dates, don't assume first result)
    - Extract ALL unchecked items (`- [ ] ...`) from that note — count them explicitly
    - Create new note with sections: `# To Do ✅` and `# Worklog 📝`
    - Paste ALL unchecked items under To Do (preserve exact text and indentation)

@@ -148,6 +148,11 @@ stage() {
 
 	replace_in_staged_text_files "<USER>" "$USER"
 
+	# change <DAYBOOK_NOTEBOOK> tag to the per-machine Joplin daybook notebook
+	# name (e.g. "Journal" on m4, "Daybook" on m2-work). Defaults to "Journal".
+	DAYBOOK_NOTEBOOK=$(echo "$BUILD_CONFIG" | jq -r '.daybookNotebook // "Journal"')
+	replace_in_staged_text_files "<DAYBOOK_NOTEBOOK>" "$DAYBOOK_NOTEBOOK"
+
 	find "$BASE_ABS/stage" -type f -name '*-e' -exec rm -f {} +
 }
 

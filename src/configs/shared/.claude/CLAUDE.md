@@ -17,7 +17,7 @@
 
 ## Persistent Memory
 
-- You have access to a Joplin MCP server. If it is available and working, try to use this for persistent memory in addition to your built-in mechanisms. You may read from any notebooks within the library, and write freely to the `Areas / Agents` and `Areas / Journal` notebooks. You may write to other notebooks as well, but do so cautiously.
+- You have access to a Joplin MCP server. If it is available and working, try to use this for persistent memory in addition to your built-in mechanisms. You may read from any notebooks within the library, and write freely to the `Areas / Agents` and `Areas / <DAYBOOK_NOTEBOOK>` notebooks. You may write to other notebooks as well, but do so cautiously.
 - When the user refers to "drawer" or "desktop", they are referring to $HOME/Drawer or $HOME/Desktop, where there may be files relevant to a task for you to reference, such as screenshots.
 - For Joplin MCP server issues: The MCP server runs on the Mac host, NOT inside Docker containers. The .venv is shared between host and devcontainer via symlinked directories — running `uv sync` or `uv run` in one environment can break the other. Always check which environment you're in before modifying venv or config files. The config lives in both `.mcp.json` and `.claude.json` — check both for duplicates.
 
@@ -85,9 +85,9 @@ Follow this general workflow for large tasks:
 After completing any non-trivial task, log a brief entry to a Joplin daybook note:
 
 1. Format today's note title as `DD Mon, YYYY` (e.g., `10 Apr, 2026`)
-2. Search Joplin for a note with that exact title in `Areas / Journal`
+2. Search Joplin for a note with that exact title in `Areas / <DAYBOOK_NOTEBOOK>`
 3. **If found**: get the note's current body, append the new entry, then update with the combined body
-4. **If not found**: create a new note with that title in `Areas / Journal`
+4. **If not found**: create a new note with that title in `Areas / <DAYBOOK_NOTEBOOK>`
 5. **Never overwrite** existing content — always read the full body first, then append
 
 Entry format: `- HH:MM — <one-sentence summary of what was done>`
