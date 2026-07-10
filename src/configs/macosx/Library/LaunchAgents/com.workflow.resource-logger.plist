@@ -9,7 +9,7 @@
 	<key>ProgramArguments</key>
 	<array>
 		<string>/usr/bin/python3</string>
-		<string>/usr/local/bin/monitor/resource_logger.py</string>
+		<string>/usr/local/src/workflow-macos-1095/src/utils/macosx/monitor/resource_logger.py</string>
 	</array>
 
 	<key>StartInterval</key>

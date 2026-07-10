@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.workflow.diskio-sampler</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python3</string>
+		<string>/usr/local/bin/monitor/diskio_sampler.py</string>
+	</array>
+	<key>StartInterval</key>
+	<integer>300</integer>
+	<key>StandardErrorPath</key>
+	<string>/tmp/workflow-diskio-sampler.log</string>
+</dict>
+</plist>

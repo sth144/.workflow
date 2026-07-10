@@ -188,6 +188,125 @@ def extract_sys_series(entries: list[dict]) -> dict[str, tuple[list, list]]:
 
 
 # ---------------------------------------------------------------------------
+# Disk blame — directory growth, per-process writes, open writers
+# ---------------------------------------------------------------------------
+
+def _extract_dir_series(entries: list[dict]) -> dict[str, tuple[list, list]]:
+    """Extract directory size timeseries (KB -> GB) from 'dirs' field."""
+    all_dirs: set[str] = set()
+    for entry in entries:
+        for d in entry.get("dirs", []):
+            all_dirs.add(d["path"])
+    if not all_dirs:
+        return {}
+
+    # Rank by latest size
+    latest: dict[str, int] = {}
+    for entry in reversed(entries):
+        for d in entry.get("dirs", []):
+            latest.setdefault(d["path"], d["kb"])
+        if len(latest) >= len(all_dirs):
+            break
+    top = sorted(latest, key=lambda k: latest[k], reverse=True)[:10]
+
+    series: dict[str, tuple[list, list]] = {d: ([], []) for d in top}
+    for entry in entries:
+        ts = entry["ts"]
+        snap = {d["path"]: d["kb"] for d in entry.get("dirs", [])}
+        for d in top:
+            if d in snap:
+                series[d][0].append(ts)
+                series[d][1].append(snap[d] / (1024 * 1024))  # GB
+    return series
+
+
+def _extract_writer_series(
+    entries: list[dict],
+) -> dict[str, tuple[list, list]]:
+    """Build timeseries for top disk writers (fs_usage bytes -> MB)."""
+    totals: dict[str, float] = defaultdict(float)
+    for entry in entries:
+        for w in entry.get("writers", []):
+            totals[w["name"]] += w.get("write_bytes", 0)
+    top = sorted(totals, key=lambda k: totals[k], reverse=True)[:MAX_TRACES]
+    if not top:
+        return {}
+
+    series: dict[str, tuple[list, list]] = {n: ([], []) for n in top}
+    for entry in entries:
+        ts = entry["ts"]
+        snap = {w["name"]: w.get("write_bytes", 0)
+                for w in entry.get("writers", [])}
+        for name in top:
+            series[name][0].append(ts)
+            series[name][1].append(snap.get(name, 0) / (1024 * 1024))  # MB
+    return series
+
+
+def _extract_lsof_series(
+    entries: list[dict],
+) -> dict[str, tuple[list, list]]:
+    """Build timeseries for open-write-FD counts from lsof."""
+    totals: dict[str, int] = defaultdict(int)
+    for entry in entries:
+        for w in entry.get("lsof", []):
+            totals[w["name"]] += w.get("open_writes", 0)
+    top = sorted(totals, key=lambda k: totals[k], reverse=True)[:MAX_TRACES]
+    if not top:
+        return {}
+
+    series: dict[str, tuple[list, list]] = {n: ([], []) for n in top}
+    for entry in entries:
+        ts = entry["ts"]
+        snap = {w["name"]: w.get("open_writes", 0)
+                for w in entry.get("lsof", [])}
+        for name in top:
+            series[name][0].append(ts)
+            series[name][1].append(snap.get(name, 0))
+    return series
+
+
+def _build_disk_blame_figure(entries: list[dict]) -> "go.Figure | None":
+    """Build a figure with directory growth, disk writers, and open-FD panels."""
+    dir_series = _extract_dir_series(entries)
+    writer_series = _extract_writer_series(entries)
+    lsof_series = _extract_lsof_series(entries)
+
+    panels: list[tuple[str, dict, str]] = []
+    if dir_series:
+        panels.append(("Directory Sizes", dir_series, "GB"))
+    if writer_series:
+        panels.append(("Disk Writers (fs_usage)", writer_series, "MB/sample"))
+    if lsof_series:
+        panels.append(("Open Write FDs (lsof)", lsof_series, "count"))
+    if not panels:
+        return None
+
+    fig = make_subplots(
+        rows=len(panels), cols=1,
+        subplot_titles=tuple(t for t, _, _ in panels),
+        vertical_spacing=0.08,
+    )
+    for i, (_, series, ylabel) in enumerate(panels, 1):
+        for name, (ts_vals, y_vals) in series.items():
+            fig.add_trace(
+                go.Scatter(x=ts_vals, y=y_vals, name=name,
+                           mode="lines+markers", marker=dict(size=4)),
+                row=i, col=1,
+            )
+        fig.update_yaxes(title_text=ylabel, row=i, col=1)
+
+    fig.update_layout(
+        title="Disk Blame",
+        height=350 * len(panels),
+        template="plotly_dark",
+        hovermode="x unified",
+        legend=dict(groupclick="toggleitem"),
+    )
+    return fig
+
+
+# ---------------------------------------------------------------------------
 # Disk usage treemap (from ncdu JSON export)
 # ---------------------------------------------------------------------------
 
@@ -399,6 +518,7 @@ def _build_figure(entries: list[dict]) -> go.Figure:
 def generate_report(entries: list[dict], output: Path, widget: bool = False) -> None:
     """Generate report HTML. Widget mode wraps in a floating template."""
     fig = _build_figure(entries)
+    blame_fig = _build_disk_blame_figure(entries)
     treemap_fig = _build_treemap()
 
     hover_style = dict(
@@ -408,7 +528,7 @@ def generate_report(entries: list[dict], output: Path, widget: bool = False) -> 
     )
 
     if widget:
-        for f in (fig, treemap_fig):
+        for f in (fig, blame_fig, treemap_fig):
             if f is None:
                 continue
             f.update_layout(
@@ -419,6 +539,8 @@ def generate_report(entries: list[dict], output: Path, widget: bool = False) -> 
         fig.update_layout(margin=dict(t=40, b=20, l=40, r=20))
 
     parts = [fig.to_html(include_plotlyjs=True, full_html=False)]
+    if blame_fig:
+        parts.append(blame_fig.to_html(include_plotlyjs=False, full_html=False))
     if treemap_fig:
         parts.append(treemap_fig.to_html(include_plotlyjs=False, full_html=False))
     content = "\n".join(parts)
