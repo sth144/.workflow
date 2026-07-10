@@ -151,7 +151,8 @@ def load_config() -> Config:
         git_repos_csv=os.getenv("GIT_REPOS", "").strip(),
         docker_enable=getenv_bool("DOCKER_ENABLE", False),
         docker_base_url=os.getenv("DOCKER_BASE_URL", "http://localhost").strip(),
-        network_map_enable=getenv_bool("NETWORK_MAP_ENABLE", True),
+        # Network diagram disabled for now — set NETWORK_MAP_ENABLE=1 to re-enable.
+        network_map_enable=getenv_bool("NETWORK_MAP_ENABLE", False),
         network_map_target=os.getenv("NETWORK_MAP_TARGET", "").strip(),
         network_map_host_limit=getenv_int("NETWORK_MAP_HOST_LIMIT", 24),
     )
