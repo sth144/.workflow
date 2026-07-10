@@ -2,6 +2,14 @@
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
 
+# Add user-local binaries; Claude Code installs claude here.
+if [ -d "$HOME/.local/bin" ]; then
+  case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) export PATH="$HOME/.local/bin:$PATH" ;;
+  esac
+fi
+
 export PATH=$PATH:/opt/homebrew/bin:/opt/homebrew/opt/coreutils/libexec/gnubin
 
 # If not running interactively, don't do anything

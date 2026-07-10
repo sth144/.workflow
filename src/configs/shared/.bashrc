@@ -2,6 +2,14 @@
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
 
+# Add user-local binaries; Claude Code installs claude here.
+if [ -d "$HOME/.local/bin" ]; then
+  case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) export PATH="$HOME/.local/bin:$PATH" ;;
+  esac
+fi
+
 # If not running interactively, don't do anything
 case $- in
 *i*) ;;
@@ -135,6 +143,7 @@ ORIG_PS1="$PS1"
 CMD_PID=""
 
 # Function to update prompt with PID
+update_prompt_with_pid() {
   if [[ -n "$CMD_PID" ]]; then
     PS1="[PID:$CMD_PID] $ORIG_PS1"
   else
