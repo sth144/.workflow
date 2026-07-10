@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "blender": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["--python", "3.12", "blender-mcp"],
+      "env": {
+        "UV_PYTHON_PREFERENCE": "only-managed"
+      }
+    },
+    "freecad": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["--python", "3.12", "freecad-mcp"],
+      "env": {
+        "UV_PYTHON_PREFERENCE": "only-managed"
+      }
+    }
+  }
+}

@@ -371,7 +371,13 @@ update_claude_mcp() {
 	# Repo definitions win on conflict; servers present only in ~/.claude.json (e.g.
 	# the claude.ai Microsoft 365 server the desktop app adds) are preserved. Also
 	# drops the stale project-scoped trello entry that was a workaround for the gap.
+	#
+	# An optional per-machine fragment (~/.claude/mcp.macm4.json, deployed only from
+	# the local-macosx-m4 layer) is merged last so this host can add MCP servers that
+	# make no sense elsewhere (e.g. blender/freecad, which need local GUI apps) without
+	# duplicating the shared server list. Fragment wins on conflict.
 	SRC="$HOME/.claude/mcp.json"
+	FRAG="$HOME/.claude/mcp.macm4.json"
 	DST="$HOME/.claude.json"
 	for f in "$SRC" "$DST"; do
 		if [ ! -f "$f" ]; then
@@ -384,19 +390,28 @@ update_claude_mcp() {
 		return
 	fi
 
+	# Optional machine fragment: use it only if present and valid, else an empty set.
+	FRAG_TMP=$(mktemp)
+	if [ -f "$FRAG" ] && jq empty "$FRAG" >/dev/null 2>&1; then
+		cp "$FRAG" "$FRAG_TMP"
+	else
+		echo '{"mcpServers":{}}' > "$FRAG_TMP"
+	fi
+
 	cp "$DST" "$DST.bak"
 	TMP=$(mktemp)
-	jq --slurpfile mcp "$SRC" '
-		.mcpServers = ((.mcpServers // {}) + $mcp[0].mcpServers)
+	jq --slurpfile mcp "$SRC" --slurpfile frag "$FRAG_TMP" '
+		.mcpServers = ((.mcpServers // {}) + $mcp[0].mcpServers + ($frag[0].mcpServers // {}))
 		| if (.projects["/usr/local/src/workflow-macos-1095"].mcpServers.trello)
 		  then del(.projects["/usr/local/src/workflow-macos-1095"].mcpServers.trello)
 		  else . end
 	' "$DST" > "$TMP"
+	rm -f "$FRAG_TMP"
 
 	# Only replace if jq produced valid, non-empty output (guard against clobbering).
 	if [ -s "$TMP" ] && jq empty "$TMP" >/dev/null 2>&1; then
 		mv "$TMP" "$DST"
-		echo "merged $(jq -r '.mcpServers | keys | length' "$SRC") source-of-truth MCP servers into ~/.claude.json (backup: $DST.bak)"
+		echo "merged $(jq -r '.mcpServers | keys | length' "$SRC") shared + $(jq -r '.mcpServers | keys | length' "$FRAG" 2>/dev/null || echo 0) machine MCP servers into ~/.claude.json (backup: $DST.bak)"
 	else
 		rm -f "$TMP"
 		echo "update_claude_mcp: jq merge failed, left ~/.claude.json unchanged"

@@ -28,6 +28,21 @@ args = ["-lc", 'source ~/.config/.env.TRELLO_API_KEY && source ~/.config/.env.TR
 url = "http://192.168.1.243:8086/mcp-secret"
 enabled = true
 
+# Local CAD/3D bridges — need the Blender/FreeCAD GUI apps running on this M4 Mac,
+# so they live only in this layer. --python 3.12 + only-managed pins a native arm64
+# interpreter so a stray Rosetta launch can't rebuild an x86_64 env and crash on the
+# arm64 pydantic_core wheel. Start the in-app bridge first (Blender: BlenderMCP tab ->
+# Connect; FreeCAD: MCP Addon workbench -> Start RPC Server).
+[mcp_servers.blender]
+command = "uvx"
+args = ["--python", "3.12", "blender-mcp"]
+env = { UV_PYTHON_PREFERENCE = "only-managed" }
+
+[mcp_servers.freecad]
+command = "uvx"
+args = ["--python", "3.12", "freecad-mcp"]
+env = { UV_PYTHON_PREFERENCE = "only-managed" }
+
 [tui.model_availability_nux]
 "gpt-5.3-codex-spark" = 4
 
