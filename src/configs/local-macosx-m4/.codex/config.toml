@@ -31,6 +31,22 @@ enabled = true
 [tui.model_availability_nux]
 "gpt-5.3-codex-spark" = 4
 
+# VS Code diff tabs for Codex apply_patch edits — mirrors the Claude Code
+# diff-tab hook. Uses PreToolUse to snapshot patch targets and PostToolUse to
+# open `code --diff` after the patch lands. Disable with:
+#   touch ~/.codex/hooks/diff-tab.disabled
+[[hooks.PreToolUse]]
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "$HOME/.codex/hooks/diff-tab.sh pre"
+timeout = 10
+
+[[hooks.PostToolUse]]
+[[hooks.PostToolUse.hooks]]
+type = "command"
+command = "$HOME/.codex/hooks/diff-tab.sh post"
+timeout = 10
+
 # Daybook worklog Stop hook — mirrors the Claude Code daybook reminder.
 # Blocks the turn once to nag for a Joplin daybook entry after non-trivial work;
 # the "reason" becomes a continuation prompt. Defined in config.toml (not
