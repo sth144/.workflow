@@ -111,6 +111,10 @@ Key skills (always in context):
 @~/.claude/skills/slack/SKILL.md
 @~/.claude/skills/jupyter-notebook/SKILL.md
 
+<!-- Machine-local instructions. Only staged on hosts that provide it (e.g. macm4);
+     silently ignored on hosts where the file is absent. -->
+@~/.claude/CLAUDE.macm4.md
+
 ## Agents
 
 - `documentation-agent` — documentation tasks (docstrings, READMEs, API docs)

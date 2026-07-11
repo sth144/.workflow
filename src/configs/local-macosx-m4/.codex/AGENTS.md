@@ -144,3 +144,22 @@ For content changes:
 3. Report exactly which source files were changed and what staging impact they have.
 
 If a task cannot safely run full install steps, state that clearly and stop at staging validation.
+
+## CAD / 3D Project Storage
+
+Blender and FreeCAD are set up on this machine with MCP servers (`blender`, `freecad`).
+Save CAD / 3D project files to the CAD archive on `sthinds.local` (the Ubuntu box),
+mounted locally over SMB:
+
+- **Blender** projects → `~/media/.mounts/D/Documents/CAD/Blender/`
+- **FreeCAD** projects → `~/media/.mounts/D/Documents/CAD/FreeCAD/`
+
+(On `sthinds.local` these are the `D` Samba share → `Documents/CAD/Blender` and
+`Documents/CAD/FreeCAD`.)
+
+- Keep an in-progress working copy under `~/blender-projects/` while iterating, then copy
+  the finished `.blend` / `.FCStd` to the CAD archive above.
+- Save `.blend` files self-contained (pack external data) so they open standalone.
+- Render Blender/FreeCAD preview frames to `~/blender-preview.png` for the live VS Code tab.
+- `uvx blender-mcp` / `uvx freecad-mcp` must run **arm64-native** (config pins
+  `--python 3.12` + `UV_PYTHON_PREFERENCE=only-managed`); never launch from a Rosetta shell.
