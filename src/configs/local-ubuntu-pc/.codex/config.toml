@@ -30,7 +30,7 @@ trust_level = "trusted"
 "gpt-5.3-codex-spark" = 1
 
 [mcp_servers.home-assistant]
-url = "http://192.168.1.243:8086/mcp-secret"
+url = "http://192.168.1.243:8086/<HA_MCP_SECRET>"
 enabled = true
 
 [plugins."gmail@openai-curated"]

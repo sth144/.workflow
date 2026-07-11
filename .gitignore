@@ -1,3 +1,6 @@
+# local secrets (values injected into staged output at build time)
+secrets.yaml
+
 # backup
 backup/*
 !backup/.keep

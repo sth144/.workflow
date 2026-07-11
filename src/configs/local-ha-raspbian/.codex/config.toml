@@ -13,7 +13,7 @@ enabled = true
 
 
 [mcp_servers.home-assistant]
-url = "http://192.168.1.243:8086/mcp-secret"
+url = "http://192.168.1.243:8086/<HA_MCP_SECRET>"
 enabled = true
 
 

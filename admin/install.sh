@@ -153,6 +153,21 @@ stage() {
 	DAYBOOK_NOTEBOOK=$(echo "$BUILD_CONFIG" | jq -r '.daybookNotebook // "Journal"')
 	replace_in_staged_text_files "<DAYBOOK_NOTEBOOK>" "$DAYBOOK_NOTEBOOK"
 
+	# inject local secrets: replace <KEY> placeholders in staged files with values
+	# from the gitignored secrets.yaml (simple "KEY: value" lines). Keeps real secret
+	# values out of the tracked source, which only ever contains the <KEY> placeholder.
+	SECRETS_FILE="$BASE_ABS/secrets.yaml"
+	if [ -f "$SECRETS_FILE" ]; then
+		while IFS= read -r line; do
+			case "$line" in \#*|"") continue ;; esac
+			key=$(printf '%s' "$line" | sed -n 's/^\([A-Za-z0-9_]*\)[[:space:]]*:.*/\1/p')
+			val=$(printf '%s' "$line" | sed -n 's/^[A-Za-z0-9_]*[[:space:]]*:[[:space:]]*//p')
+			[ -n "$key" ] || continue
+			val="${val%\"}"; val="${val#\"}"
+			replace_in_staged_text_files "<${key}>" "$val"
+		done < "$SECRETS_FILE"
+	fi
+
 	find "$BASE_ABS/stage" -type f -name '*-e' -exec rm -f {} +
 }
 
