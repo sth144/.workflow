@@ -129,8 +129,13 @@ def _main_screen_size_pt() -> Optional[Tuple[int, int]]:
         )
     except subprocess.SubprocessError:
         return None
-    parts = out.stdout.strip().split(",")
-    return (int(parts[0]), int(parts[1])) if len(parts) == 2 else None
+    # hs may emit "-- Loading extension: screen" before our line on first use, so
+    # scan from the last line for a clean "W,H" pair rather than trusting line 1.
+    for line in reversed(out.stdout.splitlines()):
+        parts = line.strip().split(",")
+        if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+            return (int(parts[0]), int(parts[1]))
+    return None
 
 
 def _write_sidecar(image_path: str, region: Optional[Tuple[int, int, int, int]]) -> None:
