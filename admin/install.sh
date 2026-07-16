@@ -298,7 +298,7 @@ update_scratchpad_apps() {
 	# "<icns-basename>:<display name>" — wrapper is built as "[Scratchpad] <display name>.app".
 	# That bundle filename is what macOS shows in the Dock/Cmd-Tab for these exec wrappers,
 	# so it doubles as the label. Hammerspoon's scratchApp() must resolve the same name.
-	local specs=( "terminal:Terminal" "ranger:Ranger" "calc:Calculator" "forks:Forks" "claude-yolo:Claude YOLO" "daybook:Daybook" )
+	local specs=( "terminal:Terminal" "ranger:Ranger" "calc:Calculator" "forks:Forks" "claude-yolo:Claude YOLO" "daybook:Daybook" "cad-tutor:CAD Tutor" )
 	for spec in "${specs[@]}"; do
 		local name="${spec%%:*}"
 		local display="${spec##*:}"

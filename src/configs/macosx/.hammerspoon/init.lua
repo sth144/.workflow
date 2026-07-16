@@ -83,6 +83,7 @@ local aiTerminal = aiTerminalConfig()
 -- | —       | Daybook     | Cmd+Ctrl+B   |
 -- | —       | DiffToggle  | Cmd+Ctrl+D   |
 -- | —       | ResMonitor  | Cmd+Ctrl+M   |
+-- | —       | CAD Tutor   | Cmd+Ctrl+G   |
 
 local scratchpads = {
   -- Terminal (i3: Alt+U)
@@ -93,6 +94,17 @@ local scratchpads = {
     key      = "u",
     width    = 0.5,
     height   = 0.55,
+  },
+
+  -- CAD Tutor (FreeCAD/Blender assistant, macm4). Anchored top-right so it never
+  -- covers the 3D viewport in the screen center. Custom handler via the
+  -- "[Scratchpad] CAD Tutor" wrapper so it carries its own Dock icon.
+  cadtutor = {
+    hotkey   = mod,
+    key      = "g",
+    width    = 0.32,
+    height   = 0.5,
+    anchor   = "topright",
   },
 
   -- Joplin notes (i3: Alt+J)
@@ -280,12 +292,17 @@ local function positionWindow(win, config)
   local f = screen:frame()
   local w = f.w * config.width
   local h = f.h * config.height
-  win:setFrame({
-    x = f.x + (f.w - w) / 2,
-    y = f.y + (f.h - h) / 2,
-    w = w,
-    h = h,
-  })
+  local margin = 12
+  local x, y
+  local anchor = config.anchor or "center"
+  if anchor == "topright" then
+    x, y = f.x + f.w - w - margin, f.y + margin
+  elseif anchor == "topleft" then
+    x, y = f.x + margin, f.y + margin
+  else
+    x, y = f.x + (f.w - w) / 2, f.y + (f.h - h) / 2
+  end
+  win:setFrame({ x = x, y = y, w = w, h = h })
 end
 
 -- Search EVERY running Alacritty instance, not just one. On macOS a bare
@@ -393,6 +410,13 @@ local function toggleClaudeForks()
   toggleTermScratchpad("HS-FORKS", "tmux new-session -A -s claude-forks", scratchpads.forks, scratchApp("Forks"))
 end
 
+local function toggleCadTutor()
+  -- Dedicated terminal beside the CAD app for the `cad-tutor` skill. Opens a
+  -- login shell (start `claude`/`codex` there, then /cad-tutor); swap the command
+  -- below to auto-launch a harness if you prefer.
+  toggleTermScratchpad("HS-CADTUTOR", 'exec "$SHELL"', scratchpads.cadtutor, scratchApp("CAD Tutor"))
+end
+
 local function toggleAiYolo()
   toggleTermScratchpad(aiTerminal.yoloMarker, aiTerminal.yoloCommand, scratchpads.aiyolo, scratchApp(aiTerminal.yoloApp))
 end
@@ -440,6 +464,8 @@ for name, config in pairs(scratchpads) do
   -- Custom handlers for terminal-based scratchpads
   if name == "terminal" then
     hs.hotkey.bind(config.hotkey, config.key, toggleTerminal)
+  elseif name == "cadtutor" then
+    hs.hotkey.bind(config.hotkey, config.key, toggleCadTutor)
   elseif name == "ranger" then
     hs.hotkey.bind(config.hotkey, config.key, toggleRanger)
   elseif name == "calculator" then
@@ -546,5 +572,10 @@ hs.hotkey.bind(mod, "d", function()
     hs.notify.new({ title = "Claude Code", informativeText = "Diff tabs OFF" }):send()
   end
 end)
+
+-- Optional machine-local Hammerspoon extensions (e.g. the macm4 cad-tutor
+-- highlight overlay). Absent on machines without the file; pcall keeps init
+-- robust either way.
+pcall(dofile, os.getenv("HOME") .. "/.hammerspoon/cad_tutor.lua")
 
 hs.alert.show("Hammerspoon config loaded")

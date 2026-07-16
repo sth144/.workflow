@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b7bf0"/>
+      <stop offset="1" stop-color="#1b3f8f"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.5" cy="0.08" r="0.9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.30"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#0c1b3a" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+  <rect x="46" y="46" width="420" height="420" rx="96" fill="url(#bg)"/>
+  <rect x="46" y="46" width="420" height="420" rx="96" fill="url(#gloss)"/>
+  <g filter="url(#sh)">
+    <!-- isometric cube faces -->
+    <path d="M256 160 L345 215 L256 270 L167 215 Z" fill="#eaf1ff" fill-opacity="0.96"/>
+    <path d="M167 215 L256 270 L256 390 L167 335 Z" fill="#bcd0f7" fill-opacity="0.92"/>
+    <path d="M345 215 L256 270 L256 390 L345 335 Z" fill="#9bb8ee" fill-opacity="0.92"/>
+    <!-- cube edges (blueprint wireframe) -->
+    <path d="M256 160 L345 215 L345 335 L256 390 L167 335 L167 215 Z"
+          fill="none" stroke="#ffffff" stroke-width="10" stroke-linejoin="round"/>
+    <path d="M256 270 L256 390 M256 270 L167 215 M256 270 L345 215"
+          fill="none" stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+  <!-- tutor highlight: orange ring on a corner vertex (echoes the overlay accent) -->
+  <circle cx="345" cy="215" r="20" fill="none" stroke="#ff5c00" stroke-width="9"/>
+</svg>
