@@ -12,8 +12,6 @@ top_cpu() {
         var=$var$(awk -v process=11 '{print "cpu_usage{process=\""$process"\", pid=\""$2"\"}", $3z}');
     done <<< "$z"
 
-    echo $var
-
     curl --max-time 10 -X POST -H "Content-Type: text/plain" --data "$var
         " http://localhost:9091/metrics/job/top/instance/machine
 }
@@ -25,8 +23,6 @@ top_mem() {
     do
         var=$var$(awk -v process=11 '{print "memory_usage{process=\""$process"\", pid=\""$2"\"}", $4z}');
     done <<< "$z"
-
-    echo $var
 
     curl --max-time 10 -X POST -H "Content-Type: text/plain" --data "$var
         " http://localhost:9091/metrics/job/top/instance/machine

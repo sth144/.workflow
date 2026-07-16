@@ -1,0 +1,2 @@
+*/5 * * * * sthinds flock -n /tmp/workflow-top-push-cpu.lock /usr/local/bin/pushgateway/top_push.sh top_cpu >/dev/null 2>> /home/sthinds/.cache/.workflow/cronjob.log
+*/5 * * * * sthinds flock -n /tmp/workflow-top-push-mem.lock /usr/local/bin/pushgateway/top_push.sh top_mem >/dev/null 2>> /home/sthinds/.cache/.workflow/cronjob.log
