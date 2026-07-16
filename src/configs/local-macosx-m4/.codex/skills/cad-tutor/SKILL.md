@@ -45,7 +45,7 @@ To reason about menus/buttons/panels, capture the app window and **open/read the
 PNG**:
 
 ```bash
-python3 ~/bin/cad-tutor/cad_tutor.py shot --app FreeCAD --out /tmp/cad-tutor/shot.png
+python3 ~/bin/screen-tutor/screen_tutor.py shot --app FreeCAD --out /tmp/cad-tutor/shot.png
 # or: --app Blender   |   --full (whole screen)   |   --region x,y,w,h
 ```
 
@@ -66,19 +66,19 @@ the *real* button in the app and auto-fades. Best while the user is looking at t
 app itself:
 
 ```bash
-python3 ~/bin/cad-tutor/cad_tutor.py highlight --box "820,140,64,64:Pad tool" --duration 6
+python3 ~/bin/screen-tutor/screen_tutor.py highlight --box "820,140,64,64:Pad tool" --duration 6
 # multiple --box allowed; remove overlays with:  ... highlight --clear
 ```
 
-Needs the CAD app visible and Hammerspoon running (it provides `cadHighlight` via
-`~/.hammerspoon/cad_tutor.lua`). Uses the geometry from the most recent `shot`.
+Needs the CAD app visible and Hammerspoon running (it provides `screenHighlight` via
+`~/.hammerspoon/screen_tutor.lua`). Uses the geometry from the most recent `shot`.
 
 **b. Annotated screenshot** — boxes/arrows/labels burned into an image at
 `~/cad-tutor.png` (pin it as a VS Code image tab, like `~/blender-preview.png`).
 Best for a step sequence the user can scroll back through:
 
 ```bash
-python3 ~/bin/cad-tutor/cad_tutor.py annotate \
+python3 ~/bin/screen-tutor/screen_tutor.py annotate \
   --in /tmp/cad-tutor/shot.png --out ~/cad-tutor.png \
   --box "820,140,64,64:Pad tool" \
   --arrow "700,320,815,170:start here" \

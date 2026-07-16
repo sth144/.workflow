@@ -1,26 +1,31 @@
 #!/usr/bin/env python3
-"""cad-tutor helper: capture a CAD app window and draw annotations on it.
+"""screen-tutor helper: capture a window/screen and highlight regions on it.
 
-Subcommands
------------
+A self-contained macOS CLI (no dependency on how it's deployed, so it can be
+lifted into its own repo later). Subcommands:
+
 shot
-    Capture a screenshot of a CAD app window (FreeCAD/Blender) via macOS
-    ``screencapture``. Falls back to the full main display when the window
-    bounds can't be read (e.g. Accessibility permission not granted).
+    Capture a screenshot of an app window, an explicit region, or the full
+    screen via macOS ``screencapture``. Writes a geometry sidecar so `highlight`
+    can map image pixels back to screen points.
 annotate
-    Draw highlight boxes, arrows, and text labels onto an image with PIL and
-    write the result to ``--out``.
+    Draw highlight boxes, arrows, and text labels onto an image with PIL.
+highlight
+    Draw live, auto-fading on-screen overlays over the real UI via Hammerspoon
+    (the ``screenHighlight`` global). Coordinates are image pixels; the sidecar
+    written by `shot` maps them to screen points automatically.
 
-Coordinates are in *pixels of the target image*. On Retina displays a
-screenshot is 2x its point size, so always estimate coordinates from the
-captured PNG itself, then annotate that same PNG so the coordinate spaces
-match.
+Coordinates are pixels of the target image. On Retina displays a screenshot is
+2x its point size, so estimate coordinates from the captured PNG itself, then
+annotate/highlight that same PNG so the coordinate spaces match.
 
 Examples
 --------
-    cad_tutor.py shot --app FreeCAD --out /tmp/cad-tutor/shot.png
-    cad_tutor.py annotate --in /tmp/cad-tutor/shot.png --out ~/cad-tutor.png \\
-        --box "820,140,64,64:Pad tool" --arrow "700,300,815,170:click here"
+    screen_tutor.py shot --app Safari --out /tmp/screen-tutor/shot.png
+    screen_tutor.py shot --frontmost --out /tmp/screen-tutor/shot.png
+    screen_tutor.py highlight --box "820,140,64,64:Save" --duration 6
+    screen_tutor.py annotate --in shot.png --out ~/screen-tutor.png \\
+        --box "820,140,64,64:Save" --arrow "700,300,815,170:click here"
 """
 
 from __future__ import annotations
@@ -38,7 +43,8 @@ try:
 except ImportError:  # pragma: no cover - surfaced as a clear runtime error
     Image = ImageDraw = ImageFont = None  # type: ignore
 
-# App name -> macOS process name used by System Events.
+# Optional app-name -> macOS process-name overrides. Any app not listed here is
+# assumed to use its own name as the System Events process name (true for most).
 APP_PROCESS = {
     "freecad": "FreeCAD",
     "blender": "Blender",
@@ -55,11 +61,29 @@ def _expand(path: str) -> str:
     return os.path.expanduser(os.path.expandvars(path))
 
 
-def _window_region(app: str) -> Optional[str]:
-    """Return ``x,y,w,h`` for the app's front window, or None if unavailable."""
-    process = APP_PROCESS.get(app.lower())
-    if not process:
+def _osascript(script: str, timeout: int = 10) -> Optional[str]:
+    """Run an AppleScript and return trimmed stdout, or None on failure."""
+    try:
+        out = subprocess.run(
+            ["osascript", "-e", script],
+            capture_output=True, text=True, check=True, timeout=timeout,
+        )
+    except (subprocess.CalledProcessError, subprocess.TimeoutError) as exc:
+        print(f"warn: osascript failed: {exc}", file=sys.stderr)
         return None
+    return out.stdout.strip()
+
+
+def _frontmost_process() -> Optional[str]:
+    """Return the name of the frontmost (focused) application process."""
+    return _osascript(
+        'tell application "System Events" to get name of first process '
+        "whose frontmost is true"
+    )
+
+
+def _window_region(process: str) -> Optional[str]:
+    """Return ``x,y,w,h`` (points) for the process's front window, or None."""
     script = (
         f'tell application "System Events" to tell process "{process}"\n'
         "  set p to position of window 1\n"
@@ -68,16 +92,8 @@ def _window_region(app: str) -> Optional[str]:
         '& "," & ((item 1 of s) as text) & "," & ((item 2 of s) as text)\n'
         "end tell"
     )
-    try:
-        out = subprocess.run(
-            ["osascript", "-e", script],
-            capture_output=True, text=True, check=True, timeout=10,
-        )
-    except (subprocess.CalledProcessError, subprocess.TimeoutError) as exc:
-        print(f"warn: could not read {process} window bounds: {exc}", file=sys.stderr)
-        return None
-    region = out.stdout.strip()
-    return region if region.count(",") == 3 else None
+    region = _osascript(script)
+    return region if region and region.count(",") == 3 else None
 
 
 def _capture(out_path: str, region: Optional[str]) -> None:
@@ -101,8 +117,13 @@ def _resolve_region(args: argparse.Namespace) -> Optional[Tuple[int, int, int, i
     """Decide the capture region (points), or None for full-screen."""
     if args.region:
         return _parse_region(args.region)
-    if not args.full and args.app:
-        raw = _window_region(args.app)
+    process = None
+    if args.frontmost:
+        process = _frontmost_process()
+    elif args.app:
+        process = APP_PROCESS.get(args.app.lower(), args.app)
+    if process and not args.full:
+        raw = _window_region(process)
         if raw is None:
             print("warn: falling back to full-screen capture", file=sys.stderr)
             return None
@@ -205,9 +226,7 @@ def _draw_label(draw: "ImageDraw.ImageDraw", x: int, y: int, text: str, font) ->
         return
     left, top, right, bottom = draw.textbbox((x, y), text, font=font)
     pad = 4
-    draw.rectangle(
-        (left - pad, top - pad, right + pad, bottom + pad), fill=LABEL_BG
-    )
+    draw.rectangle((left - pad, top - pad, right + pad, bottom + pad), fill=LABEL_BG)
     draw.text((x, y), text, fill=LABEL_FG, font=font)
 
 
@@ -216,15 +235,6 @@ def _draw_box(draw: "ImageDraw.ImageDraw", spec: str, font) -> None:
     (x, y, w, h), text = _parse_ints(spec, 4, "box")
     draw.rectangle((x, y, x + w, y + h), outline=HIGHLIGHT, width=4, fill=FILL)
     _draw_label(draw, x, max(0, y - 22), text, font)
-
-
-def _draw_arrow(draw: "ImageDraw.ImageDraw", spec: str, font) -> None:
-    """Draw an arrow from ``"x1,y1,x2,y2[:label]"`` pointing at (x2, y2)."""
-    (x1, y1, x2, y2), text = _parse_ints(spec, 4, "arrow")
-    draw.line((x1, y1, x2, y2), fill=HIGHLIGHT, width=5)
-    head = _arrowhead(x1, y1, x2, y2)
-    draw.polygon(head, fill=HIGHLIGHT)
-    _draw_label(draw, x1, y1 - 22, text, font)
 
 
 def _arrowhead(x1: int, y1: int, x2: int, y2: int, size: int = 16) -> List[Tuple[int, int]]:
@@ -236,6 +246,14 @@ def _arrowhead(x1: int, y1: int, x2: int, y2: int, size: int = 16) -> List[Tuple
     right = (x2 - size * math.cos(angle + math.pi / 6),
              y2 - size * math.sin(angle + math.pi / 6))
     return [(x2, y2), (int(left[0]), int(left[1])), (int(right[0]), int(right[1]))]
+
+
+def _draw_arrow(draw: "ImageDraw.ImageDraw", spec: str, font) -> None:
+    """Draw an arrow from ``"x1,y1,x2,y2[:label]"`` pointing at (x2, y2)."""
+    (x1, y1, x2, y2), text = _parse_ints(spec, 4, "arrow")
+    draw.line((x1, y1, x2, y2), fill=HIGHLIGHT, width=5)
+    draw.polygon(_arrowhead(x1, y1, x2, y2), fill=HIGHLIGHT)
+    _draw_label(draw, x1, y1 - 22, text, font)
 
 
 def cmd_annotate(args: argparse.Namespace) -> int:
@@ -271,30 +289,30 @@ def _load_sidecar(path: str) -> Dict:
 
 
 def _highlight_call(spec: str, origin: List[int], scale: float, duration: int) -> str:
-    """Build one Lua ``cadHighlight(...)`` call from an image-pixel box spec."""
+    """Build one Lua ``screenHighlight(...)`` call from an image-pixel box spec."""
     (x, y, w, h), text = _parse_ints(spec, 4, "box")
     point_x = origin[0] + x / scale
     point_y = origin[1] + y / scale
     label = text.replace("]]", "]")
-    return "cadHighlight(%.1f,%.1f,%.1f,%.1f,[[%s]],%d)" % (
+    return "screenHighlight(%.1f,%.1f,%.1f,%.1f,[[%s]],%d)" % (
         point_x, point_y, w / scale, h / scale, label, duration
     )
 
 
 def cmd_highlight(args: argparse.Namespace) -> int:
-    """Draw live on-screen highlights over the CAD app via Hammerspoon."""
+    """Draw live on-screen highlights over the real UI via Hammerspoon."""
     hs_bin = shutil.which("hs")
     if not hs_bin:
         print("error: Hammerspoon 'hs' CLI not found on PATH", file=sys.stderr)
         return 1
     if args.clear and not args.box:
-        subprocess.run([hs_bin, "-c", "cadHighlightClear()"], check=True, timeout=10)
+        subprocess.run([hs_bin, "-c", "screenHighlightClear()"], check=True, timeout=10)
         return 0
 
     meta = _load_sidecar(args.frm)
     origin = meta.get("origin_pt", [0, 0])
     scale = meta.get("scale") or 2.0
-    calls = ["cadHighlightClear()"]
+    calls = ["screenHighlightClear()"]
     for spec in args.box or []:
         calls.append(_highlight_call(spec, origin, scale, args.duration))
     subprocess.run([hs_bin, "-c", "; ".join(calls)], check=True, timeout=15)
@@ -302,34 +320,44 @@ def cmd_highlight(args: argparse.Namespace) -> int:
     return 0
 
 
-def build_parser() -> argparse.ArgumentParser:
-    """Construct the argument parser for the two subcommands."""
-    parser = argparse.ArgumentParser(prog="cad_tutor.py", description=__doc__)
-    sub = parser.add_subparsers(dest="command", required=True)
-
-    shot = sub.add_parser("shot", help="capture a CAD app window screenshot")
-    shot.add_argument("--app", choices=sorted(APP_PROCESS), help="CAD app to capture")
+def _add_shot_parser(sub) -> None:
+    shot = sub.add_parser("shot", help="capture an app window / region / full screen")
+    shot.add_argument("--app", help="app to capture (e.g. Safari, FreeCAD)")
+    shot.add_argument("--frontmost", action="store_true", help="capture the focused app's window")
     shot.add_argument("--region", help="explicit x,y,w,h region (points)")
     shot.add_argument("--full", action="store_true", help="capture the full screen")
-    shot.add_argument("--out", default="/tmp/cad-tutor/shot.png", help="output PNG path")
+    shot.add_argument("--out", default="/tmp/screen-tutor/shot.png", help="output PNG path")
     shot.set_defaults(func=cmd_shot)
 
+
+def _add_annotate_parser(sub) -> None:
     ann = sub.add_parser("annotate", help="draw highlights onto an image")
     ann.add_argument("--in", dest="inp", required=True, help="input image path")
-    ann.add_argument("--out", default="~/cad-tutor.png", help="output PNG path")
+    ann.add_argument("--out", default="~/screen-tutor.png", help="output PNG path")
     ann.add_argument("--box", action="append", help='"x,y,w,h[:label]" (repeatable)')
     ann.add_argument("--arrow", action="append", help='"x1,y1,x2,y2[:label]" (repeatable)')
     ann.add_argument("--label", action="append", help='"x,y:text" (repeatable)')
     ann.add_argument("--font-size", type=int, default=18, help="label font size")
     ann.set_defaults(func=cmd_annotate)
 
+
+def _add_highlight_parser(sub) -> None:
     hl = sub.add_parser("highlight", help="draw live on-screen highlights (Hammerspoon)")
-    hl.add_argument("--from", dest="frm", default="/tmp/cad-tutor/last-shot.json",
+    hl.add_argument("--from", dest="frm", default="/tmp/screen-tutor/last-shot.json",
                     help="geometry sidecar written by `shot`")
     hl.add_argument("--box", action="append", help='"x,y,w,h[:label]" in image pixels (repeatable)')
     hl.add_argument("--duration", type=int, default=5, help="seconds before auto-dismiss (0 = keep)")
     hl.add_argument("--clear", action="store_true", help="remove all highlights and exit")
     hl.set_defaults(func=cmd_highlight)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Construct the argument parser for all subcommands."""
+    parser = argparse.ArgumentParser(prog="screen_tutor.py", description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    _add_shot_parser(sub)
+    _add_annotate_parser(sub)
+    _add_highlight_parser(sub)
     return parser
 
 

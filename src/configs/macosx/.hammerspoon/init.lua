@@ -573,9 +573,9 @@ hs.hotkey.bind(mod, "d", function()
   end
 end)
 
--- Optional machine-local Hammerspoon extensions (e.g. the macm4 cad-tutor
+-- Optional machine-local Hammerspoon extensions (e.g. the macm4 screen-tutor
 -- highlight overlay). Absent on machines without the file; pcall keeps init
 -- robust either way.
-pcall(dofile, os.getenv("HOME") .. "/.hammerspoon/cad_tutor.lua")
+pcall(dofile, os.getenv("HOME") .. "/.hammerspoon/screen_tutor.lua")
 
 hs.alert.show("Hammerspoon config loaded")

@@ -1,20 +1,20 @@
--- ~/.hammerspoon/cad_tutor.lua  (macm4 only)
+-- ~/.hammerspoon/screen_tutor.lua  (macm4)
 --
--- Live on-screen highlight overlays for the `cad-tutor` skill. Loaded by the
--- shared init.lua via `pcall(dofile, ...)`, so it is a safe no-op on machines
--- where this file is absent.
+-- Live on-screen highlight overlays for the `screen-tutor` / `cad-tutor` skills.
+-- Loaded by the shared init.lua via `pcall(dofile, ...)`, so it is a safe no-op
+-- on machines where this file is absent.
 --
--- Globals exposed for the `hs -c` CLI driven by ~/bin/cad-tutor/cad_tutor.py:
---   cadHighlight(x, y, w, h, label, duration)  -- box + label at screen POINTS
---   cadHighlightClear()                        -- remove every active overlay
+-- Globals exposed for the `hs -c` CLI driven by ~/bin/screen-tutor/screen_tutor.py:
+--   screenHighlight(x, y, w, h, label, duration)  -- box + label at screen POINTS
+--   screenHighlightClear()                        -- remove every active overlay
 --
--- Coordinates are screen points (top-left origin, global space). cad_tutor.py
+-- Coordinates are screen points (top-left origin, global space). screen_tutor.py
 -- converts screenshot pixels -> points using the sidecar geometry from `shot`.
 
 local overlays = {}
 local ACCENT = { red = 1, green = 0.36, blue = 0, alpha = 1 }
 
-function cadHighlightClear()
+function screenHighlightClear()
   for _, canvas in ipairs(overlays) do
     canvas:delete()
   end
@@ -64,13 +64,17 @@ local function present(canvas)
   overlays[#overlays + 1] = canvas
 end
 
-function cadHighlight(x, y, w, h, label, duration)
+function screenHighlight(x, y, w, h, label, duration)
   duration = duration or 5
   present(boxCanvas(x, y, w, h))
   if label and label ~= "" then
     present(labelCanvas(x, y, label))
   end
   if duration > 0 then
-    hs.timer.doAfter(duration, cadHighlightClear)
+    hs.timer.doAfter(duration, screenHighlightClear)
   end
 end
+
+-- Backward-compatible aliases (cad-tutor shipped these names first).
+cadHighlight = screenHighlight
+cadHighlightClear = screenHighlightClear

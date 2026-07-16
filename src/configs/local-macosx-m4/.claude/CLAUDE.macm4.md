@@ -34,15 +34,25 @@ Guidelines:
     `print()` in `execute_code` during iteration and only pull a render (small
     `width`/`height`) at milestones instead of after every edit.
 
+## Screen Tutor skill
+
+`screen-tutor` (`/screen-tutor` in Claude Code, `$screen-tutor` in Codex) is the
+general-purpose version: on request it screenshots whatever app you're in, reasons
+about it, and highlights the relevant control (live overlay or annotated
+`~/screen-tutor.png`). It captures **only when you ask** — never on its own, and
+prefers answering locally before spending tokens on a screenshot. `cad-tutor` (below)
+is the CAD-specific specialization built on the same `screen_tutor.py` engine +
+`screenHighlight` overlay.
+
 ## CAD Tutor skill
 
 For hands-on help in a live CAD session, invoke the `cad-tutor` skill (`/cad-tutor`
 in Claude Code, `$cad-tutor` in Codex). It has its own scratchpad window — toggle
 the **CAD Tutor** terminal (top-right, clear of the viewport) with **Cmd+Ctrl+G**.
 It inspects the model via the `blender`/`freecad` MCP servers, screenshots the app
-window (`~/bin/cad-tutor/cad_tutor.py shot`), and highlights the relevant control
+window (`~/bin/screen-tutor/screen_tutor.py shot`), and highlights the relevant control
 two ways:
-- **Live overlay** — `cad_tutor.py highlight --box "x,y,w,h:label"` draws a glowing
-  box over the real button via Hammerspoon (`~/.hammerspoon/cad_tutor.lua`), auto-fading.
-- **Annotated screenshot** — `cad_tutor.py annotate …` writes `~/cad-tutor.png`
+- **Live overlay** — `screen_tutor.py highlight --box "x,y,w,h:label"` draws a glowing
+  box over the real button via Hammerspoon (`~/.hammerspoon/screen_tutor.lua`), auto-fading.
+- **Annotated screenshot** — `screen_tutor.py annotate …` writes `~/cad-tutor.png`
   (pin it as a VS Code image tab).
