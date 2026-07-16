@@ -99,7 +99,29 @@ mount_share() {
     local mount_dir="$MOUNT_ROOT/$alias_name"
 
     mkdir -p "$mount_dir"
-    /sbin/mount -t smbfs -o nobrowse,soft,noowners,nopassprompt "$(smbfs_url "$url")" "$mount_dir" >/dev/null 2>&1
+    if /sbin/mount -t smbfs -o nobrowse,soft,noowners,nopassprompt "$(smbfs_url "$url")" "$mount_dir" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    # Fallback: NetAuth/NetFS mount (same path Finder's "Connect to Server" uses).
+    # It reads the login keychain, so password-protected shares (the Pis) auth
+    # correctly where mount_smbfs's -nopassprompt guest attempt is rejected (err 77).
+    #
+    # If the stored credential is stale, NetAuth pops a blocking GUI auth dialog.
+    # For a 60s background agent that means a hang and a nag every cycle, so we
+    # bound it: mount silently from the keychain within a few seconds or bail.
+    /usr/bin/osascript -e "mount volume \"$url\"" >/dev/null 2>&1 &
+    local na_pid=$! waited=0
+    while kill -0 "$na_pid" 2>/dev/null && (( waited < 10 )); do
+        sleep 1
+        (( waited++ ))
+    done
+    if kill -0 "$na_pid" 2>/dev/null; then
+        kill "$na_pid" 2>/dev/null
+        wait "$na_pid" 2>/dev/null
+        return 1
+    fi
+    wait "$na_pid" 2>/dev/null
 }
 
 ensure_share() {
@@ -136,9 +158,15 @@ shares=(
     "D|smb://sthinds@sthinds.local/D|sthinds.local,sthinds,192.168.1.235|D"
     "NAS|smb://sthinds@openmediavault.local/NAS|openmediavault.local,openmediavault,192.168.1.245|NAS"
     "omv|smb://sthinds@openmediavault.local/sthinds|openmediavault.local,openmediavault,192.168.1.245|sthinds"
-    "pi|smb://pi@home.assistant/pi|home.assistant,raspberrypi,192.168.1.243|pi"
+    # home.assistant rejects user 'pi' + the saved password at the SMB layer
+    # (server-side, not a keychain fault). Re-enable once the box's Samba
+    # password is reset and re-saved on the Mac. See: smbutil view //pi@home.assistant
+    # "pi|smb://pi@home.assistant/pi|home.assistant,raspberrypi,192.168.1.243|pi"
     "pc0|smb://picocluster@pc0/picocluster|pc0,192.168.1.240|picocluster"
-    "pc1|smb://picocluster@pc1/picocluster|pc1,192.168.1.241|picocluster"
+    # pc1 rejects the saved password server-side (unlike pc0/pc2). Re-enable once
+    # pc1's Samba password matches the others: sudo smbpasswd -a picocluster on pc1,
+    # then reconnect once in Finder to re-save on the Mac.
+    # "pc1|smb://picocluster@pc1/picocluster|pc1,192.168.1.241|picocluster"
     "pc2|smb://picocluster@pc2/picocluster|pc2,192.168.1.242|picocluster"
 )
 

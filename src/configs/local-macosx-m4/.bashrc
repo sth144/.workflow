@@ -70,6 +70,21 @@ case "$TERM" in xterm* | rxvt*)
 *) ;;
 esac
 
+# Keep the tmux pane title tracking the host you're actually on. The PS1 title
+# escape above only fires for xterm/rxvt, so inside tmux (screen-256color) — and
+# especially when you ssh into a box and launch a TUI — the pane keeps showing
+# the local hostname. Stamp the destination on connect and restore on return.
+ssh() {
+  local _host _rc
+  _host=$(command ssh -G "$@" 2>/dev/null | awk '/^hostname /{print $2; exit}')
+  [ -n "$_host" ] || _host="${@: -1}"
+  printf '\033]2;%s\033\\' "$_host"
+  command ssh "$@"
+  _rc=$?
+  printf '\033]2;%s\033\\' "$(hostname -s)"
+  return $_rc
+}
+
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
   test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
