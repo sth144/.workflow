@@ -279,3 +279,8 @@ fi
 if command -v atuin >/dev/null 2>&1; then
   eval "$(atuin init bash 2>/dev/null)" 2>/dev/null
 fi
+
+# Prefer user-level npm global installs over older host-level binaries.
+if [ -d "$HOME/.npm-global/bin" ]; then
+  export PATH="$HOME/.npm-global/bin:$PATH"
+fi
