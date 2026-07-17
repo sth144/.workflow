@@ -84,6 +84,8 @@ local aiTerminal = aiTerminalConfig()
 -- | —       | DiffToggle  | Cmd+Ctrl+D   |
 -- | —       | ResMonitor  | Cmd+Ctrl+M   |
 -- | —       | CAD Tutor   | Cmd+Ctrl+G   |
+-- | —       | ScreenTutor | Cmd+Ctrl+H   |
+-- | —       | ↳ cycle nook| Cmd+Ctrl+Shift+H |
 
 local scratchpads = {
   -- Terminal (i3: Alt+U)
@@ -104,6 +106,17 @@ local scratchpads = {
     key      = "g",
     width    = 0.32,
     height   = 0.5,
+    anchor   = "topright",
+  },
+
+  -- Screen Tutor (generic on-screen assistant, macm4). A translucent panel that
+  -- pins to a corner (Cmd+Ctrl+H toggles; Cmd+Ctrl+Shift+H cycles corners) so it
+  -- sits beside whatever app you're using without covering the center.
+  screentutor = {
+    hotkey   = mod,
+    key      = "h",
+    width    = 0.30,
+    height   = 0.42,
     anchor   = "topright",
   },
 
@@ -299,6 +312,10 @@ local function positionWindow(win, config)
     x, y = f.x + f.w - w - margin, f.y + margin
   elseif anchor == "topleft" then
     x, y = f.x + margin, f.y + margin
+  elseif anchor == "bottomright" then
+    x, y = f.x + f.w - w - margin, f.y + f.h - h - margin
+  elseif anchor == "bottomleft" then
+    x, y = f.x + margin, f.y + f.h - h - margin
   else
     x, y = f.x + (f.w - w) / 2, f.y + (f.h - h) / 2
   end
@@ -354,16 +371,17 @@ end
 -- and findAlacrittyWindowByTitle searches every instance so the window is still
 -- discoverable. dynamic_title is pinned off so the running program (tmux, ranger,
 -- bc) can't rename our marker. (command must not contain a single quote — none do.)
-local function launchAlacritty(marker, command, appBundle)
+local function launchAlacritty(marker, command, appBundle, extraOpts)
   local app = appBundle or "/Applications/Alacritty.app"
+  local opts = (extraOpts and extraOpts ~= "") and (" " .. extraOpts) or ""
   local shellCmd = string.format(
     "open -na '%s' --args "
-      .. "--title '%s' -o window.dynamic_title=false -e bash -lc '%s'",
-    app, marker, command)
+      .. "--title '%s' -o window.dynamic_title=false%s -e bash -lc '%s'",
+    app, marker, opts, command)
   hs.execute(shellCmd, true)  -- `true` => run via login shell
 end
 
-local function toggleTermScratchpad(marker, command, config, appBundle)
+local function toggleTermScratchpad(marker, command, config, appBundle, extraOpts)
   local scratchWin = findAlacrittyWindowByTitle(marker)
 
   if scratchWin then
@@ -381,7 +399,7 @@ local function toggleTermScratchpad(marker, command, config, appBundle)
     end
   else
     -- No window found - create one (in its custom-icon wrapper if available)
-    launchAlacritty(marker, command, appBundle)
+    launchAlacritty(marker, command, appBundle, extraOpts)
 
     -- Position after delay
     hs.timer.doAfter(0.5, function()
@@ -415,6 +433,29 @@ local function toggleCadTutor()
   -- login shell (start `claude`/`codex` there, then /cad-tutor); swap the command
   -- below to auto-launch a harness if you prefer.
   toggleTermScratchpad("HS-CADTUTOR", 'exec "$SHELL"', scratchpads.cadtutor, scratchApp("CAD Tutor"))
+end
+
+-- Screen Tutor: a translucent, corner-pinnable terminal for the `screen-tutor`
+-- skill. Cmd+Ctrl+H toggles it; Cmd+Ctrl+Shift+H cycles it around the corners.
+local SCREEN_TUTOR_CORNERS = { "topright", "bottomright", "bottomleft", "topleft" }
+local screenTutorCornerIdx = 1
+
+local function toggleScreenTutor()
+  scratchpads.screentutor.anchor = SCREEN_TUTOR_CORNERS[screenTutorCornerIdx]
+  toggleTermScratchpad("HS-SCREENTUTOR", 'exec "$SHELL"', scratchpads.screentutor,
+    scratchApp("Screen Tutor"), "-o window.opacity=0.82")
+end
+
+local function cycleScreenTutorCorner()
+  screenTutorCornerIdx = (screenTutorCornerIdx % #SCREEN_TUTOR_CORNERS) + 1
+  local corner = SCREEN_TUTOR_CORNERS[screenTutorCornerIdx]
+  scratchpads.screentutor.anchor = corner
+  local win = findAlacrittyWindowByTitle("HS-SCREENTUTOR")
+  if win then
+    positionWindow(win, scratchpads.screentutor)
+    win:raise()
+  end
+  hs.alert.show("Screen Tutor → " .. corner)
 end
 
 local function toggleAiYolo()
@@ -466,6 +507,8 @@ for name, config in pairs(scratchpads) do
     hs.hotkey.bind(config.hotkey, config.key, toggleTerminal)
   elseif name == "cadtutor" then
     hs.hotkey.bind(config.hotkey, config.key, toggleCadTutor)
+  elseif name == "screentutor" then
+    hs.hotkey.bind(config.hotkey, config.key, toggleScreenTutor)
   elseif name == "ranger" then
     hs.hotkey.bind(config.hotkey, config.key, toggleRanger)
   elseif name == "calculator" then
@@ -572,6 +615,9 @@ hs.hotkey.bind(mod, "d", function()
     hs.notify.new({ title = "Claude Code", informativeText = "Diff tabs OFF" }):send()
   end
 end)
+
+-- Cycle the Screen Tutor widget around the screen corners (Cmd+Ctrl+Shift+H).
+hs.hotkey.bind({ "cmd", "ctrl", "shift" }, "h", cycleScreenTutorCorner)
 
 -- Optional machine-local Hammerspoon extensions (e.g. the macm4 screen-tutor
 -- highlight overlay). Absent on machines without the file; pcall keeps init

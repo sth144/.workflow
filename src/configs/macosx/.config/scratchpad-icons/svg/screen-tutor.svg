@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18b7a6"/>
+      <stop offset="1" stop-color="#0d6e63"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.5" cy="0.08" r="0.9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.30"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#08322d" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+  <rect x="46" y="46" width="420" height="420" rx="96" fill="url(#bg)"/>
+  <rect x="46" y="46" width="420" height="420" rx="96" fill="url(#gloss)"/>
+  <g filter="url(#sh)">
+    <!-- screen / window -->
+    <rect x="120" y="132" width="230" height="168" rx="20" fill="#e9f7f4" fill-opacity="0.95"/>
+    <rect x="120" y="132" width="230" height="168" rx="20" fill="none" stroke="#ffffff" stroke-width="8"/>
+    <!-- content lines on the screen -->
+    <rect x="150" y="168" width="150" height="14" rx="7" fill="#0d6e63" opacity="0.55"/>
+    <rect x="150" y="200" width="110" height="14" rx="7" fill="#0d6e63" opacity="0.4"/>
+    <rect x="150" y="232" width="130" height="14" rx="7" fill="#0d6e63" opacity="0.4"/>
+  </g>
+  <!-- magnifier inspecting the screen (orange accent = the highlight overlay) -->
+  <circle cx="330" cy="322" r="60" fill="#ffffff" fill-opacity="0.14" stroke="#ff5c00" stroke-width="16"/>
+  <line x1="374" y1="366" x2="412" y2="404" stroke="#ff5c00" stroke-width="24" stroke-linecap="round"/>
+</svg>
