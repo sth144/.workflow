@@ -320,6 +320,52 @@ def cmd_highlight(args: argparse.Namespace) -> int:
     return 0
 
 
+def _hs_locate(hs_bin: str, app: Optional[str], query: str) -> List[Dict]:
+    """Ask Hammerspoon's screenLocate for controls matching `query` (AX tree)."""
+    safe_app = (app or "").replace("]]", "]")
+    safe_query = query.replace("]]", "]")
+    script = f"screenLocate([[{safe_app}]],[[{safe_query}]])"
+    try:
+        out = subprocess.run(
+            [hs_bin, "-c", script], capture_output=True, text=True, check=True, timeout=20
+        )
+    except subprocess.SubprocessError as exc:
+        print(f"warn: screenLocate failed: {exc}", file=sys.stderr)
+        return []
+    # Tolerate a leading "-- Loading extension: ..." line: take the last JSON line.
+    for line in reversed(out.stdout.splitlines()):
+        line = line.strip()
+        if line.startswith("[") and line.endswith("]"):
+            return json.loads(line)
+    return []
+
+
+def _highlight_points(hs_bin: str, frames: List[Dict], duration: int) -> None:
+    """Draw overlays for frames already expressed in screen points."""
+    calls = ["screenHighlightClear()"]
+    for frame in frames:
+        label = str(frame.get("label", "")).replace("]]", "]")[:40]
+        calls.append("screenHighlight(%.1f,%.1f,%.1f,%.1f,[[%s]],%d)" % (
+            frame["x"], frame["y"], frame["w"], frame["h"], label, duration))
+    subprocess.run([hs_bin, "-c", "; ".join(calls)], check=True, timeout=15)
+
+
+def cmd_locate(args: argparse.Namespace) -> int:
+    """Find a control by text via Accessibility and highlight it (local, no shot)."""
+    hs_bin = shutil.which("hs")
+    if not hs_bin:
+        print("error: Hammerspoon 'hs' CLI not found on PATH", file=sys.stderr)
+        return 1
+    frames = _hs_locate(hs_bin, args.app, args.text)[:args.max]
+    print(json.dumps(frames))
+    if not frames:
+        print(f"no accessibility match for {args.text!r}", file=sys.stderr)
+        return 3  # distinct code so callers can fall back to OCR / a screenshot
+    if not args.no_highlight:
+        _highlight_points(hs_bin, frames, args.duration)
+    return 0
+
+
 def _add_shot_parser(sub) -> None:
     shot = sub.add_parser("shot", help="capture an app window / region / full screen")
     shot.add_argument("--app", help="app to capture (e.g. Safari, FreeCAD)")
@@ -351,6 +397,16 @@ def _add_highlight_parser(sub) -> None:
     hl.set_defaults(func=cmd_highlight)
 
 
+def _add_locate_parser(sub) -> None:
+    loc = sub.add_parser("locate", help="find a control by text (Accessibility) and highlight it")
+    loc.add_argument("--text", required=True, help="text to match (case-insensitive substring)")
+    loc.add_argument("--app", help="app to search (default: the frontmost app)")
+    loc.add_argument("--max", type=int, default=6, help="max matches to highlight")
+    loc.add_argument("--duration", type=int, default=6, help="overlay seconds (0 = keep)")
+    loc.add_argument("--no-highlight", action="store_true", help="list matches only, don't draw")
+    loc.set_defaults(func=cmd_locate)
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Construct the argument parser for all subcommands."""
     parser = argparse.ArgumentParser(prog="screen_tutor.py", description=__doc__)
@@ -358,6 +414,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_shot_parser(sub)
     _add_annotate_parser(sub)
     _add_highlight_parser(sub)
+    _add_locate_parser(sub)
     return parser
 
 

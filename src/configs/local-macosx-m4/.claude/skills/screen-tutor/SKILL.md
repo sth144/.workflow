@@ -46,8 +46,20 @@ from the captured PNG you just read so pixel spaces match.
 
 ## Point at a control
 
-Estimate the target's pixel box from the shot you read. Coordinates are image
-pixels; `shot` records the geometry so overlays map pixels → screen points.
+**Try the Accessibility tree first — no screenshot, no tokens.** For "highlight the
+X button/menu/field" in a native app, locate it by its visible text:
+
+```bash
+python3 ~/bin/screen-tutor/screen_tutor.py locate --app "Safari" --text "Save"
+# omit --app to search the frontmost app; add --no-highlight to just list matches
+```
+
+It returns exact screen frames and highlights the match(es) live. If it exits 3
+(no match — common for Electron / web / canvas / 3D UIs the AX tree can't see),
+fall back to a screenshot and the pixel-based methods below.
+
+Otherwise, estimate the target's pixel box from the shot you read. Coordinates are
+image pixels; `shot` records the geometry so overlays map pixels → screen points.
 
 **a. Live overlay** — a glowing orange box over the real control, auto-fading.
 Best while the user is looking at the app:

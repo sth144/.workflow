@@ -75,6 +75,75 @@ function screenHighlight(x, y, w, h, label, duration)
   end
 end
 
+-- ---------------------------------------------------------------------------
+-- Accessibility targeting: find on-screen controls by their text and return
+-- exact screen-point frames, so the tutor can highlight "the Save button"
+-- without a screenshot or coordinate guessing. Fully local (no model tokens).
+-- ---------------------------------------------------------------------------
+
+local AX_TEXT_ATTRS = { "AXTitle", "AXDescription", "AXValue", "AXHelp", "AXLabel" }
+
+local function axText(el)
+  for _, attr in ipairs(AX_TEXT_ATTRS) do
+    local ok, v = pcall(function() return el:attributeValue(attr) end)
+    if ok and type(v) == "string" and v ~= "" then
+      return v
+    end
+  end
+  return nil
+end
+
+local function axFrame(el)
+  local pos = el:attributeValue("AXPosition")
+  local size = el:attributeValue("AXSize")
+  if pos and size and size.w and size.h then
+    return { x = pos.x, y = pos.y, w = size.w, h = size.h, label = axText(el) }
+  end
+  return nil
+end
+
+local function axSearch(el, needle, out, depth, budget)
+  if depth <= 0 or #out >= 20 or budget.n <= 0 then
+    return
+  end
+  budget.n = budget.n - 1
+  local text = axText(el)
+  if text and string.find(string.lower(text), needle, 1, true) then
+    local f = axFrame(el)
+    if f and f.w > 0 and f.h > 0 then
+      out[#out + 1] = f
+    end
+  end
+  local kids = el:attributeValue("AXChildren")
+  if type(kids) == "table" then
+    for _, kid in ipairs(kids) do
+      axSearch(kid, needle, out, depth - 1, budget)
+    end
+  end
+end
+
+-- Print a JSON array of {x,y,w,h,label} (screen points) for controls whose text
+-- contains `query` (case-insensitive) in `appName` (or the frontmost app).
+function screenLocate(appName, query)
+  local app = (appName ~= "" and hs.application.get(appName))
+    or hs.application.frontmostApplication()
+  local axapp = app and hs.axuielement.applicationElement(app)
+  if not axapp then
+    print("[]")
+    return
+  end
+  local out = {}
+  axSearch(axapp, string.lower(query), out, 16, { n = 6000 })
+  local parts = {}
+  for _, m in ipairs(out) do
+    local label = string.gsub(m.label or "", '["\\%c]', " ")
+    parts[#parts + 1] = string.format(
+      '{"x":%.1f,"y":%.1f,"w":%.1f,"h":%.1f,"label":"%s"}',
+      m.x, m.y, m.w, m.h, label)
+  end
+  print("[" .. table.concat(parts, ",") .. "]")
+end
+
 -- Backward-compatible aliases (cad-tutor shipped these names first).
 cadHighlight = screenHighlight
 cadHighlightClear = screenHighlightClear
