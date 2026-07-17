@@ -366,6 +366,62 @@ def cmd_locate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_ocr(image_path: str) -> Optional[List[Dict]]:
+    """Run the Apple Vision OCR helper on an image; return pixel-box matches."""
+    swift = shutil.which("swift")
+    if not swift:
+        print("error: swift toolchain not found on PATH", file=sys.stderr)
+        return None
+    script = os.path.join(os.path.dirname(os.path.realpath(__file__)), "vision_ocr.swift")
+    try:
+        out = subprocess.run(
+            [swift, script, image_path], capture_output=True, text=True, check=True, timeout=120
+        )
+    except subprocess.SubprocessError as exc:
+        print(f"error: OCR failed: {exc}", file=sys.stderr)
+        return None
+    for line in reversed(out.stdout.splitlines()):
+        line = line.strip()
+        if line.startswith("[") and line.endswith("]"):
+            return json.loads(line)
+    return []
+
+
+def _pixel_frame(match: Dict, origin: List[int], scale: float) -> Dict:
+    """Map an OCR pixel box to a screen-point frame using the shot sidecar."""
+    return {
+        "x": origin[0] + match["x"] / scale,
+        "y": origin[1] + match["y"] / scale,
+        "w": match["w"] / scale,
+        "h": match["h"] / scale,
+        "label": match.get("text", ""),
+    }
+
+
+def cmd_ocr(args: argparse.Namespace) -> int:
+    """Recognize text in a shot (Apple Vision); optionally highlight matches."""
+    results = _run_ocr(_expand(args.inp))
+    if results is None:
+        return 1
+    needle = args.text.lower() if args.text else None
+    matches = [r for r in results if not needle or needle in r["text"].lower()]
+    print(json.dumps(matches))
+    if not matches:
+        print(f"no OCR text matched {args.text!r}", file=sys.stderr)
+        return 3
+    if args.highlight:
+        hs_bin = shutil.which("hs")
+        if not hs_bin:
+            print("error: Hammerspoon 'hs' CLI not found for --highlight", file=sys.stderr)
+            return 1
+        meta = _load_sidecar(args.frm)
+        origin = meta.get("origin_pt", [0, 0])
+        scale = meta.get("scale") or 2.0
+        frames = [_pixel_frame(m, origin, scale) for m in matches[:args.max]]
+        _highlight_points(hs_bin, frames, args.duration)
+    return 0
+
+
 def _add_shot_parser(sub) -> None:
     shot = sub.add_parser("shot", help="capture an app window / region / full screen")
     shot.add_argument("--app", help="app to capture (e.g. Safari, FreeCAD)")
@@ -407,6 +463,18 @@ def _add_locate_parser(sub) -> None:
     loc.set_defaults(func=cmd_locate)
 
 
+def _add_ocr_parser(sub) -> None:
+    ocr = sub.add_parser("ocr", help="recognize text in a shot (Apple Vision) and optionally highlight")
+    ocr.add_argument("--in", dest="inp", required=True, help="input image (from `shot`)")
+    ocr.add_argument("--text", help="only keep/highlight text containing this substring")
+    ocr.add_argument("--from", dest="frm", default="/tmp/screen-tutor/last-shot.json",
+                     help="geometry sidecar for --highlight mapping")
+    ocr.add_argument("--highlight", action="store_true", help="draw overlays on matches")
+    ocr.add_argument("--max", type=int, default=8, help="max matches to highlight")
+    ocr.add_argument("--duration", type=int, default=6, help="overlay seconds (0 = keep)")
+    ocr.set_defaults(func=cmd_ocr)
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Construct the argument parser for all subcommands."""
     parser = argparse.ArgumentParser(prog="screen_tutor.py", description=__doc__)
@@ -415,6 +483,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_annotate_parser(sub)
     _add_highlight_parser(sub)
     _add_locate_parser(sub)
+    _add_ocr_parser(sub)
     return parser
 
 

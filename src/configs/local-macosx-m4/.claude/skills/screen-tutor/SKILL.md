@@ -56,10 +56,19 @@ python3 ~/bin/screen-tutor/screen_tutor.py locate --app "Safari" --text "Save"
 
 It returns exact screen frames and highlights the match(es) live. If it exits 3
 (no match — common for Electron / web / canvas / 3D UIs the AX tree can't see),
-fall back to a screenshot and the pixel-based methods below.
+capture a shot and let **OCR** find the text — still local, no model tokens:
 
-Otherwise, estimate the target's pixel box from the shot you read. Coordinates are
-image pixels; `shot` records the geometry so overlays map pixels → screen points.
+```bash
+python3 ~/bin/screen-tutor/screen_tutor.py shot --app "Figma" --out /tmp/screen-tutor/shot.png
+python3 ~/bin/screen-tutor/screen_tutor.py ocr --in /tmp/screen-tutor/shot.png --text "Export" --highlight
+```
+
+`ocr` uses Apple Vision (native, offline); `--highlight` maps the matched text box
+to screen points via the shot's sidecar and draws it (exits 3 if nothing matched).
+
+Only if OCR also misses do you reason over the screenshot yourself — estimate the
+target's pixel box from the shot you read (coordinates are image pixels; `shot`
+records the geometry so overlays map pixels → screen points) with the methods below.
 
 **a. Live overlay** — a glowing orange box over the real control, auto-fading.
 Best while the user is looking at the app:
