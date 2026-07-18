@@ -109,7 +109,7 @@ local scratchpads = {
     anchor   = "topright",
   },
 
-  -- Screen Tutor (generic on-screen assistant, macm4). A translucent panel that
+  -- Screen Tutor (generic on-screen assistant). A translucent panel that
   -- pins to a corner (Cmd+Ctrl+H toggles; Cmd+Ctrl+Shift+H cycles corners) so it
   -- sits beside whatever app you're using without covering the center.
   screentutor = {
@@ -381,6 +381,23 @@ local function launchAlacritty(marker, command, appBundle, extraOpts)
   hs.execute(shellCmd, true)  -- `true` => run via login shell
 end
 
+-- Poll for a freshly-launched window and position it the moment it appears. A
+-- single fixed delay is unreliable: a cold LaunchServices start (custom wrapper
+-- .app, or a harness like claude booting inside) can take longer than any one
+-- guess, so the timer fires before the window exists and it stays wherever
+-- Alacritty first drew it (screen center). Retry until it shows, then pin it.
+local function positionWhenReady(marker, config, attempts)
+  attempts = attempts or 20
+  local win = findAlacrittyWindowByTitle(marker)
+  if win then
+    positionWindow(win, config)
+  elseif attempts > 0 then
+    hs.timer.doAfter(0.25, function()
+      positionWhenReady(marker, config, attempts - 1)
+    end)
+  end
+end
+
 local function toggleTermScratchpad(marker, command, config, appBundle, extraOpts)
   local scratchWin = findAlacrittyWindowByTitle(marker)
 
@@ -400,14 +417,8 @@ local function toggleTermScratchpad(marker, command, config, appBundle, extraOpt
   else
     -- No window found - create one (in its custom-icon wrapper if available)
     launchAlacritty(marker, command, appBundle, extraOpts)
-
-    -- Position after delay
-    hs.timer.doAfter(0.5, function()
-      local win = findAlacrittyWindowByTitle(marker)
-      if win then
-        positionWindow(win, config)
-      end
-    end)
+    -- Poll until the window actually appears, then pin it to its anchor.
+    positionWhenReady(marker, config)
   end
 end
 
@@ -442,8 +453,12 @@ local screenTutorCornerIdx = 1
 
 local function toggleScreenTutor()
   scratchpads.screentutor.anchor = SCREEN_TUTOR_CORNERS[screenTutorCornerIdx]
-  toggleTermScratchpad("HS-SCREENTUTOR", 'exec "$SHELL"', scratchpads.screentutor,
-    scratchApp("Screen Tutor"), "-o window.opacity=0.82")
+  -- Auto-launch the claude harness straight into the /screen-tutor skill; drop to
+  -- a login shell when it exits so the window persists and stays toggle-able.
+  -- Sonnet by default: faster than Opus for this glance-and-explain widget, and
+  -- the token-heavy visual reasoning is rare (AX/OCR handle the common cases).
+  toggleTermScratchpad("HS-SCREENTUTOR", 'claude --model sonnet /screen-tutor; exec "$SHELL"',
+    scratchpads.screentutor, scratchApp("Screen Tutor"), "-o window.opacity=0.82")
 end
 
 local function cycleScreenTutorCorner()
@@ -619,8 +634,8 @@ end)
 -- Cycle the Screen Tutor widget around the screen corners (Cmd+Ctrl+Shift+H).
 hs.hotkey.bind({ "cmd", "ctrl", "shift" }, "h", cycleScreenTutorCorner)
 
--- Optional machine-local Hammerspoon extensions (e.g. the macm4 screen-tutor
--- highlight overlay). Absent on machines without the file; pcall keeps init
+-- Optional Hammerspoon extensions (the screen-tutor highlight overlay, staged
+-- from the macOS layer). Absent on machines without the file; pcall keeps init
 -- robust either way.
 pcall(dofile, os.getenv("HOME") .. "/.hammerspoon/screen_tutor.lua")
 

@@ -111,8 +111,9 @@ Key skills (always in context):
 @~/.claude/skills/slack/SKILL.md
 @~/.claude/skills/jupyter-notebook/SKILL.md
 
-<!-- Machine-local instructions. Only staged on hosts that provide it (e.g. macm4);
-     silently ignored on hosts where the file is absent. -->
+<!-- Platform/machine-local instructions. Only staged on hosts that provide them
+     (macOS layer / e.g. macm4); silently ignored where the file is absent. -->
+@~/.claude/CLAUDE.macosx.md
 @~/.claude/CLAUDE.macm4.md
 
 ## Agents

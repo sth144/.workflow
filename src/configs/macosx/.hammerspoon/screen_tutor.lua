@@ -1,4 +1,4 @@
--- ~/.hammerspoon/screen_tutor.lua  (macm4)
+-- ~/.hammerspoon/screen_tutor.lua  (macOS layer)
 --
 -- Live on-screen highlight overlays for the `screen-tutor` / `cad-tutor` skills.
 -- Loaded by the shared init.lua via `pcall(dofile, ...)`, so it is a safe no-op

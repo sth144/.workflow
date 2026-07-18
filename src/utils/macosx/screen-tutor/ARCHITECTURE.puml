@@ -1,0 +1,134 @@
+@startuml screen-tutor-cad-tutor
+'============================================================================
+' Screen Tutor & CAD Tutor — architecture
+'
+' Two on-screen assistant skills for this M4 Mac that share one capture/
+' highlight engine. screen-tutor is the generic "look at my screen" assistant;
+' cad-tutor is the same engine plus a Blender/FreeCAD MCP layer for 3D model
+' inspection. Both run as a Claude/Codex harness inside a Hammerspoon-launched
+' Alacritty widget, and both point at real on-screen controls via the same
+' local-first escalation: Accessibility tree -> Apple Vision OCR -> model
+' reasoning over a screenshot.
+'
+' Render:  plantuml ARCHITECTURE.puml        (or the PlantUML VS Code preview)
+'============================================================================
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam defaultTextAlignment center
+skinparam ArrowColor #555555
+skinparam packageStyle rectangle
+
+actor "User" as user
+
+package "Launcher — Hammerspoon (~/.hammerspoon/init.lua)" #F5F0FF {
+  component "Screen Tutor toggle\nCmd+Ctrl+H\n(translucent, corner-pinned)" as stToggle
+  component "CAD Tutor toggle\nCmd+Ctrl+G\n(anchored top-right)" as cadToggle
+  component "positionWhenReady()\npin on first launch\nCmd+Ctrl+Shift+H cycles corners" as pin
+}
+
+package "Widget windows — Alacritty" #EEF6FF {
+  component "Screen Tutor widget\nclaude --model sonnet\n/screen-tutor" as stWidget
+  component "CAD Tutor widget\nclaude|codex\n/cad-tutor" as cadWidget
+}
+
+package "Skills — Claude/Codex harness (reasoning)" #EFFff0 {
+  component "screen-tutor SKILL\n(shared: configs/macosx)" as stSkill
+  component "cad-tutor SKILL\n(configs/local-macosx-m4)" as cadSkill
+  note bottom of stSkill
+    Local-first: try AX <b>locate</b>, then
+    <b>ocr</b>, and only escalate to reading
+    the PNG (model tokens) when both miss.
+  end note
+}
+
+package "Engine — screen_tutor.py (~/bin/screen-tutor)" #FFF6E5 {
+  component "shot\ncapture window/region/full\n+ geometry sidecar" as shot
+  component "locate\nfind control by text (AX)" as locate
+  component "ocr\nrecognize text in a shot" as ocr
+  component "highlight\nlive overlay on real UI" as highlight
+  component "annotate\nboxes/arrows/labels -> PNG" as annotate
+}
+
+package "Hammerspoon Lua (~/.hammerspoon/screen_tutor.lua)" #F5F0FF {
+  component "screenHighlight()\nscreenHighlightClear()\ncanvas overlays" as hsHighlight
+  component "screenLocate()\nwalk AX tree, return frames" as hsLocate
+}
+
+package "macOS frameworks / tools" #F0F0F0 {
+  component "screencapture" as screencap
+  component "System Events\n(AppleScript: window\nbounds, frontmost app)" as sysevents
+  component "vision_ocr.swift\nApple Vision (offline OCR)" as vision
+  component "Accessibility API" as axapi
+}
+
+package "CAD-only — MCP bridges" #FFF0F5 {
+  component "blender-mcp\n(uvx, arm64)" as blenderMcp
+  component "freecad-mcp\n(uvx, arm64)" as freecadMcp
+  component "Blender / FreeCAD\n(in-app RPC bridge)" as cadApps
+}
+
+artifact "shot.png + <file>.json sidecar\n/tmp/{screen,cad}-tutor/\n(last-shot.json)" as shotFile
+artifact "~/screen-tutor.png\n~/cad-tutor.png\n(annotated, pin as VS Code tab)" as annFile
+
+' --- launch flow ---
+user --> stToggle : Cmd+Ctrl+H
+user --> cadToggle : Cmd+Ctrl+G
+stToggle --> stWidget : launch
+cadToggle --> cadWidget : launch
+stToggle ..> pin
+cadToggle ..> pin
+pin ..> stWidget : reposition to corner
+pin ..> cadWidget : reposition to corner
+
+stWidget --> stSkill : runs
+cadWidget --> cadSkill : runs
+cadSkill ..|> stSkill : extends\n(same engine)
+
+' --- skill drives the engine (local-first order) ---
+stSkill --> locate  : 1. by text
+stSkill --> shot    : 2. capture
+stSkill --> ocr     : 2b. read text
+stSkill --> highlight
+stSkill --> annotate
+cadSkill --> shot
+cadSkill --> highlight
+cadSkill --> annotate
+
+' --- engine -> OS / Lua ---
+shot --> screencap
+shot --> sysevents
+shot --> shotFile : writes
+locate --> hsLocate : hs -c
+ocr --> vision
+ocr ..> shotFile : reads sidecar
+highlight --> hsHighlight : hs -c
+highlight ..> shotFile : reads sidecar
+annotate --> shotFile : reads
+annotate --> annFile : writes (PIL)
+
+hsHighlight --> user : orange overlay\non real screen
+hsLocate --> axapi
+vision ..> shotFile : reads PNG
+
+' --- CAD model inspection (ground truth, not pixels) ---
+cadSkill --> blenderMcp : get_scene_info,\nexecute_blender_code
+cadSkill --> freecadMcp : get_objects,\nexecute_code
+blenderMcp --> cadApps
+freecadMcp --> cadApps
+
+' --- read-backs for reasoning ---
+stSkill <.. shotFile : Read PNG
+stSkill <.. annFile : verify highlight
+cadSkill <.. shotFile : Read PNG
+cadSkill <.. annFile : verify highlight
+
+legend right
+  |= line |= meaning |
+  | solid | invokes / launches |
+  | dashed | reads / verifies / extends |
+  Local-first escalation keeps model tokens
+  for genuine visual reasoning; AX + OCR are
+  fully local (no tokens).
+endlegend
+
+@enduml

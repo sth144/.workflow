@@ -34,17 +34,11 @@ Guidelines:
     `print()` in `execute_code` during iteration and only pull a render (small
     `width`/`height`) at milestones instead of after every edit.
 
-## Screen Tutor skill
-
-`screen-tutor` (`/screen-tutor` in Claude Code, `$screen-tutor` in Codex) is the
-general-purpose version: on request it screenshots whatever app you're in, reasons
-about it, and highlights the relevant control (live overlay or annotated
-`~/screen-tutor.png`). It captures **only when you ask** — never on its own, and
-prefers answering locally before spending tokens on a screenshot. `cad-tutor` (below)
-is the CAD-specific specialization built on the same `screen_tutor.py` engine +
-`screenHighlight` overlay.
-
 ## CAD Tutor skill
+
+`cad-tutor` is the CAD-specific specialization of the general-purpose `screen-tutor`
+skill (documented at the macOS layer), built on the same `screen_tutor.py` engine +
+`screenHighlight` overlay.
 
 For hands-on help in a live CAD session, invoke the `cad-tutor` skill (`/cad-tutor`
 in Claude Code, `$cad-tutor` in Codex). It has its own scratchpad window — toggle

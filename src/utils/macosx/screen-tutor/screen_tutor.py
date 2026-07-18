@@ -68,7 +68,7 @@ def _osascript(script: str, timeout: int = 10) -> Optional[str]:
             ["osascript", "-e", script],
             capture_output=True, text=True, check=True, timeout=timeout,
         )
-    except (subprocess.CalledProcessError, subprocess.TimeoutError) as exc:
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
         print(f"warn: osascript failed: {exc}", file=sys.stderr)
         return None
     return out.stdout.strip()
@@ -368,14 +368,19 @@ def cmd_locate(args: argparse.Namespace) -> int:
 
 def _run_ocr(image_path: str) -> Optional[List[Dict]]:
     """Run the Apple Vision OCR helper on an image; return pixel-box matches."""
-    swift = shutil.which("swift")
-    if not swift:
-        print("error: swift toolchain not found on PATH", file=sys.stderr)
-        return None
-    script = os.path.join(os.path.dirname(os.path.realpath(__file__)), "vision_ocr.swift")
+    base_dir = os.path.dirname(os.path.realpath(__file__))
+    compiled = os.path.join(base_dir, "vision_ocr")
+    if os.path.isfile(compiled) and os.access(compiled, os.X_OK):
+        cmd = [compiled, image_path]
+    else:
+        swift = shutil.which("swift")
+        if not swift:
+            print("error: swift toolchain not found on PATH", file=sys.stderr)
+            return None
+        cmd = [swift, os.path.join(base_dir, "vision_ocr.swift"), image_path]
     try:
         out = subprocess.run(
-            [swift, script, image_path], capture_output=True, text=True, check=True, timeout=120
+            cmd, capture_output=True, text=True, check=True, timeout=120
         )
     except subprocess.SubprocessError as exc:
         print(f"error: OCR failed: {exc}", file=sys.stderr)
