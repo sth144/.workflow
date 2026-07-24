@@ -78,6 +78,14 @@ Skip questions already obvious from the item text. One question per turn, wait
 for my answer. If I give a thin answer and the item clearly needs more, follow
 up once, then move on.
 
+### "Make a note"
+
+When I say "make a note" of something during the walkthrough, **immediately**
+annotate the corresponding to-do item in the Daybook note (re-fetch body, append
+the note text after an em-dash on the same line, write back). For example,
+`- [ ] L7FS indexing` becomes `- [ ] L7FS indexing — need to discuss with James`.
+Don't just acknowledge it verbally — persist it in Joplin.
+
 ### Use subagents when an item needs digging
 
 When an item needs research or context I don't have at my fingertips, **spawn a

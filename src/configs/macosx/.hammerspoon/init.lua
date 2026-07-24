@@ -167,14 +167,14 @@ local scratchpads = {
     height   = 0.7,
   },
 
-  -- bc calculator in Alacritty (i3: Alt+F11)
+  -- qalc calculator in Alacritty, bc -l fallback (i3: Alt+F11)
   -- NOTE: This uses a custom handler, not the standard toggleScratchpad
   calculator = {
     hotkey      = mod,
     key         = "k",
     width       = 0.28,
     height      = 0.32,
-    windowTitle = "bc",
+    windowTitle = "qalc",
   },
 
   -- Chrome for research (i3: Alt+R)
@@ -432,7 +432,7 @@ local function toggleRanger()
 end
 
 local function toggleBcCalc()
-  toggleTermScratchpad("HS-CALC", "bc ~/.bcrc -l", scratchpads.calculator, scratchApp("Calculator"))
+  toggleTermScratchpad("HS-CALC", "if [ -x /Users/seanhinds/bin/qalc ]; then /Users/seanhinds/bin/qalc; else bc -l ~/.bcrc; fi", scratchpads.calculator, scratchApp("Calculator"))
 end
 
 local function toggleClaudeForks()

@@ -374,6 +374,11 @@ refresh() {
 	if [ -d $BASE_ABS/stage/.config/i3/config ]; then
 		i3-msg restart
 	fi
+
+	# Reload Hammerspoon config if running (macOS)
+	if command -v hs >/dev/null 2>&1; then
+		hs -c "hs.reload()" 2>/dev/null || true
+	fi
 }
 
 update_claude_mcp() {
