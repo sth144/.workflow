@@ -15,6 +15,21 @@
       "env": {
         "UV_PYTHON_PREFERENCE": "only-managed"
       }
+    },
+    "qgis": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--python",
+        "3.12",
+        "--from",
+        "git+https://github.com/nkarasiak/qgis-mcp@v0.7.1",
+        "qgis-mcp-server"
+      ],
+      "env": {
+        "UV_PYTHON_PREFERENCE": "only-managed",
+        "QGIS_MCP_TOOL_MODE": "compound"
+      }
     }
   }
 }

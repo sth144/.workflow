@@ -34,6 +34,43 @@ Guidelines:
     `print()` in `execute_code` during iteration and only pull a render (small
     `width`/`height`) at milestones instead of after every edit.
 
+## GIS / QGIS
+
+QGIS is set up on this machine with an MCP server (`qgis`). Same two-part architecture as
+Blender/FreeCAD — `qgis-mcp` is a fork of BlenderMCP: a plugin opens a socket server
+*inside* QGIS, and the stdio MCP server relays to it.
+
+- **Start the bridge before driving:** QGIS → *QGIS MCP* dock widget → *Start Server*
+  (listens on `localhost:9876`). If a tool call reports a connection refused, the dock
+  server isn't running — say so and continue rather than retrying blind.
+- **Version lockstep.** The in-app half is the *QGIS MCP* plugin (Plugins → Manage and
+  Install Plugins, needs QGIS ≥ 3.28); the server half is pinned to git tag `v0.7.1` in
+  `mcp.macm4.json` because that's the plugin version on plugins.qgis.org. A newer server
+  can send commands an older plugin has no handler for, so **bump both together** — update
+  the plugin, then move the pinned tag.
+- **Tool mode.** `QGIS_MCP_TOOL_MODE=compound` is set, which exposes ~23 grouped tools
+  (`project`, `layer`, `features`, `style`, `canvas`, `render`, `processing`, `code`,
+  `layer_tree`, `expression`, `transform`, …) instead of ~102 granular ones. Drop the env
+  var only if you need a granular tool that no group covers.
+- **Token cost / renders.** `render`/map-canvas calls return base64 PNGs, the same
+  freecad-mcp trap described above. Verify with `print()` of layer counts / extents /
+  CRS / feature counts via the `code` group during iteration, and pull a small-`width`
+  render only at milestones.
+- **`execute_code` runs arbitrary PyQGIS** in the live app — same trust posture as
+  `execute_blender_code`. It can overwrite project files and layers on disk, so prefer
+  the typed tools when one exists.
+- **Optional hardening.** The socket is localhost-only with no auth by default; any local
+  process that reaches the port can drive QGIS. To require a shared secret, set
+  `QGIS_MCP_TOKEN` in *both* QGIS's own process environment and the server's `env` block —
+  note that QGIS launched from Finder won't inherit a shell export, so it needs
+  `launchctl setenv` or a shell launch.
+
+Save `.qgz` / `.qgs` projects to the GIS archive on `sthinds.local`, mirroring the CAD
+archive convention: `~/media/.mounts/D/Documents/GIS/` (the `D` Samba share →
+`Documents/GIS`). Keep layer sources on the share too, or use absolute paths that resolve
+on the mount — QGIS stores relative layer paths by default and a project moved off the
+mount will open with broken layers.
+
 ## CAD Tutor skill
 
 `cad-tutor` is the CAD-specific specialization of the general-purpose `screen-tutor`

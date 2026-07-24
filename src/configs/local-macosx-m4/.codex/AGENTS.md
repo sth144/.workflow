@@ -163,3 +163,22 @@ mounted locally over SMB:
 - Render Blender/FreeCAD preview frames to `~/blender-preview.png` for the live VS Code tab.
 - `uvx blender-mcp` / `uvx freecad-mcp` must run **arm64-native** (config pins
   `--python 3.12` + `UV_PYTHON_PREFERENCE=only-managed`); never launch from a Rosetta shell.
+
+## GIS / QGIS
+
+QGIS is set up here with an MCP server (`qgis`) — same socket-plugin architecture as
+Blender/FreeCAD (`qgis-mcp` is a BlenderMCP fork). Save `.qgz` / `.qgs` projects to
+`~/media/.mounts/D/Documents/GIS/` on the `D` Samba share, and keep layer sources on the
+mount too (QGIS stores relative layer paths, so a project moved off the mount opens broken).
+
+- Start the bridge first: QGIS → *QGIS MCP* dock → **Start Server** (`localhost:9876`).
+  Connection refused means the dock server isn't running — say so, don't retry blind.
+- The plugin (*QGIS MCP*, QGIS ≥ 3.28) and the server (pinned to git tag `v0.7.1` in
+  `config.toml`) must stay in lockstep; bump both together.
+- `QGIS_MCP_TOOL_MODE=compound` is set — ~23 grouped tools instead of ~102 granular ones.
+- Map renders return base64 PNGs (same token trap as `freecad-mcp` `get_view`): verify with
+  `print()` of layer/feature counts, extents and CRS while iterating, render at milestones.
+- `execute_code` runs arbitrary PyQGIS against the live app and can overwrite projects and
+  layers on disk — prefer the typed tools when one exists.
+- The socket is localhost-only with no auth by default; `QGIS_MCP_TOKEN` must be set in
+  *both* QGIS's process env and the server `env` block to require a secret.

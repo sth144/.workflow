@@ -394,7 +394,7 @@ update_claude_mcp() {
 	#
 	# An optional per-machine fragment (~/.claude/mcp.macm4.json, deployed only from
 	# the local-macosx-m4 layer) is merged last so this host can add MCP servers that
-	# make no sense elsewhere (e.g. blender/freecad, which need local GUI apps) without
+	# make no sense elsewhere (e.g. blender/freecad/qgis, which need local GUI apps) without
 	# duplicating the shared server list. Fragment wins on conflict.
 	SRC="$HOME/.claude/mcp.json"
 	FRAG="$HOME/.claude/mcp.macm4.json"
