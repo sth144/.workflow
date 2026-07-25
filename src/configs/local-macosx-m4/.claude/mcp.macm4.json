@@ -23,7 +23,7 @@
         "--python",
         "3.12",
         "--from",
-        "git+https://github.com/nkarasiak/qgis-mcp@v0.7.1",
+        "/usr/local/src/qgis-mcp-patched",
         "qgis-mcp-server"
       ],
       "env": {
