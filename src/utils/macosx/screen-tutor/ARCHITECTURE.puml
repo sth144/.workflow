@@ -68,7 +68,7 @@ package "CAD-only — MCP bridges" #FFF0F5 {
 }
 
 artifact "shot.png + <file>.json sidecar\n/tmp/{screen,cad}-tutor/\n(last-shot.json)" as shotFile
-artifact "~/screen-tutor.png\n~/cad-tutor.png\n(annotated, pin as VS Code tab)" as annFile
+artifact "~/tmp/screen-tutor.png\n~/tmp/cad-tutor.png\n(annotated, pin as VS Code tab)" as annFile
 
 ' --- launch flow ---
 user --> stToggle : Cmd+Ctrl+H

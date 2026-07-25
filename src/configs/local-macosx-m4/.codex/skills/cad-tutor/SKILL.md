@@ -74,12 +74,13 @@ Needs the CAD app visible and Hammerspoon running (it provides `screenHighlight`
 `~/.hammerspoon/screen_tutor.lua`). Uses the geometry from the most recent `shot`.
 
 **b. Annotated screenshot** — boxes/arrows/labels burned into an image at
-`~/cad-tutor.png` (pin it as a VS Code image tab, like `~/blender-preview.png`).
+`~/tmp/cad-tutor.png` (pin it as a VS Code image tab, like
+`~/tmp/blender-preview.png`).
 Best for a step sequence the user can scroll back through:
 
 ```bash
 python3 ~/bin/screen-tutor/screen_tutor.py annotate \
-  --in /tmp/cad-tutor/shot.png --out ~/cad-tutor.png \
+  --in /tmp/cad-tutor/shot.png --out ~/tmp/cad-tutor.png \
   --box "820,140,64,64:Pad tool" \
   --arrow "700,320,815,170:start here" \
   --label "40,40:Step 1 — select a sketch"
@@ -87,7 +88,7 @@ python3 ~/bin/screen-tutor/screen_tutor.py annotate \
 
 `--box "x,y,w,h[:label]"`, `--arrow "x1,y1,x2,y2[:label]"` (points at x2,y2),
 `--label "x,y:text"` — each repeatable. After annotating, **re-open
-`~/cad-tutor.png`** to confirm the highlight landed on the right control before
+`~/tmp/cad-tutor.png`** to confirm the highlight landed on the right control before
 telling the user to look; re-estimate and redraw if it's off.
 
 ## Working style
@@ -98,10 +99,9 @@ telling the user to look; re-estimate and redraw if it's off.
   state what it will do and get a yes — unless the user already told you to just
   do it.
 - When you create or save project files, follow the machine's CAD storage rules:
-  Blender → `~/media/.mounts/D/Documents/CAD/Blender/`, FreeCAD →
-  `~/media/.mounts/D/Documents/CAD/FreeCAD/` (keep a working copy under
-  `~/blender-projects/` while iterating; pack external data into `.blend`).
-- Keep temp screenshots under `/tmp/cad-tutor/`; reuse `~/cad-tutor.png` for the
+  Blender → `~/Documents/CAD/Blender/`, FreeCAD →
+  `~/media/.mounts/D/Documents/CAD/FreeCAD/` (pack external data into `.blend`).
+- Keep temp screenshots under `/tmp/cad-tutor/`; reuse `~/tmp/cad-tutor.png` for the
   live annotated view so the pinned tab updates in place.
 - If the user asks something the screenshot can't resolve (tiny/ambiguous UI),
   ask them to zoom or describe, rather than guessing coordinates.

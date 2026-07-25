@@ -24,7 +24,7 @@ Examples
     screen_tutor.py shot --app Safari --out /tmp/screen-tutor/shot.png
     screen_tutor.py shot --frontmost --out /tmp/screen-tutor/shot.png
     screen_tutor.py highlight --box "820,140,64,64:Save" --duration 6
-    screen_tutor.py annotate --in shot.png --out ~/screen-tutor.png \\
+    screen_tutor.py annotate --in shot.png --out ~/tmp/screen-tutor.png \\
         --box "820,140,64,64:Save" --arrow "700,300,815,170:click here"
 """
 
@@ -440,7 +440,7 @@ def _add_shot_parser(sub) -> None:
 def _add_annotate_parser(sub) -> None:
     ann = sub.add_parser("annotate", help="draw highlights onto an image")
     ann.add_argument("--in", dest="inp", required=True, help="input image path")
-    ann.add_argument("--out", default="~/screen-tutor.png", help="output PNG path")
+    ann.add_argument("--out", default="~/tmp/screen-tutor.png", help="output PNG path")
     ann.add_argument("--box", action="append", help='"x,y,w,h[:label]" (repeatable)')
     ann.add_argument("--arrow", action="append", help='"x1,y1,x2,y2[:label]" (repeatable)')
     ann.add_argument("--label", action="append", help='"x,y:text" (repeatable)')
