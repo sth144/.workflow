@@ -68,6 +68,16 @@
           }
         ],
         "matcher": "*"
+      },
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/screen-tutor-consent.sh",
+            "timeout": 90,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
       }
     ],
     "SessionEnd": [
@@ -85,6 +95,14 @@
         "hooks": [
           {
             "command": "$HOME/.claude/hooks/openisland-wrapper.sh --source claude",
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/screen-tutor-consent.sh reset",
             "type": "command"
           }
         ]
