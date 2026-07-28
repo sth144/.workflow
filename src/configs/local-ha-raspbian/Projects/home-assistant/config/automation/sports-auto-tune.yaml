@@ -79,23 +79,17 @@
           {{ test_network if test_network is defined
              else (state_attr(game, 'tv_network') | default('', true)) }}
     - variables:
-        # tv_network substring -> where to send it.
-        # YouTube TV is the catch-all: it carries nearly every linear channel, so
-        # unmatched networks land there rather than failing outright.
-        # Apple TV is genuinely unreachable from HA here: the Shield has no
-        # Apple TV app, and this Samsung exposes only ['TV','HDMI'] as sources
-        # (core samsungtv can't launch Tizen apps). See the note in the default
-        # branch for the one workaround that would fix it.
+        # tv_network -> where to send it. The mapping itself lives in
+        # custom_templates/streaming_apps.jinja, which is deliberately NOT tracked
+        # in git: which networks are mapped reveals which streaming services this
+        # household subscribes to. See streaming_apps.jinja.example for structure
+        # and for how to discover package names / deep links over ADB.
+        #
+        # app_for() returns a package name, a deep link, or "unsupported"
+        # (-> the default branch below just notifies).
         activity: >-
-          {% set n = network | lower %}
-          {% if   'apple' in n or 'season pass' in n %}unsupported
-          {% elif 'peacock' in n or 'nbc' in n %}com.peacocktv.peacockandroid
-          {% elif 'prime' in n or 'amazon' in n %}com.amazon.amazonvideo.livingroom.nvidia
-          {% elif 'paramount' in n or 'cbs' in n %}com.cbs.ott
-          {% elif 'fox' in n or 'fs1' in n or 'btn' in n or 'big ten' in n %}foxsports://live
-          {% elif 'espn' in n or 'abc' in n %}com.espn.score_center
-          {% else %}com.google.android.youtube.tvunplugged
-          {% endif %}
+          {% from 'streaming_apps.jinja' import app_for %}
+          {{ app_for(network) | trim }}
 
     - choose:
         # ------------------------------------------------------------------

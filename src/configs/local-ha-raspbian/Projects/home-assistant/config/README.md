@@ -24,6 +24,23 @@ Adding a new top-level key requires a **full HA restart**, not a reload.
 |---|---|
 | `templates.yaml` | `sensor.live_tracked_game` — dynamic roster of in-progress TeamTracker games |
 | `automation/sports-auto-tune.yaml` | Wakes the TV + Shield and launches the app carrying a tracked team's live game |
+| `custom_templates/streaming_apps.jinja.example` | Scaffold for the network → app map |
+
+### `custom_templates/streaming_apps.jinja` is NOT tracked
+
+The live file is gitignored, because which networks are mapped reveals which
+streaming services the household subscribes to. To deploy on a fresh host:
+
+```bash
+cp custom_templates/streaming_apps.jinja.example \
+   custom_templates/streaming_apps.jinja
+# fill in your own services, then:
+#   action: homeassistant.reload_custom_templates
+```
+
+The automation imports it as a Jinja macro, so a missing file breaks the
+`activity` variable. The `.example` documents the contract and how to discover
+package names / deep links over ADB.
 
 ## Sports auto-tune
 
@@ -31,18 +48,16 @@ Triggered off `sensor.live_tracked_game`, which derives from
 `integration_entities('teamtracker')` at render time. **Teams are not listed
 anywhere** — adding a team to the TeamTracker integration is enough, no edits here.
 
-App package names and deep links were read off the Shield itself via
-`androidtv.adb_command` (`pm list packages`, `cmd package dump`), not guessed:
+The network → app mapping lives in `custom_templates/streaming_apps.jinja`
+(untracked, see above) and is called as `app_for(network)`. It returns an Android
+TV package name, a deep link, or `unsupported` — the last of which routes to a
+notification instead of touching the TV.
 
-| Network | Target |
-|---|---|
-| NBC / Peacock | `com.peacocktv.peacockandroid` |
-| Prime Video | `com.amazon.amazonvideo.livingroom.nvidia` (Shield-specific build) |
-| CBS / Paramount+ | `com.cbs.ott` |
-| FOX / FS1 / BTN | `foxsports://live` (verified deep link — lands on live content) |
-| ESPN / ABC | `com.espn.score_center` |
-| anything else | `com.google.android.youtube.tvunplugged` (YouTube TV catch-all) |
-| Apple TV / MLS Season Pass | unsupported — notify only |
+Values there were read off the Shield itself via `androidtv.adb_command`
+(`pm list packages`, `cmd package dump`), not guessed. Two findings worth keeping:
+Prime Video on this device is the Shield-specific `…livingroom.nvidia` build, and
+YouTube TV is installed, making it a sound catch-all for linear channels that lack
+a dedicated app.
 
 ### Guards
 

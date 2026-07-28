@@ -46,3 +46,7 @@ admin/config/**/*
 **/.venv*
 
 ~
+
+# HA: real network->streaming-app map reveals household subscriptions.
+# Only the .example scaffold is tracked; the live file stays on the HA host.
+src/configs/local-ha-raspbian/Projects/home-assistant/config/custom_templates/streaming_apps.jinja
