@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.workflow.slack-eyes</string>
+
+	<!-- run_once_daily.sh guards a single launch per calendar day (lock keyed on
+	     script basename + date), so a missed-interval catch-up at login can't
+	     append the same 👀 items twice. -->
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/cron/run_once_daily.sh</string>
+		<string>/bin/bash</string>
+		<string>/Users/<USER>/.claude/routines/slack-eyes.sh</string>
+	</array>
+
+	<!-- Weekday mornings at 08:25, five minutes before com.workflow.daybook-interview.
+	     Not 08:30: the interview opens an interactive Claude session that edits
+	     today's daybook note, and two concurrent read-modify-write cycles on the
+	     same note would clobber each other. Running first also means the interview
+	     starts with today's 👀 items already in the To Do list. -->
+	<key>StartCalendarInterval</key>
+	<array>
+		<dict>
+			<key>Weekday</key>
+			<integer>1</integer>
+			<key>Hour</key>
+			<integer>8</integer>
+			<key>Minute</key>
+			<integer>25</integer>
+		</dict>
+		<dict>
+			<key>Weekday</key>
+			<integer>2</integer>
+			<key>Hour</key>
+			<integer>8</integer>
+			<key>Minute</key>
+			<integer>25</integer>
+		</dict>
+		<dict>
+			<key>Weekday</key>
+			<integer>3</integer>
+			<key>Hour</key>
+			<integer>8</integer>
+			<key>Minute</key>
+			<integer>25</integer>
+		</dict>
+		<dict>
+			<key>Weekday</key>
+			<integer>4</integer>
+			<key>Hour</key>
+			<integer>8</integer>
+			<key>Minute</key>
+			<integer>25</integer>
+		</dict>
+		<dict>
+			<key>Weekday</key>
+			<integer>5</integer>
+			<key>Hour</key>
+			<integer>8</integer>
+			<key>Minute</key>
+			<integer>25</integer>
+		</dict>
+	</array>
+
+	<key>StandardOutPath</key>
+	<string>/Users/<USER>/.claude/routines/logs/slack-eyes.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/<USER>/.claude/routines/logs/slack-eyes.log</string>
+</dict>
+</plist>
