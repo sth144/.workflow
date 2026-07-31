@@ -22,6 +22,7 @@ Optional env vars:
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import re
@@ -79,6 +80,8 @@ MAX_PAGES = 20
 STATE_KEEP = 500
 SUMMARY_LIMIT = 90
 
+MENTION_RE = re.compile(r"<@([UW][A-Z0-9]+)(?:\|([^>]+))?>")
+SPECIAL_MENTION_RE = re.compile(r"<!([^>|]+)(?:\|([^>]+))?>")
 LABELLED_LINK_RE = re.compile(r"<([^|>]+)\|([^>]+)>")
 BARE_LINK_RE = re.compile(r"<([^>]+)>")
 WHITESPACE_RE = re.compile(r"\s+")
@@ -140,8 +143,14 @@ def extract_eyed(item: dict[str, Any], user_id: str) -> dict[str, Any] | None:
 
 
 def fetch_eyed_messages(user_id: str) -> list[dict[str, Any]]:
-    """Every 👀'd message, newest first."""
+    """Every 👀'd message, newest first, one entry per message.
+
+    reactions.list can return the same message more than once — a threaded
+    message also broadcast to the channel comes back twice — so de-dupe on
+    channel:ts within the run as well as against the state file.
+    """
     found: list[dict[str, Any]] = []
+    keys: set[str] = set()
     cursor = ""
     for _ in range(MAX_PAGES):
         params: dict[str, Any] = {"limit": 100, "full": "true"}
@@ -151,7 +160,8 @@ def fetch_eyed_messages(user_id: str) -> list[dict[str, Any]]:
 
         for item in data.get("items", []):
             message = extract_eyed(item, user_id)
-            if message:
+            if message and message["key"] not in keys:
+                keys.add(message["key"])
                 found.append(message)
 
         cursor = (data.get("response_metadata") or {}).get("next_cursor") or ""
@@ -160,8 +170,15 @@ def fetch_eyed_messages(user_id: str) -> list[dict[str, Any]]:
     return found
 
 
-def channel_label(channel_id: str, cache: dict[str, str]) -> str:
-    """Human label for a channel, falling back to the raw ID."""
+def channel_label(
+    channel_id: str, cache: dict[str, str], resolve: Any = None
+) -> str:
+    """Human label for a channel, falling back to the raw ID.
+
+    A 1:1 DM is labelled with the other person's handle (``@kent``) rather than
+    a bare "DM" — conversations.info reports the counterpart's user ID, which
+    ``resolve`` turns into a name. Mirrors Slack's own @person / #channel split.
+    """
     if channel_id in cache:
         return cache[channel_id]
 
@@ -171,7 +188,8 @@ def channel_label(channel_id: str, cache: dict[str, str]) -> str:
             "channel", {}
         )
         if channel.get("is_im"):
-            label = "DM"
+            other = channel.get("user")
+            label = f"@{resolve(other)}" if other and resolve else "DM"
         elif channel.get("name"):
             label = f"#{channel['name']}"
     except (SlackError, requests.RequestException):
@@ -180,6 +198,28 @@ def channel_label(channel_id: str, cache: dict[str, str]) -> str:
         pass
 
     cache[channel_id] = label
+    return label
+
+
+def user_label(user_id: str, cache: dict[str, str]) -> str:
+    """Display handle for a user ID, falling back to the raw ID."""
+    if user_id in cache:
+        return cache[user_id]
+
+    label = user_id
+    try:
+        profile = slack_get("users.info", user=user_id).get("user", {})
+        names = profile.get("profile") or {}
+        label = (
+            names.get("display_name")
+            or names.get("real_name")
+            or profile.get("name")
+            or user_id
+        )
+    except (SlackError, requests.RequestException):
+        pass
+
+    cache[user_id] = label
     return label
 
 
@@ -196,10 +236,34 @@ def permalink_for(message: dict[str, Any], team_url: str) -> str:
 # -- Formatting --
 
 
-def summarize(text: str) -> str:
-    """Flatten Slack message text into one short plain-text line."""
+def summarize(text: str, resolve: Any = None) -> str:
+    """Flatten Slack message text into one short plain-text line.
+
+    ``resolve`` optionally maps a user ID to a handle so ``<@U04C187FFTK>``
+    reads as a name instead of an ID.
+
+    Order matters: the ``<...>`` forms are Slack entities and must be consumed
+    while the angle brackets are still literal. HTML entities are decoded only
+    afterwards, so text where the author typed "&lt;" cannot be mistaken for
+    markup.
+    """
+
+    def mention(match: re.Match[str]) -> str:
+        label = match.group(2)
+        if not label and resolve:
+            label = resolve(match.group(1))
+        return "@" + (label or match.group(1))
+
+    def special(match: re.Match[str]) -> str:
+        label = match.group(2) or match.group(1)
+        # <!subteam^S123|@team> style values carry an ID after a caret.
+        return "@" + label.split("^")[0].lstrip("@")
+
+    text = MENTION_RE.sub(mention, text)
+    text = SPECIAL_MENTION_RE.sub(special, text)
     text = LABELLED_LINK_RE.sub(r"\2", text)
     text = BARE_LINK_RE.sub(r"\1", text)
+    text = html.unescape(text)
     text = WHITESPACE_RE.sub(" ", text).strip()
     text = LEADING_MARKUP_RE.sub("", text).strip()
     if not text:
@@ -209,13 +273,15 @@ def summarize(text: str) -> str:
     return text
 
 
-def todo_line(message: dict[str, Any], label: str, permalink: str) -> str:
+def todo_line(
+    message: dict[str, Any], label: str, permalink: str, resolve: Any = None
+) -> str:
     """Render one To Do item.
 
     The summary leads so the Trello card name phase 1b derives from this line
     stays readable; the link trails as markdown so Joplin renders it clean.
     """
-    summary = summarize(message["text"])
+    summary = summarize(message["text"], resolve)
     if permalink:
         return f"- [ ] {EYES_MARK} {summary} ([{label}]({permalink}))"
     return f"- [ ] {EYES_MARK} {summary} ({label})"
@@ -325,16 +391,27 @@ def select_fresh(
         if cutoff and float(message["ts"]) < cutoff:
             continue
         fresh.append(message)
-    fresh.reverse()
+    # Sort rather than reverse: oldest-first is what we want in the To Do list,
+    # and reversing only achieves that if reactions.list is strictly
+    # newest-first — ordering its docs do not promise.
+    fresh.sort(key=lambda message: float(message["ts"]))
     return fresh
 
 
-def build_lines(
-    fresh: list[dict[str, Any]], team_url: str
-) -> list[str]:
-    cache: dict[str, str] = {}
+def build_lines(fresh: list[dict[str, Any]], team_url: str) -> list[str]:
+    channels: dict[str, str] = {}
+    users: dict[str, str] = {}
+
+    def resolve(user_id: str) -> str:
+        return user_label(user_id, users)
+
     return [
-        todo_line(m, channel_label(m["channel"], cache), permalink_for(m, team_url))
+        todo_line(
+            m,
+            channel_label(m["channel"], channels, resolve),
+            permalink_for(m, team_url),
+            resolve,
+        )
         for m in fresh
     ]
 

@@ -102,6 +102,13 @@ Logs: `~/.claude/routines/logs/slack-eyes.log`
 ## Notes
 - Removing the 👀 in Slack does **not** remove the To Do item. The flow is
   one-way by design; delete the line (or the Trello card) to drop it.
-- Channels the token can't see (private channels, group DMs — the token has
-  `channels:read` only) fall back to showing the raw channel ID.
-- Message text is flattened to one line and truncated to 90 characters.
+- Labels follow Slack's own convention: `#channel` for channels, `@person` for
+  1:1 DMs (resolved via `conversations.info` → `users.info`, cached per run).
+- Channels the token can't see fall back to the raw channel ID. Private channels
+  need `groups:read` and group DMs need `mpim:read` on the **user** token; with
+  neither, those items still appear, just labelled `C…`/`G…`.
+- Message text is flattened to one line, Slack entities are resolved
+  (`<@U…>` → `@name`, `<url|label>` → `label`, `<!here>` → `@here`), HTML
+  entities are decoded, and the result is truncated to 90 characters.
+- Items are added oldest-first, sorted by timestamp rather than trusting
+  `reactions.list` ordering.
