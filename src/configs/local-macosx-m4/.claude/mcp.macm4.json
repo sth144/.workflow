@@ -1,5 +1,9 @@
 {
   "mcpServers": {
+    "ha-mcp": {
+      "type": "http",
+      "url": "http://192.168.1.243:8086/<HA_MCP_SECRET>"
+    },
     "blender": {
       "type": "stdio",
       "command": "uvx",
