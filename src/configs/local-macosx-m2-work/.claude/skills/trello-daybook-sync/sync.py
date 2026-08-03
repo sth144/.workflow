@@ -160,7 +160,7 @@ def today_title() -> str:
 def parse_todo_section(body: str) -> tuple[str, list[str], str]:
     """Split body into (before_todo, todo_lines, after_todo).
 
-    Returns the raw lines within the ## To Do section, plus the text
+    Returns the raw lines within the # To Do ✅ section, plus the text
     before and after it.
     """
     lines = body.split("\n")

@@ -17,7 +17,7 @@ the Joplin daybook. Trigger phrases include: "sync today", "sync trello",
 The sync script (`sync.py`, in the same directory as this file) runs these phases:
 
 1. **Phase 1 (Joplin -> Trello)**: Finds checked items in the daybook's
-   `## To Do` section that have `<!-- trello:CARD_ID -->` markers, and
+   `# To Do ✅` section that have `<!-- trello:CARD_ID -->` markers, and
    moves those cards to the Done list in Trello. Strips the marker from
    moved items so they're preserved as plain completed items.
 
@@ -27,7 +27,7 @@ The sync script (`sync.py`, in the same directory as this file) runs these phase
    Joplin line so it's tracked on future syncs.
 
 3. **Phase 2 (Trello -> Joplin)**: Fetches the current Today list from
-   Trello and merges it into the daybook's `## To Do` section. Adds new
+   Trello and merges it into the daybook's `# To Do ✅` section. Adds new
    cards, preserves existing items, removes cards no longer in Today.
 
 If today's daybook note doesn't exist, it creates one and carries forward

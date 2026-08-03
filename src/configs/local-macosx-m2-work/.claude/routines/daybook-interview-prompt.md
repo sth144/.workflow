@@ -15,10 +15,10 @@ assume today's note already exists.
 3. **If today's note doesn't exist**, use the most recent prior Daybook note
    instead — the one whose title parses to the newest date.
 4. Read that note's body and collect the unchecked items (`- [ ]`) under its
-   `## To Do` section. Ignore checked items (`- [x]`) and the `## Worklog`.
+   `# To Do ✅` section. Ignore checked items (`- [x]`) and the `# Worklog 📝`.
 5. **Deduplicate against prior completions.** Fetch the 5 most recent prior
    Daybook notes (search `notebook:Daybook`, parse titles as dates, take the 5
-   newest before today). Collect every `- [x]` item from their `## To Do`
+   newest before today). Collect every `- [x]` item from their `# To Do ✅`
    sections. Match by `<!-- trello:CARD_ID -->` marker first, then by item text
    (ignoring leading/trailing whitespace and markers). For each of today's
    unchecked items that matches a prior checked item:
@@ -118,7 +118,7 @@ MCP `update_note` tool:
 1. Re-fetch the note's current body first.
 2. Append a new `## Plan <DD Mon, YYYY>` section at the end with the ordered
    plan, blockers, and first action from Step 4.
-3. **Append only.** Never modify or remove the `## To Do` or `## Worklog`
+3. **Append only.** Never modify or remove the `# To Do ✅` or `# Worklog 📝`
    sections — read the full body, add your section, write the whole thing back.
 4. If a `## Plan` section for today already exists, replace just that section
    (don't duplicate it), leaving everything else untouched.
