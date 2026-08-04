@@ -15,6 +15,26 @@ items, search results, or full Joplin/Trello tool responses unless the user
 asked for them. The main chat output stays limited to the normal final task
 response — do not announce the daybook update or paste the subagent's status.
 
+## Write Safety (read before any update_note call)
+
+`update_note` **replaces the entire note body**. There is no append mode. If you
+send a body you did not build from the note's current contents, everything already
+in the note is destroyed.
+
+So the only safe sequence is:
+
+1. `get_note` the target note and keep the body it returns **verbatim**
+2. append your new text to that exact string
+3. send the combined result as `body`
+
+Never pass a placeholder, a summary, or a hand-retyped version of the note. If you
+have not read the note in this session, you are not ready to write to it.
+
+A `PreToolUse` guard (`daybook-write-guard.sh`) re-reads the note from the Joplin
+API and blocks writes that drop existing worklog entries, lose the To Do/Worklog
+headings, or shrink the note by more than half. If it blocks you, do not retry the
+same body — go back to step 1. For a deliberate rewrite, `DAYBOOK_GUARD_OFF=1`.
+
 ## Find or Create Today's Note
 
 1. Search Joplin for today's note in `Areas / <DAYBOOK_NOTEBOOK>` (title format: `DD Mon, YYYY`)

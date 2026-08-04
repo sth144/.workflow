@@ -78,6 +78,16 @@
           }
         ],
         "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/daybook-write-guard.sh",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "mcp__joplin__update_note"
       }
     ],
     "SessionEnd": [
