@@ -165,7 +165,7 @@ export NVM_DIR=~/.nvm
 source ~/.nvm/nvm.sh
 
 # add all utils (and scripts within .config) to PATH, pruning heavy dirs like node_modules
-export PATH="$(find ~/bin/ \( -name node_modules -o -name .git \) -prune -o -type d -printf ":%p"):$PATH"
+export PATH="$(find -L ~/bin/ \( -name node_modules -o -name .git \) -prune -o -type d -printf ":%p"):$PATH"
 #export PATH="$(find ~/.config/ \( -name node_modules -o -name .git \) -prune -o -type d -printf ":%p"):$PATH"
 export PATH=$PATH:/opt/sonar/bin
 

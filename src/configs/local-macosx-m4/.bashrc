@@ -252,7 +252,7 @@ if [ -d ~/.nvm ]; then
 fi
 
 # add all utils (and scripts within .config) to PATH, pruning heavy dirs like node_modules
-export PATH="$(find "$HOME/bin" \( -name node_modules -o -name .git \) -prune -o -type d -print 2>/dev/null | paste -sd: -):$PATH"
+export PATH="$(find -L "$HOME/bin" \( -name node_modules -o -name .git \) -prune -o -type d -print 2>/dev/null | paste -sd: -):$PATH"
 export PATH=$PATH:/opt/sonar/bin
 
 #~/.config/i3/sh/xrandr-layout.sh
