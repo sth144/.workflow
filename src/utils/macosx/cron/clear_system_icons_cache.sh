@@ -19,7 +19,9 @@
 
 set -u
 
-THRESHOLD_GB=5
+# Overridable so disk/icon_cache_reset.sh can force a run (threshold 0) when the
+# disk is full and you do not care that the cache is "only" a few GB.
+THRESHOLD_GB="${ICON_CACHE_THRESHOLD_GB:-5}"
 CACHE_DIR="/Library/Caches/com.apple.iconservices.store"
 LOGFILE="/var/log/iconservices_cleanup.log"
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
