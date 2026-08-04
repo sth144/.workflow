@@ -53,16 +53,41 @@ cache_size_gb() {
 # name/mtime distribution inside the store. Without this the store gets deleted
 # and the cause is unknowable until it refills.
 capture_diagnostics() {
-		log "--- store contents before delete (top 20 entries by size) ---"
-		du -sm "$CACHE_DIR"/* 2>/dev/null | sort -rn | head -20 | while read -r mb path; do
-				log "  ${mb}MB  $(stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$path" 2>/dev/null)  ${path##*/}"
+		# One stat pass over the whole store: size, mtime day, mtime minute, name.
+		# `find -exec +` batches arguments, so this survives a store with hundreds of
+		# thousands of entries. An earlier version globbed "$CACHE_DIR"/* into du and
+		# silently produced nothing at 301,390 entries because that blew ARG_MAX.
+		local inventory="/tmp/iconservices_inventory.$$"
+		find "$CACHE_DIR" -mindepth 1 -maxdepth 1 \
+				-exec stat -f '%z %Sm %N' -t '%Y-%m-%d %H:%M' {} + > "$inventory" 2>/dev/null
+
+		log "  total entries: $(wc -l < "$inventory" | tr -d ' ')"
+
+		# KB, not MB: individual entries average well under a megabyte, so MB
+		# granularity rounds almost every one of them to "0MB".
+		log "--- largest 20 entries ---"
+		sort -rn -k1,1 "$inventory" 2>/dev/null | head -20 | while read -r bytes day time name; do
+				log "  $((bytes / 1024))KB  ${day} ${time}  ${name##*/}"
 		done
-		log "  total entries: $(find "$CACHE_DIR" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | tr -d ' ')"
-		log "  total files:   $(find "$CACHE_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')"
-		log "--- processes holding the store open ---"
-		lsof -w -- "$CACHE_DIR" 2>/dev/null | awk 'NR>1{print $1, $2, $3}' | sort -u | head -10 | while read -r line; do
-				log "  $line"
+
+		# Which days the store actually grew on, and how much. This is the strongest
+		# producer signal available after the fact: a single runaway process shows up
+		# as one or two days holding nearly all the bytes.
+		log "--- growth by day (entries / total MB) ---"
+		awk '{ n[$2]++; mb[$2] += $1 / 1048576 }
+		     END { for (d in n) printf "%s %d %d\n", d, n[d], mb[d] }' "$inventory" 2>/dev/null |
+				sort -rn -k3,3 | head -15 | while read -r day count mb; do
+				log "  ${day}  ${count} entries  ${mb}MB"
 		done
+
+		# Names are hashes, but a shared prefix/extension across the biggest entries
+		# narrows down which client API produced them.
+		log "--- sample entry names ---"
+		head -5 "$inventory" 2>/dev/null | while read -r _ _ _ name; do
+				log "  ${name##*/}"
+		done
+
+		rm -f "$inventory"
 }
 
 if [ "$(id -u)" -ne 0 ]; then
