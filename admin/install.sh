@@ -274,6 +274,49 @@ update_launchagents() {
 	echo "LaunchAgents updated"
 }
 
+# Install and load /Library/LaunchDaemons/com.workflow.* — the root-domain
+# counterpart to update_launchagents.
+#
+# This exists because there was previously no way to schedule anything as root:
+# update_root rsyncs the plists into place but nothing ever bootstrapped them, so
+# src/root/macosx/Library/LaunchDaemons/*.plist were dead files. The icon-cache
+# cleanup was worked around as a LaunchAgent + user crontab entry, neither of
+# which runs as root, so it silently no-op'd until the cache filled the disk.
+#
+# The plists are installed here rather than relying on update_root's rsync
+# because rsync -a preserves the repo's seanhinds:admin ownership, and launchd
+# refuses to load a daemon that is writable by anyone but root.
+update_launchdaemons() {
+	if [[ $(uname) != "Darwin" ]]; then
+		echo "Skipping LaunchDaemons (not macOS)"
+		return
+	fi
+
+	DAEMONS_SRC="$BASE_ABS/stage/root/Library/LaunchDaemons"
+	DAEMONS_DIR="/Library/LaunchDaemons"
+
+	if [ ! -d "$DAEMONS_SRC" ]; then
+		echo "Skipping LaunchDaemons (no $DAEMONS_SRC)"
+		return
+	fi
+
+	for plist in "$DAEMONS_SRC/com.workflow."*; do
+		[ -f "$plist" ] || continue
+		label=$(basename "$plist" .plist)
+		# Unload first; ignore errors for daemons not yet registered.
+		sudo launchctl bootout "system/$label" 2>/dev/null || true
+		# root:wheel 0644 is mandatory or launchd rejects the job.
+		sudo install -o root -g wheel -m 644 "$plist" "$DAEMONS_DIR/$(basename "$plist")"
+		if sudo launchctl bootstrap system "$DAEMONS_DIR/$(basename "$plist")"; then
+			echo "  loaded: $label"
+		else
+			echo "  WARN: failed to bootstrap $label"
+		fi
+	done
+
+	echo "LaunchDaemons updated"
+}
+
 # Build per-scratchpad .app wrappers in ~/Applications so each Alacritty scratchpad
 # window gets its own Dock/Cmd-Tab icon. Each wrapper just exec's Alacritty, so the
 # windows stay org.alacritty (Hammerspoon's title-based discovery still works) while

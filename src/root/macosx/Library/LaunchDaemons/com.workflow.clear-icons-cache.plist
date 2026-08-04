@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+	Runs the icon-cache cleanup as root, daily at 00:00.
+
+	This is a LaunchDaemon, not a LaunchAgent, on purpose. The previous
+	LaunchAgent (com.workflow.clear-icons-cache in ~/Library/LaunchAgents) ran in
+	the gui/<uid> domain as the login user, which cannot read or delete
+	/Library/Caches/com.apple.iconservices.store, so it silently no-op'd until
+	the cache reached ~200GB and filled the disk. The equivalent user-crontab
+	entry had the same problem, since admin/install.sh strips the cron user
+	field. Both have been removed in favour of this daemon.
+
+	Daily rather than weekly: the cache demonstrably grows fast enough to fill a
+	460GB volume, and a run below the threshold is just one du.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.workflow.clear-icons-cache</string>
+
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>/usr/local/bin/cron/clear_system_icons_cache.sh</string>
+	</array>
+
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>0</integer>
+		<key>Minute</key>
+		<integer>0</integer>
+	</dict>
+
+	<key>StandardErrorPath</key>
+	<string>/var/log/workflow-clear-icons-cache.log</string>
+	<key>StandardOutPath</key>
+	<string>/var/log/workflow-clear-icons-cache.log</string>
+</dict>
+</plist>

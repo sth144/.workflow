@@ -17,7 +17,7 @@ stage: clean
 	./admin/install.sh stage
 
 .PHONY: install
-install: update_cronjobs update_launchagents update_systemd_services copy_staged_to_home update_scratchpad_apps update_workflow_apps update_claude_mcp enable_utils update_bashrc update_root refresh
+install: update_cronjobs update_launchagents update_systemd_services copy_staged_to_home update_scratchpad_apps update_workflow_apps update_claude_mcp enable_utils update_bashrc update_root update_launchdaemons refresh
 	@echo "installing configs and utils"
 
 update_workflow_apps:
@@ -46,6 +46,11 @@ update_cronjobs:
 update_launchagents:
 	@echo "installing LaunchAgents in ~/Library/LaunchAgents/"
 	./admin/install.sh update_launchagents
+
+# root-domain scheduled jobs; runs after update_root so the plists are staged
+update_launchdaemons:
+	@echo "installing LaunchDaemons in /Library/LaunchDaemons/"
+	./admin/install.sh update_launchdaemons
 
 # build ~/Applications/Scratch-*.app wrappers so terminal scratchpads get custom icons
 update_scratchpad_apps:
