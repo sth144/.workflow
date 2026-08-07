@@ -1,5 +1,6 @@
 {
   "alwaysThinkingEnabled": true,
+  "tui": "fullscreen",
   "env": {
     "MCP_TOOL_TIMEOUT": "30000",
     "MCP_TIMEOUT": "30000"
