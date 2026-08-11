@@ -133,6 +133,12 @@ Available skills:
 - `sync-prs-to-branch` — sync PRs to a branch
 - `trello-daybook-sync` — bidirectional sync: Trello Today list <-> Joplin daybook To Do section
 - `jupyter-notebook` — create Jupyter notebooks from templates, promote SQL/analysis to notebooks ("notebook this", "notebook for ESP-456")
+- `diagram` — draw a mermaid diagram of a causal chain, sequence, or state machine ("draw that", "diagram this")
+
+Never print mermaid source in a response — it reads worse than the prose it
+illustrates. Use the `diagram` skill, which spools it for ⌘⌃V instead. Reach for
+it when an explanation has three or more actors with an ordering or state
+dependency between them; not for lists or two-actor calls.
 
 Key skills (always in context):
 @~/.claude/skills/fetch-jira-tickets/SKILL.md

@@ -67,3 +67,11 @@ Add under `# Worklog 📝`: `- HH:MM — <one-sentence summary>`
 
 Use the time from the hook message. Include screenshot link if visual changes were made.
 Skip logging if session was trivial (casual chat, no code/config changes).
+
+If the session produced a diagram (see the `diagram` skill) that explains
+something worth keeping — a bug's causal chain, a design decision — embed the
+mermaid block in the entry, indented under it, so the daybook keeps the picture
+and not just the sentence. Joplin renders mermaid in its markdown viewer. Fetch
+the source with `/usr/local/bin/diagram/render_mermaid.py --print` rather than
+retyping it. One diagram per entry at most; skip it when the sentence stands on
+its own.

@@ -720,6 +720,61 @@ hs.hotkey.bind(mod, "d", function()
   setDiffTabs(not diffTabsEnabled())
 end)
 
+-- Diagram viewer (Cmd+Ctrl+V)
+-- Shows the newest diagram an agent spooled, in a floating webview. Agents keep
+-- mermaid source out of the chat and spool it instead, so this key is the only
+-- place a diagram costs anything to look at.
+local diagramWebview = nil
+local diagramVisible = false
+
+local function diagramScript()
+  local installed = "/usr/local/bin/diagram/render_mermaid.py"
+  if fileExists(installed) then
+    return installed
+  end
+  return "/usr/local/src/workflow-macos-1095/src/utils/macosx/diagram/render_mermaid.py"
+end
+
+local function toggleDiagram()
+  if diagramVisible and diagramWebview then
+    diagramWebview:hide()
+    diagramVisible = false
+    return
+  end
+
+  local out = hs.execute("/usr/bin/python3 " .. diagramScript() .. " 2>/dev/null")
+  local path = (out or ""):gsub("%s+$", "")
+  if path == "" or not fileExists(path) then
+    hs.alert.show("No diagram drawn yet")
+    return
+  end
+
+  if not diagramWebview then
+    local f = hs.screen.mainScreen():frame()
+    local w, h = 1100, 800
+    diagramWebview = hs.webview.new(
+      { x = f.x + (f.w - w) / 2, y = f.y + (f.h - h) / 2, w = w, h = h }
+    )
+    diagramWebview:windowStyle({ "borderless", "closable", "resizable" })
+    diagramWebview:level(hs.drawing.windowLevels.floating)
+    diagramWebview:allowTextEntry(false)
+    diagramWebview:windowCallback(function(action)
+      if action == "closing" then
+        diagramVisible = false
+        diagramWebview = nil
+      end
+    end)
+  end
+
+  -- Every render lands in a fresh temp directory, so the URL changes each time.
+  diagramWebview:url("file://" .. path)
+  diagramWebview:show()
+  diagramWebview:bringToFront()
+  diagramVisible = true
+end
+
+hs.hotkey.bind(mod, "v", toggleDiagram)
+
 -- Cycle the Screen Tutor widget around the screen corners (Cmd+Ctrl+Shift+H).
 hs.hotkey.bind({ "cmd", "ctrl", "shift" }, "h", cycleScreenTutorCorner)
 
@@ -742,6 +797,7 @@ local SCRATCHPAD_LABELS = {
 local EXTRA_SHORTCUTS = {
   { keys = "⌘⌃M", label = "Resource Monitor" },
   { keys = "⌘⌃D", label = "Toggle Claude Code diff tabs" },
+  { keys = "⌘⌃V", label = "Diagram viewer (newest agent diagram)" },
   { keys = "⌘⌃⇧H", label = "Cycle Screen Tutor corner" },
   { keys = "⌘⌃/", label = "This help panel" },
   { keys = "⌘⌃P", label = "Command palette — search shortcuts & utilities" },
