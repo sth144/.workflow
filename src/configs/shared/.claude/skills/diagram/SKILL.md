@@ -41,12 +41,28 @@ one costs them nothing they can't ask for.
 
 ## Diagram Types
 
-Use `sequenceDiagram` or `stateDiagram-v2`. Nothing else.
+Six types, each the natural shape for something specific:
 
-These two survive being read as plain text, which matters because the source is
-what gets stored and what shows if rendering fails. Flowcharts and class
-diagrams degrade into unreadable syntax, and they are also the shapes a model
-reaches for reflexively when it has nothing real to show.
+| Type | Use for |
+| --- | --- |
+| `sequenceDiagram` | ordering across components — who did what, when, and what it broke |
+| `stateDiagram-v2` | lifecycles: states and transitions, including nested states and fork/join |
+| `mindmap` | decomposing a concept, where the structure is hierarchy rather than flow |
+| `flowchart` | a pipeline or decision path that genuinely branches |
+| `C4Deployment` | what runs where, and which piece talks to which |
+| `erDiagram` | data shape: entities and the relationships between them |
+
+A longer type list does not mean more diagrams. The rule above still decides
+*whether* to draw; this only decides *what shape* once that rule says yes.
+
+Be most suspicious of `flowchart`. It is what a model reaches for when it has
+nothing specific to show, and a flowchart of steps that never branch is just a
+numbered list drawn badly — write the list instead.
+
+Mermaid supports plenty more (gantt, timeline, kanban, journey, pie, quadrant,
+sankey, class, requirement, gitGraph, treemap, radar, and so on). Those are
+reporting formats rather than explanations: use them only when the user asks
+for one by name.
 
 ## How To Draw One
 
@@ -86,6 +102,9 @@ If the user asked for the diagram explicitly, that line is the whole response.
 - Do not use `note`, `end`, `activate`, or `state` as a participant id — they
   collide with keywords and the diagram will not parse. Alias instead:
   `participant nb as Daybook note`.
+- In `timeline` and anywhere else that uses `:` as a separator, a label
+  containing a colon (`07:00`) breaks the parse. Inside a `sequenceDiagram`
+  participant alias it is fine.
 - Keep labels short. They are read at a glance, and long ones force mermaid
   into wide layouts that need scrolling.
 - Times and colons inside an alias are fine (`as slack-eyes 08:25`).
