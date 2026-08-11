@@ -874,7 +874,44 @@ local function hideDiagram()
   diagramVisible = false
 end
 
-local DIAGRAM_HINT = "⌘C image   ⌘⇧C source   click or esc to close"
+-- Buttons carry their own shortcut in the label, so the keyboard route is
+-- discoverable without a separate hint line.
+local DIAGRAM_BUTTONS = {
+  { id = "copyImage", label = "⌘C  Copy image", width = 116 },
+  { id = "copySource", label = "⌘⇧C  Copy source", width = 132 },
+  { id = "close", label = "esc  Close", width = 88 },
+}
+local DIAGRAM_BUTTON_H = 24
+local DIAGRAM_BUTTON_GAP = 10
+local DIAGRAM_BAR_H = 44
+
+-- Appends a row of buttons across the bottom of the canvas. Both the plate and
+-- its label track the mouse, since a click on the text is still a click on the
+-- button.
+local function appendDiagramButtons(canvas, width, top)
+  local total = -DIAGRAM_BUTTON_GAP
+  for _, button in ipairs(DIAGRAM_BUTTONS) do
+    total = total + button.width + DIAGRAM_BUTTON_GAP
+  end
+
+  local x = (width - total) / 2
+  for _, button in ipairs(DIAGRAM_BUTTONS) do
+    canvas:appendElements({
+      type = "rectangle", action = "fill", id = button.id,
+      fillColor = { hex = "#232733", alpha = 1 },
+      roundedRectRadii = { xRadius = 5, yRadius = 5 },
+      frame = { x = x, y = top, w = button.width, h = DIAGRAM_BUTTON_H },
+      trackMouseDown = true,
+    }, {
+      type = "text", text = button.label, id = button.id,
+      textColor = { hex = "#c8ccd4" }, textSize = 11,
+      textAlignment = "center",
+      frame = { x = x, y = top + 5, w = button.width, h = DIAGRAM_BUTTON_H },
+      trackMouseDown = true,
+    })
+    x = x + button.width + DIAGRAM_BUTTON_GAP
+  end
+end
 
 local function showDiagram(pngPath)
   local img = hs.image.imageFromPath(pngPath)
@@ -889,9 +926,9 @@ local function showDiagram(pngPath)
   local size = img:size()
   local imgW, imgH = size.w / 2, size.h / 2
   local f = hs.screen.mainScreen():frame()
-  local scale = math.min(1, (f.w - 160) / imgW, (f.h - 160) / imgH)
-  local w = imgW * scale + DIAGRAM_PAD * 2
-  local h = imgH * scale + DIAGRAM_PAD * 2 + 22
+  local scale = math.min(1, (f.w - 160) / imgW, (f.h - 160 - DIAGRAM_BAR_H) / imgH)
+  local w = math.max(imgW * scale + DIAGRAM_PAD * 2, 380)
+  local h = imgH * scale + DIAGRAM_PAD * 2 + DIAGRAM_BAR_H
 
   diagramCanvas = hs.canvas.new(
     { x = f.x + (f.w - w) / 2, y = f.y + (f.h - h) / 2, w = w, h = h }
@@ -899,26 +936,31 @@ local function showDiagram(pngPath)
   diagramCanvas:level(hs.canvas.windowLevels.floating)
   diagramCanvas:appendElements(
     {
-      type = "rectangle", action = "fill",
+      type = "rectangle", action = "fill", id = "close",
       fillColor = { hex = "#14161a", alpha = 0.98 },
       roundedRectRadii = { xRadius = 10, yRadius = 10 },
       trackMouseDown = true,
     },
     {
-      type = "image", image = img, imageScaling = "scaleProportionally",
+      type = "image", image = img, imageScaling = "scaleProportionally", id = "close",
       frame = { x = DIAGRAM_PAD, y = DIAGRAM_PAD, w = w - DIAGRAM_PAD * 2, h = imgH * scale },
       trackMouseDown = true,
-    },
-    {
-      type = "text", text = DIAGRAM_HINT,
-      textColor = { hex = "#6b7280" }, textSize = 11,
-      textAlignment = "center",
-      frame = { x = 0, y = h - 20, w = w, h = 16 },
     }
   )
-  -- Clicking anywhere on it dismisses: the window floats over everything, so
-  -- getting rid of it should not require aiming at anything.
-  diagramCanvas:mouseCallback(function() hideDiagram() end)
+  appendDiagramButtons(diagramCanvas, w, h - DIAGRAM_BAR_H + 10)
+
+  -- Clicking the diagram itself dismisses too: the window floats over
+  -- everything, so getting rid of it should not require aiming at anything.
+  diagramCanvas:mouseCallback(function(_, message, id)
+    if message ~= "mouseDown" then return end
+    if id == "copyImage" then
+      copyDiagramImage()
+    elseif id == "copySource" then
+      copyDiagramText()
+    else
+      hideDiagram()
+    end
+  end)
   diagramCanvas:canvasMouseEvents(true, false, false, false)
   diagramCanvas:show()
   diagramVisible = true
