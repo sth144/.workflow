@@ -65,11 +65,13 @@ def prune() -> None:
     """Drop diagrams past the keep count or the keep window.
 
     Spooled diagrams are scratch by design — the durable copy is whatever got
-    written into the daybook.
+    written into the daybook. The cached .png the viewer renders next to each
+    .mmd goes with it, so those cannot outlive their source.
     """
     cutoff = time.time() - KEEP_SECONDS
     for index, path in enumerate(spooled()):
         if index >= KEEP_FILES or path.stat().st_mtime < cutoff:
+            path.with_suffix(".png").unlink(missing_ok=True)
             path.unlink(missing_ok=True)
 
 

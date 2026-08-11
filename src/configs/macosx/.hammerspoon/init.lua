@@ -721,11 +721,75 @@ hs.hotkey.bind(mod, "d", function()
 end)
 
 -- Diagram viewer (Cmd+Ctrl+V)
--- Shows the newest diagram an agent spooled, in a floating webview. Agents keep
--- mermaid source out of the chat and spool it instead, so this key is the only
--- place a diagram costs anything to look at.
-local diagramWebview = nil
+-- Shows the newest diagram an agent spooled. Agents keep mermaid source out of
+-- the chat and spool it instead, so this key is the only place a diagram costs
+-- anything to look at.
+--
+-- Viewing is a native image window, not a browser: mermaid is turned into an
+-- SVG once, in a hidden webview, and cached next to the .mmd. Every view after
+-- the first is just an NSImage in a canvas.
+--
+-- While it is up: ⌘C copies the diagram as an image, ⌘⇧C copies the mermaid
+-- source, escape or ⌘⌃V dismisses it.
+local diagramCanvas = nil
+local diagramImage = nil
+local diagramModal = nil
 local diagramVisible = false
+local DIAGRAM_PAD = 24
+
+-- Rasterises in WebKit rather than handing the SVG to macOS: mermaid scopes its
+-- styling to an id selector in an embedded <style>, and NSImage's SVG renderer
+-- ignores that, so a serialised SVG comes out in default black-on-white. A PNG
+-- is also what you actually want on the clipboard.
+--
+-- Fixes the size to the drawn content and bakes in the background first, so the
+-- copy matches the window instead of pasting as a transparent sliver. The image
+-- decode is asynchronous, so the result is stashed on window and picked up by a
+-- later poll.
+local DIAGRAM_RASTER_JS = [[
+(function () {
+  if (window.__diagramPng) { return window.__diagramPng; }
+  if (window.__diagramStarted) { return ''; }
+  var svg = document.querySelector('svg');
+  if (!svg || !svg.getBBox) { return ''; }
+  var box;
+  try { box = svg.getBBox(); } catch (e) { return ''; }
+  if (!box || box.width < 1) { return ''; }
+  window.__diagramStarted = true;
+
+  var pad = 20;
+  var w = Math.ceil(box.width + pad * 2), h = Math.ceil(box.height + pad * 2);
+  svg.setAttribute('width', w);
+  svg.setAttribute('height', h);
+  svg.setAttribute('viewBox',
+    (box.x - pad) + ' ' + (box.y - pad) + ' ' + w + ' ' + h);
+  svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  if (!svg.querySelector('.diagram-bg')) {
+    var bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bg.setAttribute('class', 'diagram-bg');
+    bg.setAttribute('x', box.x - pad); bg.setAttribute('y', box.y - pad);
+    bg.setAttribute('width', w); bg.setAttribute('height', h);
+    bg.setAttribute('fill', '#14161a');
+    svg.insertBefore(bg, svg.firstChild);
+  }
+
+  var data = new XMLSerializer().serializeToString(svg);
+  var img = new Image();
+  img.onload = function () {
+    var scale = 2;  // retina, and gives room to paste at a readable size
+    var canvas = document.createElement('canvas');
+    canvas.width = w * scale;
+    canvas.height = h * scale;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0, w, h);
+    window.__diagramPng = canvas.toDataURL('image/png').split(',')[1];
+  };
+  img.src = 'data:image/svg+xml;base64,' +
+    btoa(unescape(encodeURIComponent(data)));
+  return '';
+})()
+]]
 
 local function diagramScript()
   local installed = "/usr/local/bin/diagram/render_mermaid.py"
@@ -735,45 +799,174 @@ local function diagramScript()
   return "/usr/local/src/workflow-macos-1095/src/utils/macosx/diagram/render_mermaid.py"
 end
 
-local function toggleDiagram()
-  if diagramVisible and diagramWebview then
-    diagramWebview:hide()
-    diagramVisible = false
+local function diagramRun(args)
+  local out = hs.execute("/usr/bin/python3 " .. diagramScript() .. " " .. args .. " 2>/dev/null")
+  return (out or ""):gsub("%s+$", "")
+end
+
+local function newestDiagram()
+  return diagramRun("--list"):match("^[^\n]*") or ""
+end
+
+-- Renders the spooled mermaid to a PNG in a hidden webview, once. The webview is
+-- kept on screen but fully transparent: WebKit skips layout for windows parked
+-- off screen, and getBBox needs a real layout to measure.
+local function renderDiagramPng(pngPath, done)
+  local htmlPath = diagramRun("")
+  if htmlPath == "" or not fileExists(htmlPath) then
+    done(nil)
     return
   end
 
-  local out = hs.execute("/usr/bin/python3 " .. diagramScript() .. " 2>/dev/null")
-  local path = (out or ""):gsub("%s+$", "")
-  if path == "" or not fileExists(path) then
+  local wv = hs.webview.new({ x = 0, y = 0, w = 1600, h = 1200 })
+  wv:alpha(0.01)
+  wv:url("file://" .. htmlPath)
+  wv:show()
+
+  local tries, finished, timer = 0, false, nil
+  local function finish(result)
+    if finished then return end
+    finished = true
+    if timer then timer:stop() end
+    wv:delete()
+    done(result)
+  end
+
+  timer = hs.timer.doEvery(0.25, function()
+    tries = tries + 1
+    if tries > 24 then
+      finish(nil)
+      return
+    end
+    wv:evaluateJavaScript(DIAGRAM_RASTER_JS, function(res)
+      if finished or not res or res == "" then return end
+      local fh = io.open(pngPath, "wb")
+      if not fh then
+        finish(nil)
+        return
+      end
+      fh:write(hs.base64.decode(res))
+      fh:close()
+      finish(pngPath)
+    end)
+  end)
+end
+
+local function copyDiagramImage()
+  if not diagramImage then return end
+  hs.pasteboard.writeObjects(diagramImage)
+  hs.alert.show("Diagram copied as image")
+end
+
+local function copyDiagramText()
+  local source = diagramRun("--print")
+  if source == "" then return end
+  hs.pasteboard.setContents(source)
+  hs.alert.show("Diagram source copied")
+end
+
+local function hideDiagram()
+  if diagramCanvas then
+    diagramCanvas:delete()
+    diagramCanvas = nil
+  end
+  if diagramModal then diagramModal:exit() end
+  diagramVisible = false
+end
+
+local DIAGRAM_HINT = "⌘C image   ⌘⇧C source   click or esc to close"
+
+local function showDiagram(pngPath)
+  local img = hs.image.imageFromPath(pngPath)
+  if not img then
+    hs.alert.show("Could not load diagram")
+    return
+  end
+  diagramImage = img
+
+  -- The PNG is rasterised at 2x, so its pixel size is twice the size it should
+  -- occupy on screen.
+  local size = img:size()
+  local imgW, imgH = size.w / 2, size.h / 2
+  local f = hs.screen.mainScreen():frame()
+  local scale = math.min(1, (f.w - 160) / imgW, (f.h - 160) / imgH)
+  local w = imgW * scale + DIAGRAM_PAD * 2
+  local h = imgH * scale + DIAGRAM_PAD * 2 + 22
+
+  diagramCanvas = hs.canvas.new(
+    { x = f.x + (f.w - w) / 2, y = f.y + (f.h - h) / 2, w = w, h = h }
+  )
+  diagramCanvas:level(hs.canvas.windowLevels.floating)
+  diagramCanvas:appendElements(
+    {
+      type = "rectangle", action = "fill",
+      fillColor = { hex = "#14161a", alpha = 0.98 },
+      roundedRectRadii = { xRadius = 10, yRadius = 10 },
+      trackMouseDown = true,
+    },
+    {
+      type = "image", image = img, imageScaling = "scaleProportionally",
+      frame = { x = DIAGRAM_PAD, y = DIAGRAM_PAD, w = w - DIAGRAM_PAD * 2, h = imgH * scale },
+      trackMouseDown = true,
+    },
+    {
+      type = "text", text = DIAGRAM_HINT,
+      textColor = { hex = "#6b7280" }, textSize = 11,
+      textAlignment = "center",
+      frame = { x = 0, y = h - 20, w = w, h = 16 },
+    }
+  )
+  -- Clicking anywhere on it dismisses: the window floats over everything, so
+  -- getting rid of it should not require aiming at anything.
+  diagramCanvas:mouseCallback(function() hideDiagram() end)
+  diagramCanvas:canvasMouseEvents(true, false, false, false)
+  diagramCanvas:show()
+  diagramVisible = true
+  if diagramModal then diagramModal:enter() end
+end
+
+local function toggleDiagram()
+  if diagramVisible then
+    hideDiagram()
+    return
+  end
+
+  local mmd = newestDiagram()
+  if mmd == "" then
     hs.alert.show("No diagram drawn yet")
     return
   end
 
-  if not diagramWebview then
-    local f = hs.screen.mainScreen():frame()
-    local w, h = 1100, 800
-    diagramWebview = hs.webview.new(
-      { x = f.x + (f.w - w) / 2, y = f.y + (f.h - h) / 2, w = w, h = h }
-    )
-    diagramWebview:windowStyle({ "borderless", "closable", "resizable" })
-    diagramWebview:level(hs.drawing.windowLevels.floating)
-    diagramWebview:allowTextEntry(false)
-    diagramWebview:windowCallback(function(action)
-      if action == "closing" then
-        diagramVisible = false
-        diagramWebview = nil
-      end
-    end)
+  local pngPath = mmd:gsub("%.mmd$", ".png")
+  if fileExists(pngPath) then
+    showDiagram(pngPath)
+    return
   end
 
-  -- Every render lands in a fresh temp directory, so the URL changes each time.
-  diagramWebview:url("file://" .. path)
-  diagramWebview:show()
-  diagramWebview:bringToFront()
-  diagramVisible = true
+  renderDiagramPng(pngPath, function(result)
+    if result then
+      showDiagram(result)
+    else
+      hs.alert.show("Could not render diagram")
+    end
+  end)
 end
 
+diagramModal = hs.hotkey.modal.new()
+diagramModal:bind({ "cmd" }, "c", copyDiagramImage)
+diagramModal:bind({ "cmd", "shift" }, "c", copyDiagramText)
+diagramModal:bind({}, "escape", hideDiagram)
+
 hs.hotkey.bind(mod, "v", toggleDiagram)
+
+-- Exposed for the Hammerspoon console (`diagram.toggle()`), which is also the
+-- only way to exercise this without a physical keypress: synthetic events do
+-- not trigger Hammerspoon's own hotkeys.
+diagram = {
+  toggle = toggleDiagram,
+  copyImage = copyDiagramImage,
+  copyText = copyDiagramText,
+}
 
 -- Cycle the Screen Tutor widget around the screen corners (Cmd+Ctrl+Shift+H).
 hs.hotkey.bind({ "cmd", "ctrl", "shift" }, "h", cycleScreenTutorCorner)

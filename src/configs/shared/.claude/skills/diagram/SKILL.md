@@ -50,9 +50,17 @@ reaches for reflexively when it has nothing real to show.
 
 ## How To Draw One
 
-Do the drafting in a **background subagent** (`run_in_background: true`) so
-neither the reasoning nor the source reaches the main thread. Give the subagent
-the facts it needs and have it run:
+Do the drafting in a **subagent** so neither the reasoning nor the source
+reaches the main thread. Run it in the background (`run_in_background: true`)
+when the diagram falls out of other work; run it synchronously when the user
+asked for a diagram and is sitting there waiting for it.
+
+Tell the subagent not to validate in a browser. The viewer already falls back to
+showing source plus the parse error, so a broken diagram is visible, not silent
+— one `--file` render is all the checking that is warranted. Drafting should
+take a handful of tool calls, not twenty.
+
+Give the subagent the facts it needs and have it run:
 
 ```bash
 /usr/local/bin/diagram/render_mermaid.py --save "<short title>" <<'MERMAID'
@@ -84,10 +92,19 @@ If the user asked for the diagram explicitly, that line is the whole response.
 
 ## Viewing
 
-⌘⌃V (Hammerspoon) renders the newest spooled diagram into a floating webview,
-and again to dismiss it. The viewer degrades to showing the source with the
-parse error if the diagram is malformed — a broken illustration should never
-become a problem to deal with.
+⌘⌃V (Hammerspoon) shows the newest spooled diagram in a floating native window.
+While it is up:
+
+| Key | Does |
+| --- | --- |
+| `⌘C` | copy the diagram as an image |
+| `⌘⇧C` | copy the mermaid source |
+| click, `escape`, `⌘⌃V` | dismiss |
+
+The first view rasterises the mermaid to a PNG and caches it next to the `.mmd`,
+so later views are just an image. A malformed diagram falls back to showing its
+source and the parse error rather than failing — a broken illustration should
+never become a problem to deal with.
 
 The spool lives in `~/.cache/.workflow/diagrams/`, pruned to the last 20 and to
 24 hours. It is scratch: the durable copy of a diagram is whatever gets written
