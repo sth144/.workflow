@@ -43,6 +43,7 @@ try:
     from sync import (  # noqa: E402
         DAYBOOK_NOTEBOOK_ID,
         JOPLIN_TOKEN,
+        carry_forward_items,
         find_daybook_note,
         get_note_body,
         joplin_post,
@@ -333,15 +334,19 @@ def ensure_today_note() -> tuple[str, str]:
     """Return (note_id, body) for today's daybook note, creating it if absent.
 
     trello-daybook-sync normally creates it at 07:00; this only fires when that
-    run was skipped or failed. Carrying items forward is that script's job, so
-    the fallback note is deliberately empty.
+    run was skipped or failed. Whoever creates the note owes it the carry
+    forward: an empty To Do section here silently swallows yesterday's
+    unfinished items, because every later writer (trello-daybook-sync, the
+    08:30 daybook interview) only carries forward when it creates the note
+    itself and this one already exists by then.
     """
     title = today_title()
     note = find_daybook_note(title)
     if note:
         return note["id"], get_note_body(note["id"])
 
-    body = "# To Do ✅\n\n\n# Worklog 📝\n\n"
+    carried = "\n".join(carry_forward_items())
+    body = f"# To Do ✅\n\n{carried}\n\n# Worklog 📝\n\n"
     created = joplin_post(
         "/notes",
         {"title": title, "parent_id": DAYBOOK_NOTEBOOK_ID, "body": body},
