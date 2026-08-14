@@ -34,6 +34,17 @@ hs.accessibilityState(true)
 -- Modifier used for all scratchpads (Cmd+Ctrl avoids conflicts with macOS/apps)
 local mod = { "cmd", "ctrl" }
 
+-- Gap (px) left between an anchored/tiled window and the screen edge, and between
+-- tiled neighbours. Persisted in hs.settings so the help panel (Cmd+Ctrl+/) can
+-- change it live; DEFAULT_GAP is only the first-run value. Centered scratchpads
+-- ignore it — they're sized by their width/height fractions instead.
+local DEFAULT_GAP = 12
+local GAP_KEY = "workflow.windowGap"
+
+local function windowGap()
+  return tonumber(hs.settings.get(GAP_KEY)) or DEFAULT_GAP
+end
+
 local function fileExists(path)
   return hs.fs.attributes(path, "mode") ~= nil
 end
@@ -307,7 +318,7 @@ local function positionWindow(win, config)
   local f = screen:frame()
   local w = f.w * config.width
   local h = f.h * config.height
-  local margin = 12
+  local margin = windowGap()
   local x, y
   local anchor = config.anchor or "center"
   if anchor == "topright" then
@@ -467,7 +478,7 @@ local screenTutorCornerIdx = 1
 -- non-Alacritty window (Screen Tutor itself is Alacritty, so it's skipped).
 local function tileAppLeftOfScreenTutor()
   local f = hs.screen.mainScreen():frame()
-  local margin = 12
+  local margin = windowGap()
   local width = scratchpads.screentutor.width
   for _, win in ipairs(hs.window.orderedWindows()) do
     local app = win:application()
@@ -516,6 +527,23 @@ local function cycleScreenTutorCorner()
     win:raise()
   end
   hs.alert.show("Screen Tutor → " .. (SCREEN_TUTOR_ANCHOR_LABELS[corner] or corner))
+end
+
+-- Re-position the anchored scratchpads that are currently open so a gap change made
+-- from the help panel shows up right away instead of on the next toggle. Only the
+-- edge-anchored pads care about the gap; centered ones are unaffected.
+local function reapplyWindowGap()
+  local anchored = {
+    { marker = "HS-SCREENTUTOR", config = scratchpads.screentutor },
+    { marker = "HS-CADTUTOR",    config = scratchpads.cadtutor },
+  }
+  for _, pad in ipairs(anchored) do
+    local win = findAlacrittyWindowByTitle(pad.marker)
+    if win then
+      if pad.config.anchor == "right" then tileAppLeftOfScreenTutor() end
+      positionWindow(win, pad.config)
+    end
+  end
 end
 
 local function toggleAiYolo()
@@ -661,19 +689,35 @@ end
 
 hs.hotkey.bind(mod, "m", toggleResmon)
 
+-- Claude Code's hook opens each edit as a VS Code diff tab; the presence of this
+-- flag file disables it. Shared by the Cmd+Ctrl+D hotkey and the help panel's
+-- toggle so both read and write one piece of state.
+local DIFF_TAB_FLAG = os.getenv("HOME") .. "/.claude/hooks/diff-tab.disabled"
+
+-- Assigned once the help panel exists, so a hotkey press repaints an open panel.
+local syncHelpDiffToggle = nil
+
+local function diffTabsEnabled()
+  return not fileExists(DIFF_TAB_FLAG)
+end
+
+local function setDiffTabs(enabled)
+  if enabled then
+    os.remove(DIFF_TAB_FLAG)
+  else
+    local f = io.open(DIFF_TAB_FLAG, "w")
+    if f then f:close() end
+  end
+  hs.notify.new({
+    title = "Claude Code",
+    informativeText = "Diff tabs " .. (enabled and "ON" or "OFF"),
+  }):send()
+  if syncHelpDiffToggle then syncHelpDiffToggle() end
+end
+
 -- Toggle Claude Code diff tab hook (Cmd+Ctrl+D)
 hs.hotkey.bind(mod, "d", function()
-  local flag = os.getenv("HOME") .. "/.claude/hooks/diff-tab.disabled"
-  local f = io.open(flag, "r")
-  if f then
-    f:close()
-    os.remove(flag)
-    hs.notify.new({ title = "Claude Code", informativeText = "Diff tabs ON" }):send()
-  else
-    f = io.open(flag, "w")
-    if f then f:close() end
-    hs.notify.new({ title = "Claude Code", informativeText = "Diff tabs OFF" }):send()
-  end
+  setDiffTabs(not diffTabsEnabled())
 end)
 
 -- Cycle the Screen Tutor widget around the screen corners (Cmd+Ctrl+Shift+H).
@@ -816,9 +860,47 @@ local function buildHelpHtml()
     .util{font-size:12px;margin:2px 0}
     .un{color:#89dceb}
     .ud{color:#7f849c}
+    .set{display:flex;gap:8px;align-items:center}
+    .set button{background:#313244;border:1px solid #45475a;border-radius:4px;color:#f5c2e7;
+      font-size:14px;width:26px;height:24px;cursor:pointer}
+    .set button:hover{background:#45475a}
+    .set input{background:#181825;border:1px solid #45475a;border-radius:4px;color:#cdd6f4;
+      font:inherit;font-size:13px;width:56px;text-align:center;padding:2px 4px}
+    .set + .set{margin-top:8px}
+    .set button.tog{width:auto;min-width:46px;padding:2px 10px;font-size:12px}
+    .set button.on{color:#a6e3a1}
+    .set button.off{color:#6c7086}
     .hint{color:#6c7086;font-size:11px;margin-top:22px;text-align:center}
   </style></head><body>]])
   table.insert(p, "<h1>⌨︎ Workstation Help</h1>")
+  -- Live window-gap stepper. Posts to the hsHelp user-content handler, which writes
+  -- hs.settings and re-positions the open anchored pads (see helpBridge below).
+  table.insert(p, "<h2>Settings</h2><div class='set'><span>Window gap</span>"
+    .. "<button onclick='bump(-2)'>−</button>"
+    .. "<input id='gapv' type='number' min='0' max='64' step='1' value='" .. windowGap()
+    .. "' onchange='sendGap(this.value)'>"
+    .. "<button onclick='bump(2)'>+</button><span class='ud'>px — edge gap for"
+    .. " anchored/tiled windows</span></div>"
+    .. [[<script>
+      function sendGap(v){window.webkit.messageHandlers.hsHelp.postMessage(
+        {action:'setGap', value:Number(v)});}
+      function bump(d){sendGap(Number(document.getElementById('gapv').value)+d);}
+      window.setGapDisplay=function(v){document.getElementById('gapv').value=v;};
+    </script>]])
+  -- VS Code diff-tab toggle, same state as Cmd+Ctrl+D. Rendered from the flag file
+  -- on every open, and repainted in place by syncHelpDiffToggle when the hotkey
+  -- flips it while this panel is showing.
+  local diffOn = diffTabsEnabled()
+  table.insert(p, "<div class='set'><span>VS Code diff tabs</span>"
+    .. "<button id='difft' class='tog " .. (diffOn and "on" or "off")
+    .. "' onclick='sendDiff()'>" .. (diffOn and "ON" or "OFF") .. "</button>"
+    .. "<span class='ud'>— Claude Code opens each edit as a diff tab (⌘⌃D)</span></div>"
+    .. [[<script>
+      function sendDiff(){window.webkit.messageHandlers.hsHelp.postMessage(
+        {action:'setDiffTabs', value:document.getElementById('difft').textContent!=='ON'});}
+      window.setDiffDisplay=function(on){var b=document.getElementById('difft');
+        if(!b){return;} b.textContent=on?'ON':'OFF'; b.className='tog '+(on?'on':'off');};
+    </script>]])
   table.insert(p, "<h2>Keyboard shortcuts</h2><div class='sc'>")
   for _, r in ipairs(shortcutRows()) do
     table.insert(p, string.format(
@@ -846,6 +928,41 @@ end
 
 local helpWebview, helpVisible = nil, false
 
+-- Fills in the forward declaration above: repaint the diff-tab button so the panel
+-- keeps up when Cmd+Ctrl+D flips the state behind its back.
+syncHelpDiffToggle = function()
+  if not helpWebview then return end
+  helpWebview:evaluateJavaScript("window.setDiffDisplay && window.setDiffDisplay("
+    .. tostring(diffTabsEnabled()) .. ")")
+end
+
+local function applyGapFromHelp(value)
+  local gap = tonumber(value)
+  if not gap then return end
+  gap = math.max(0, math.min(64, math.floor(gap)))
+  hs.settings.set(GAP_KEY, gap)
+  reapplyWindowGap()
+  if helpWebview then
+    -- Echo the clamped value back so the stepper can't drift out of range.
+    helpWebview:evaluateJavaScript("window.setGapDisplay && window.setGapDisplay(" .. gap .. ")")
+  end
+end
+
+-- Bridge for the help panel's interactive controls. The page posts {action=…} objects
+-- to window.webkit.messageHandlers.hsHelp; anything unrecognised is ignored.
+local helpBridge = hs.webview.usercontent.new("hsHelp")
+helpBridge:setCallback(function(message)
+  local body = message.body
+  if type(body) ~= "table" then return end
+  if body.action == "setGap" then
+    applyGapFromHelp(body.value)
+  elseif body.action == "setDiffTabs" then
+    -- setDiffTabs echoes back through syncHelpDiffToggle, so the button can't
+    -- disagree with the flag file if the write fails.
+    setDiffTabs(body.value == true)
+  end
+end)
+
 local function toggleHelp()
   if helpVisible and helpWebview then
     helpWebview:hide()
@@ -857,7 +974,7 @@ local function toggleHelp()
     local w = 920
     local h = math.min(f.h - 80, 1040)
     helpWebview = hs.webview.new(
-      { x = f.x + (f.w - w) / 2, y = f.y + (f.h - h) / 2, w = w, h = h }
+      { x = f.x + (f.w - w) / 2, y = f.y + (f.h - h) / 2, w = w, h = h }, {}, helpBridge
     )
     helpWebview:windowStyle({ "borderless", "closable", "resizable" })
     helpWebview:level(hs.drawing.windowLevels.floating)

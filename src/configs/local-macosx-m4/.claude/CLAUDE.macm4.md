@@ -6,15 +6,21 @@ Blender and FreeCAD are set up on this machine with MCP servers (`blender`, `fre
 When you create or save CAD / 3D project files, save them to the CAD archive on
 `sthinds.local` (the Ubuntu box), which is mounted locally over SMB:
 
-- **Blender** projects → `~/media/.mounts/D/Documents/CAD/Blender/`
+- **Blender** projects → `~/Drive/D/Documents/CAD/Blender/` (default), with
+  `~/Documents/CAD/Blender/` as a local backup if the share is unreachable
 - **FreeCAD** projects → `~/media/.mounts/D/Documents/CAD/FreeCAD/`
 
 (On `sthinds.local` these are the `D` Samba share → `Documents/CAD/Blender` and
-`Documents/CAD/FreeCAD`.)
+`Documents/CAD/FreeCAD`. `~/Drive/D` is a friendlier symlink to the same mount,
+`~/media/.mounts/D`.)
 
 Guidelines:
-- Keep an in-progress working copy under `~/blender-projects/` while iterating, then copy
-  the finished `.blend` / `.FCStd` to the CAD archive above.
+- Save Blender projects directly to `~/Drive/D/Documents/CAD/Blender/` as you go — no more
+  local `~/blender-projects/` working copy. If the share isn't mounted/reachable, save to
+  the local backup at `~/Documents/CAD/Blender/` instead, and copy the file over to the
+  share once it's back.
+- For FreeCAD, keep an in-progress working copy locally while iterating, then copy the
+  finished `.FCStd` to the CAD archive above.
 - Save `.blend` files self-contained (pack external data) so they open standalone.
 - When driving Blender/FreeCAD via MCP, render preview frames to `~/blender-preview.png`
   so they show up live in the pinned VS Code image tab.
