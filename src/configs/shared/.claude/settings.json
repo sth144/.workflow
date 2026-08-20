@@ -200,5 +200,9 @@
     "command": "npx -y ccstatusline@latest",
     "padding": 0,
     "type": "command"
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
   }
 }
