@@ -163,13 +163,71 @@ parse_git_branch() {
   fi
 }
 
-# Change NodeJS version when entering specified directories
-cd() {
-  builtin cd "$@"
+# Directory history: `cd` records where you came from, so `popdir` walks back
+# through everywhere you've been. `pushdir` with no args marks the current
+# directory before you wander off; `dirhist` lists the stack newest-first, and
+# `popdir N` jumps straight to the Nth entry it shows.
+DIRHIST_MAX=50
+DIRHIST=()
+
+_dirhist_push() {
+  DIRHIST[${#DIRHIST[@]}]="$1"
+  while [ ${#DIRHIST[@]} -gt "$DIRHIST_MAX" ]; do
+    DIRHIST=("${DIRHIST[@]:1}")
+  done
+}
+
+# Change NodeJS version when entering specified directories. Kept separate from
+# the cd wrapper so popdir can move without recording, otherwise repeated
+# popdir calls just ping-pong between the last two directories.
+_cd_nohist() {
+  builtin cd "$@" || return
   if [ -f .nvmrc ]; then
     nvm use
   fi
 }
+
+cd() {
+  local prev="$PWD"
+  _cd_nohist "$@" || return
+  [ "$PWD" = "$prev" ] || _dirhist_push "$prev"
+}
+
+pushdir() {
+  if [ $# -gt 0 ]; then
+    cd "$@"
+  else
+    _dirhist_push "$PWD"
+  fi
+}
+
+popdir() {
+  local count="${1:-1}" target="" last
+  while [ "$count" -gt 0 ] && [ ${#DIRHIST[@]} -gt 0 ]; do
+    last=$((${#DIRHIST[@]} - 1))
+    target="${DIRHIST[$last]}"
+    unset "DIRHIST[$last]"
+    count=$((count - 1))
+  done
+  if [ -z "$target" ]; then
+    echo "popdir: directory history is empty" >&2
+    return 1
+  fi
+  _cd_nohist "$target"
+}
+
+dirhist() {
+  local i
+  for ((i = ${#DIRHIST[@]} - 1; i >= 0; i--)); do
+    printf '%3d  %s\n' "$((${#DIRHIST[@]} - i))" "${DIRHIST[$i]}"
+  done
+}
+
+# Take over the muscle-memory names. The builtins are still reachable as
+# `builtin pushd` / `builtin popd` if something needs the real stack.
+alias pushd=pushdir
+alias popd=popdir
+alias dirs=dirhist
 
 # export color prompt
 # export PS1="\[\e[36m\][\[\e[m\]\[\e[33m\]\u\[\e[m\]\[\e[31m\]@\[\e[m\]\[\e[36m\]\h\[\e[m\]:\[\e[36m\]\w\[\e[m\]\[\e[36m\]]\[\e[m\]\[\e[36;36m\]\\$\[\e[m\] "
