@@ -95,6 +95,7 @@ local aiTerminal = aiTerminalConfig()
 -- | —       | DiffToggle  | Cmd+Ctrl+D   |
 -- | —       | ResMonitor  | Cmd+Ctrl+M   |
 -- | —       | CAD Tutor   | Cmd+Ctrl+G   |
+-- | —       | ↳ cycle nook| Cmd+Ctrl+Shift+G |
 -- | —       | ScreenTutor | Cmd+Ctrl+H   |
 -- | —       | ↳ cycle nook| Cmd+Ctrl+Shift+H |
 -- | —       | Help panel  | Cmd+Ctrl+/   |
@@ -111,8 +112,9 @@ local scratchpads = {
     height   = 0.55,
   },
 
-  -- CAD Tutor (FreeCAD/Blender assistant, macm4). Anchored top-right so it never
-  -- covers the 3D viewport in the screen center. Custom handler via the
+  -- CAD Tutor (FreeCAD/Blender assistant, macm4). Anchored top-right by default so
+  -- it never covers the 3D viewport in the screen center; Cmd+Ctrl+Shift+G cycles
+  -- it through the other nooks and the right dock. Custom handler via the
   -- "[Scratchpad] CAD Tutor" wrapper so it carries its own Dock icon.
   cadtutor = {
     hotkey   = mod,
@@ -457,29 +459,21 @@ local function toggleClaudeForks()
   toggleTermScratchpad("HS-FORKS", "tmux new-session -A -s claude-forks", scratchpads.forks, scratchApp("Forks"))
 end
 
-local function toggleCadTutor()
-  -- Dedicated terminal beside the CAD app for the `cad-tutor` skill. Opens a
-  -- login shell (start `claude`/`codex` there, then /cad-tutor); swap the command
-  -- below to auto-launch a harness if you prefer.
-  toggleTermScratchpad("HS-CADTUTOR", 'exec "$SHELL"', scratchpads.cadtutor, scratchApp("CAD Tutor"))
-end
+-- Tutor scratchpads (CAD Tutor, Screen Tutor) are pinnable terminals meant to sit
+-- beside the app you're working in. Cmd+Ctrl+Shift+<their key> cycles the layout:
+-- besides the four corner nooks there's a "right" full-height dock where the pad
+-- claims its own column (its configured width) and the app beside it is tiled into
+-- the rest, so both are usable side by side — a CAD/QGIS + tutor workflow.
+local TUTOR_ANCHORS = { "topright", "right", "bottomright", "bottomleft", "topleft" }
+local TUTOR_ANCHOR_LABELS = { right = "right dock (full height)" }
+local tutorAnchorIdx = { cadtutor = 1, screentutor = 1 }
 
--- Screen Tutor: a translucent, pinnable terminal for the `screen-tutor` skill.
--- Cmd+Ctrl+H toggles it; Cmd+Ctrl+Shift+H cycles its layout. Besides the four
--- corner nooks there's a "right" full-height dock: Screen Tutor claims a ~30%
--- column on the right and the app beside it is tiled into the rest (both usable
--- side by side), matching a CAD/QGIS + tutor workflow.
-local SCREEN_TUTOR_ANCHORS = { "topright", "right", "bottomright", "bottomleft", "topleft" }
-local SCREEN_TUTOR_ANCHOR_LABELS = { right = "right dock (full height)" }
-local screenTutorCornerIdx = 1
-
--- Tile the app sitting behind Screen Tutor into the left column so it stays fully
--- visible next to the right dock. Best-effort: picks the frontmost standard,
--- non-Alacritty window (Screen Tutor itself is Alacritty, so it's skipped).
-local function tileAppLeftOfScreenTutor()
+-- Tile the app sitting behind a right-docked tutor pad into the left column so it
+-- stays fully visible next to the dock. Best-effort: picks the frontmost standard,
+-- non-Alacritty window (the tutor pads are Alacritty, so they're skipped).
+local function tileAppLeftOfDock(dockWidth)
   local f = hs.screen.mainScreen():frame()
   local margin = windowGap()
-  local width = scratchpads.screentutor.width
   for _, win in ipairs(hs.window.orderedWindows()) do
     local app = win:application()
     local bid = app and app:bundleID() or ""
@@ -487,7 +481,7 @@ local function tileAppLeftOfScreenTutor()
       win:setFrame({
         x = f.x + margin,
         y = f.y + margin,
-        w = f.w * (1 - width) - 2 * margin,
+        w = f.w * (1 - dockWidth) - 2 * margin,
         h = f.h - 2 * margin,
       })
       return
@@ -495,8 +489,42 @@ local function tileAppLeftOfScreenTutor()
   end
 end
 
+-- Move a tutor pad to its remembered anchor and, in right-dock mode, tile the app
+-- beside it once the pad window has settled into place.
+local function applyTutorAnchor(name)
+  local config = scratchpads[name]
+  config.anchor = TUTOR_ANCHORS[tutorAnchorIdx[name]]
+  if config.anchor == "right" then
+    hs.timer.doAfter(0.5, function() tileAppLeftOfDock(config.width) end)
+  end
+end
+
+-- Cycle one tutor pad through the anchors. Applies immediately when the pad is
+-- open; otherwise the new anchor takes effect the next time it's toggled on.
+local function cycleTutorAnchor(name, marker, label)
+  local config = scratchpads[name]
+  tutorAnchorIdx[name] = (tutorAnchorIdx[name] % #TUTOR_ANCHORS) + 1
+  local anchor = TUTOR_ANCHORS[tutorAnchorIdx[name]]
+  config.anchor = anchor
+  local win = findAlacrittyWindowByTitle(marker)
+  if win then
+    if anchor == "right" then tileAppLeftOfDock(config.width) end
+    positionWindow(win, config)
+    win:raise()
+  end
+  hs.alert.show(label .. " → " .. (TUTOR_ANCHOR_LABELS[anchor] or anchor))
+end
+
+local function toggleCadTutor()
+  -- Dedicated terminal beside the CAD app for the `cad-tutor` skill. Opens a
+  -- login shell (start `claude`/`codex` there, then /cad-tutor); swap the command
+  -- below to auto-launch a harness if you prefer.
+  applyTutorAnchor("cadtutor")
+  toggleTermScratchpad("HS-CADTUTOR", 'exec "$SHELL"', scratchpads.cadtutor, scratchApp("CAD Tutor"))
+end
+
 local function toggleScreenTutor()
-  scratchpads.screentutor.anchor = SCREEN_TUTOR_ANCHORS[screenTutorCornerIdx]
+  applyTutorAnchor("screentutor")
   -- Auto-launch the claude harness straight into the /screen-tutor skill; drop to
   -- a login shell when it exits so the window persists and stays toggle-able.
   -- Sonnet by default: faster than Opus for this glance-and-explain widget, and
@@ -507,26 +535,6 @@ local function toggleScreenTutor()
   toggleTermScratchpad("HS-SCREENTUTOR",
     'SCREEN_TUTOR_SESSION=1 claude --model sonnet /screen-tutor; exec "$SHELL"',
     scratchpads.screentutor, scratchApp("Screen Tutor"), "-o window.opacity=0.82")
-  -- If the remembered layout is the right dock, tile the app beside it once the
-  -- Screen Tutor window has settled into place.
-  if scratchpads.screentutor.anchor == "right" then
-    hs.timer.doAfter(0.5, tileAppLeftOfScreenTutor)
-  end
-end
-
-local function cycleScreenTutorCorner()
-  screenTutorCornerIdx = (screenTutorCornerIdx % #SCREEN_TUTOR_ANCHORS) + 1
-  local corner = SCREEN_TUTOR_ANCHORS[screenTutorCornerIdx]
-  scratchpads.screentutor.anchor = corner
-  local win = findAlacrittyWindowByTitle("HS-SCREENTUTOR")
-  if win then
-    if corner == "right" then
-      tileAppLeftOfScreenTutor()
-    end
-    positionWindow(win, scratchpads.screentutor)
-    win:raise()
-  end
-  hs.alert.show("Screen Tutor → " .. (SCREEN_TUTOR_ANCHOR_LABELS[corner] or corner))
 end
 
 -- Re-position the anchored scratchpads that are currently open so a gap change made
@@ -540,7 +548,7 @@ local function reapplyWindowGap()
   for _, pad in ipairs(anchored) do
     local win = findAlacrittyWindowByTitle(pad.marker)
     if win then
-      if pad.config.anchor == "right" then tileAppLeftOfScreenTutor() end
+      if pad.config.anchor == "right" then tileAppLeftOfDock(pad.config.width) end
       positionWindow(win, pad.config)
     end
   end
@@ -1010,8 +1018,13 @@ diagram = {
   copyText = copyDiagramText,
 }
 
--- Cycle the Screen Tutor widget around the screen corners (Cmd+Ctrl+Shift+H).
-hs.hotkey.bind({ "cmd", "ctrl", "shift" }, "h", cycleScreenTutorCorner)
+-- Cycle the tutor pads around the screen nooks / right dock (Cmd+Ctrl+Shift+key).
+hs.hotkey.bind({ "cmd", "ctrl", "shift" }, "g", function()
+  cycleTutorAnchor("cadtutor", "HS-CADTUTOR", "CAD Tutor")
+end)
+hs.hotkey.bind({ "cmd", "ctrl", "shift" }, "h", function()
+  cycleTutorAnchor("screentutor", "HS-SCREENTUTOR", "Screen Tutor")
+end)
 
 --------------------------------------------------------------------------------
 -- Help panel (Cmd+Ctrl+/) and command palette (Cmd+Ctrl+P)
@@ -1033,6 +1046,7 @@ local EXTRA_SHORTCUTS = {
   { keys = "⌘⌃M", label = "Resource Monitor" },
   { keys = "⌘⌃D", label = "Toggle Claude Code diff tabs" },
   { keys = "⌘⌃V", label = "Diagram viewer (newest agent diagram)" },
+  { keys = "⌘⌃⇧G", label = "Cycle CAD Tutor corner" },
   { keys = "⌘⌃⇧H", label = "Cycle Screen Tutor corner" },
   { keys = "⌘⌃/", label = "This help panel" },
   { keys = "⌘⌃P", label = "Command palette — search shortcuts & utilities" },
