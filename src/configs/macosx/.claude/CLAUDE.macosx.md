@@ -12,6 +12,9 @@ prefers answering locally before spending tokens on a screenshot.
   OCR fallback alongside it).
 - Live overlay: `screen_tutor.py highlight --box "x,y,w,h:label"` draws a glowing box
   over the real button via Hammerspoon (`~/.hammerspoon/screen_tutor.lua`), auto-fading.
+- Pad: **Cmd+Ctrl+H** toggles the Screen Tutor terminal, which boots straight into the
+  skill on whichever harness is selected under *Tutor harness* in the Cmd+Ctrl+/ help
+  panel (Claude or Codex); the flip applies to the next pad opened.
 
 On the M4 CAD workstation, `cad-tutor` is a CAD-specific specialization built on this
 same `screen_tutor.py` engine + `screenHighlight` overlay.

@@ -391,14 +391,25 @@ end
 -- and findAlacrittyWindowByTitle searches every instance so the window is still
 -- discoverable. dynamic_title is pinned off so the running program (tmux, ranger,
 -- bc) can't rename our marker. (command must not contain a single quote — none do.)
+--
+-- Deliberately NOT hs.execute(…, true): that variant re-wraps the whole line in
+-- double quotes, so the outer shell expands any $VAR and unpicks any backslash in
+-- `command` before Alacritty ever sees it — which silently mangled Codex's
+-- `$skill` prompt. The plain form is a single `sh -c` layer, and `bash -lc` inside
+-- Alacritty already supplies the login environment, so nothing is lost.
 local function launchAlacritty(marker, command, appBundle, extraOpts)
   local app = appBundle or "/Applications/Alacritty.app"
   local opts = (extraOpts and extraOpts ~= "") and (" " .. extraOpts) or ""
   local shellCmd = string.format(
-    "open -na '%s' --args "
+    "/usr/bin/open -na '%s' --args "
       .. "--title '%s' -o window.dynamic_title=false%s -e bash -lc '%s'",
     app, marker, opts, command)
-  hs.execute(shellCmd, true)  -- `true` => run via login shell
+  -- Surface a failed `open` instead of leaving the hotkey looking dead: without
+  -- this a missing/unregistered wrapper .app just silently produces no window.
+  local _, ok = hs.execute(shellCmd)
+  if not ok then
+    hs.alert.show("Could not launch " .. marker)
+  end
 end
 
 -- Poll for a freshly-launched window and position it the moment it appears. A
@@ -468,6 +479,55 @@ local TUTOR_ANCHORS = { "topright", "right", "bottomright", "bottomleft", "tople
 local TUTOR_ANCHOR_LABELS = { right = "right dock (full height)" }
 local tutorAnchorIdx = { cadtutor = 1, screentutor = 1 }
 
+-- Which agent harness the tutor pads boot into. Persisted in hs.settings so the
+-- help panel (Cmd+Ctrl+/) can flip it live; an already-open pad keeps the harness
+-- it started with, so a flip lands the next time that pad is opened.
+local TUTOR_HARNESS_KEY = "workflow.tutorHarness"
+local DEFAULT_TUTOR_HARNESS = "claude"
+
+-- The command each pad runs, per harness. Two constraints on these strings:
+-- launchAlacritty wraps the command in single quotes, so none may appear here; and
+-- Codex takes its skill as `$name` inside the prompt, which the `bash -lc` layer
+-- would expand as a variable, hence the backslash.
+--
+-- SCREEN_TUTOR_SESSION=1 activates the screen-tutor-consent.sh PreToolUse hook:
+-- normal tool calls run un-prompted (global Bash(*) allow), but the first screen
+-- capture per 30-min window asks for consent — no blanket yolo, no per-call nagging.
+-- Sonnet for the screen pad: faster than Opus for a glance-and-explain widget, and
+-- the token-heavy visual reasoning is rare (AX/OCR handle the common cases).
+local TUTOR_COMMANDS = {
+  claude = {
+    screentutor = "SCREEN_TUTOR_SESSION=1 claude --model sonnet /screen-tutor",
+    cadtutor    = "claude /cad-tutor",
+  },
+  codex = {
+    screentutor = "SCREEN_TUTOR_SESSION=1 codex \"\\$screen-tutor\"",
+    cadtutor    = "codex \"\\$cad-tutor\"",
+  },
+}
+
+-- Assigned once the help panel exists, so flipping the harness elsewhere repaints
+-- an open panel.
+local syncHelpTutorHarness = nil
+
+local function tutorHarness()
+  local saved = hs.settings.get(TUTOR_HARNESS_KEY)
+  return TUTOR_COMMANDS[saved] and saved or DEFAULT_TUTOR_HARNESS
+end
+
+-- Drop to a login shell once the harness exits so the window persists and stays
+-- toggle-able rather than vanishing.
+local function tutorCommand(name)
+  return TUTOR_COMMANDS[tutorHarness()][name] .. '; exec "$SHELL"'
+end
+
+local function setTutorHarness(harness)
+  if not TUTOR_COMMANDS[harness] then return end
+  hs.settings.set(TUTOR_HARNESS_KEY, harness)
+  hs.alert.show("Tutor harness → " .. harness .. " (next pad you open)")
+  if syncHelpTutorHarness then syncHelpTutorHarness() end
+end
+
 -- Tile the app sitting behind a right-docked tutor pad into the left column so it
 -- stays fully visible next to the dock. Best-effort: picks the frontmost standard,
 -- non-Alacritty window (the tutor pads are Alacritty, so they're skipped).
@@ -515,25 +575,17 @@ local function cycleTutorAnchor(name, marker, label)
   hs.alert.show(label .. " → " .. (TUTOR_ANCHOR_LABELS[anchor] or anchor))
 end
 
+-- Dedicated terminal beside the CAD app, booted straight into the `cad-tutor`
+-- skill on whichever harness is selected (see TUTOR_COMMANDS).
 local function toggleCadTutor()
-  -- Dedicated terminal beside the CAD app for the `cad-tutor` skill. Opens a
-  -- login shell (start `claude`/`codex` there, then /cad-tutor); swap the command
-  -- below to auto-launch a harness if you prefer.
   applyTutorAnchor("cadtutor")
-  toggleTermScratchpad("HS-CADTUTOR", 'exec "$SHELL"', scratchpads.cadtutor, scratchApp("CAD Tutor"))
+  toggleTermScratchpad("HS-CADTUTOR", tutorCommand("cadtutor"),
+    scratchpads.cadtutor, scratchApp("CAD Tutor"))
 end
 
 local function toggleScreenTutor()
   applyTutorAnchor("screentutor")
-  -- Auto-launch the claude harness straight into the /screen-tutor skill; drop to
-  -- a login shell when it exits so the window persists and stays toggle-able.
-  -- Sonnet by default: faster than Opus for this glance-and-explain widget, and
-  -- the token-heavy visual reasoning is rare (AX/OCR handle the common cases).
-  -- SCREEN_TUTOR_SESSION=1 activates the screen-tutor-consent.sh PreToolUse hook:
-  -- normal tool calls run un-prompted (global Bash(*) allow), but the first screen
-  -- capture per 30-min window asks for consent — no blanket yolo, no per-call nagging.
-  toggleTermScratchpad("HS-SCREENTUTOR",
-    'SCREEN_TUTOR_SESSION=1 claude --model sonnet /screen-tutor; exec "$SHELL"',
+  toggleTermScratchpad("HS-SCREENTUTOR", tutorCommand("screentutor"),
     scratchpads.screentutor, scratchApp("Screen Tutor"), "-o window.opacity=0.82")
 end
 
@@ -1206,6 +1258,20 @@ local function buildHelpHtml()
       window.setDiffDisplay=function(on){var b=document.getElementById('difft');
         if(!b){return;} b.textContent=on?'ON':'OFF'; b.className='tog '+(on?'on':'off');};
     </script>]])
+  -- Which harness the two tutor pads boot into. A pad that's already open keeps the
+  -- harness it started with, so the flip shows up the next time you open one.
+  table.insert(p, "<div class='set'><span>Tutor harness</span>"
+    .. "<button id='harn' class='tog on' onclick='sendHarness()'>"
+    .. string.upper(tutorHarness()) .. "</button>"
+    .. "<span class='ud'>— agent booted by Screen Tutor (⌘⌃H) and CAD Tutor (⌘⌃G);"
+    .. " applies to the next pad you open</span></div>"
+    .. [[<script>
+      function sendHarness(){window.webkit.messageHandlers.hsHelp.postMessage(
+        {action:'setTutorHarness',
+         value:document.getElementById('harn').textContent==='CLAUDE'?'codex':'claude'});}
+      window.setHarnessDisplay=function(v){var b=document.getElementById('harn');
+        if(!b){return;} b.textContent=v.toUpperCase();};
+    </script>]])
   table.insert(p, "<h2>Keyboard shortcuts</h2><div class='sc'>")
   for _, r in ipairs(shortcutRows()) do
     table.insert(p, string.format(
@@ -1241,6 +1307,13 @@ syncHelpDiffToggle = function()
     .. tostring(diffTabsEnabled()) .. ")")
 end
 
+-- Same idea for the tutor-harness button.
+syncHelpTutorHarness = function()
+  if not helpWebview then return end
+  helpWebview:evaluateJavaScript("window.setHarnessDisplay && window.setHarnessDisplay('"
+    .. tutorHarness() .. "')")
+end
+
 local function applyGapFromHelp(value)
   local gap = tonumber(value)
   if not gap then return end
@@ -1265,6 +1338,8 @@ helpBridge:setCallback(function(message)
     -- setDiffTabs echoes back through syncHelpDiffToggle, so the button can't
     -- disagree with the flag file if the write fails.
     setDiffTabs(body.value == true)
+  elseif body.action == "setTutorHarness" then
+    setTutorHarness(body.value)
   end
 end)
 

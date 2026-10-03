@@ -85,7 +85,9 @@ skill (documented at the macOS layer), built on the same `screen_tutor.py` engin
 
 For hands-on help in a live CAD session, invoke the `cad-tutor` skill (`/cad-tutor`
 in Claude Code, `$cad-tutor` in Codex). It has its own scratchpad window — toggle
-the **CAD Tutor** terminal (top-right, clear of the viewport) with **Cmd+Ctrl+G**.
+the **CAD Tutor** terminal (top-right, clear of the viewport) with **Cmd+Ctrl+G**. The
+pad boots straight into the skill on whichever harness is selected under *Tutor harness*
+in the Cmd+Ctrl+/ help panel (Claude or Codex); the flip applies to the next pad opened.
 It inspects the model via the `blender`/`freecad` MCP servers, screenshots the app
 window (`~/bin/screen-tutor/screen_tutor.py shot`), and highlights the relevant control
 two ways:
