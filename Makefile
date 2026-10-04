@@ -93,3 +93,8 @@ backup:
 	@echo "backing up local configs and utils"
 	./admin/backup_local.py
 	rsync -av ./backup ~/Drive/D/Software/Source/workflow/
+
+# move gitignored src/*/local contents into the encrypted <layer>-vault dirs
+.PHONY: migrate_vault
+migrate_vault:
+	./admin/migrate_local_to_vault.sh $(LAYER)
