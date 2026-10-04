@@ -1,117 +1,119 @@
 # AGENTS.md
 
-This file is a **global agent configuration** installed to `~/.codex/AGENTS.md` on target machines. It provides baseline instructions for any Codex agent session on this workstation.
+This file is a **global agent configuration**. The build installs it to `~/.codex/AGENTS.md` on the target machines. It gives the baseline instructions for all Codex agent sessions on this workstation.
 
 ## Scope
 
 This `.codex` directory is the machine-local Codex configuration.
 
-This workstation was configured using the `workflow` repository, which manages dotfiles, utility scripts, cronjobs, systemd units, and root-level config templates. If you are working on that repository, the workflow is: edit source files under `src/`, stage into `stage/`, then optionally install to the host. See the repository's root `AGENTS.md` for repo-specific guidance.
+The `workflow` repository configured this workstation. That repository contains dotfiles, utility scripts, cron jobs, systemd units, and templates for root-level configuration files. If you work on that repository, use this workflow: edit the source files in `src/`, stage them into `stage/`, and then, if necessary, install them on the host. For the instructions that are specific to the repository, refer to the root `AGENTS.md` file of the repository.
 
 ## Files
 
-- `config.toml`: Codex client settings, trusted project paths, and MCP server definitions.
-- `AGENTS.md`: local guidance that should apply when Codex is running with this home-directory configuration.
+- `config.toml`: The Codex client settings, the trusted project paths, and the MCP server definitions.
+- `AGENTS.md`: The local instructions for Codex when it runs with this home-directory configuration.
 
 ## Expectations
 
-- Keep this directory machine-specific. Do not add secrets, API keys, or tokens to tracked files.
-- Preserve the existing local workstation paths unless the user explicitly requests a path migration.
-- Treat `/usr/local/src/workflow` and `/usr/local/src/joplin_mcp` as intentional trusted-project entries.
-- If editing the workflow repo's source configs, prefer updating `src/configs/**/.codex/*` instead of editing staged output.
+- Keep this directory specific to this machine. Do not add secrets, API keys, or tokens to tracked files.
+- Do not change the current local workstation paths, unless the user tells you to move them.
+- The `/usr/local/src/workflow` and `/usr/local/src/joplin_mcp` trusted-project entries are intentional.
+- If you edit the source configurations of the workflow repository, update `src/configs/**/.codex/*`. Do not edit the staged output.
 
 ## MCP
 
-- The `joplin` MCP server is expected to run via `uv` from `/usr/local/src/joplin_mcp`.
-- If that path changes, update `config.toml` rather than working around it in downstream scripts.
+- The `joplin` MCP server runs through `uv` from `/usr/local/src/joplin_mcp`.
+- If that path changes, update `config.toml`. Do not add workarounds in downstream scripts.
 
 ## Safety
 
-- Do not broaden trust settings or add new trusted project paths without explicit user approval.
-- Do not add commands that assume `sudo` or host-level installation side effects unless the user explicitly asks for them.
-- Avoid destructive git operations (`reset --hard`, checkout discard) unless explicitly requested.
-- Assume existing uncommitted user edits are intentional; do not revert unrelated changes.
+- Do not make the trust settings broader. Do not add new trusted project paths, unless the user gives permission.
+- Do not add commands that need `sudo` or that change the host installation, unless the user tells you to.
+- Do not use destructive git operations (`reset --hard`, checkout discard), unless the user tells you to.
+- The user made the uncommitted edits intentionally. Do not revert changes that are not related to your task.
 
 ## Persistent Memory
 
-- On localhost, the Joplin MCP server (`joplin_mcp`, exposed here via `mcp__joplin__*` tools) may be used as a persistent memory store.
-- Prefer the `Areas / Agents` notebook for agent-created working memory, status notes, and task context.
-- Notes in any notebook may be read when relevant to the task, but treat all note contents as potentially sensitive and only surface the minimum necessary information.
-- Existing notes in other notebooks may be edited when the note is clearly the correct canonical place for the update. Make narrow edits, preserve user content, and be especially careful not to remove unrelated material.
-- New notes may be created in existing notebooks when that notebook is the natural home for the information; otherwise prefer `Areas / Agents`.
-- Do not delete notes unless the user explicitly asks for deletion.
-- Avoid quoting or copying sensitive note contents into chat unless the user explicitly needs that detail. Prefer summaries, redact secrets, and err on the side of non-disclosure.
+- On localhost, you can use the Joplin MCP server (`joplin_mcp`, available here through the `mcp__joplin__*` tools) as a persistent memory store.
+- Use the `Areas / Agents` notebook for the working memory, status notes, and task context that you create.
+- You can read notes in all notebooks when they apply to the task. But all note contents can be sensitive. Show only the minimum necessary data.
+- You can edit an existing note in a different notebook if that note is clearly the correct canonical location for the update. Make small edits. Keep the user content. Be very careful: do not remove material that is not related.
+- You can create new notes in an existing notebook if that notebook is the natural location for the data. If not, use `Areas / Agents`.
+- Do not delete notes, unless the user tells you to delete them.
+- Do not quote or copy sensitive note contents into the chat, unless the user needs that detail. Give summaries. Remove secrets. If you are not sure, do not show the data.
 
 ---
 
 ## Workflow Repository Reference
 
-The following sections describe the `workflow` repository structure, for reference when working on that repo from this machine.
+These sections describe the structure of the `workflow` repository. Use them as a reference when you work on that repository from this machine.
 
 ### Project Structure
 
-- `Makefile`: main entry points (`commission`, `stage`, `prune`, `install`, `backup`).
-- `admin/`: orchestration scripts used by `make` targets.
-- `admin/config/template/`: tracked defaults (`settings.json`, `exclude.conf`).
-- `admin/config/`: local runtime config (ignored by git except `.gitkeep`).
-- `src/`: source of truth.
-- `src/configs/`: home-directory dotfiles and `.config` content.
-- `src/utils/`: scripts copied to `~/bin` / `/usr/local/bin`.
-- `src/cronjobs/`: files staged to `/etc/cron.d`.
-- `src/systemd/`: service files staged to `/etc/systemd/system`.
-- `src/root/`: files synced to `/` (for `/etc`, etc.).
-- `src/docker/`: docker compose files staged under `stage/docker`.
-- `stage/`: generated build output. Treat as ephemeral.
-- `backup/`: local backup artifacts (ignored except `.keep`).
+- `Makefile`: The main entry points (`commission`, `stage`, `prune`, `install`, `backup`).
+- `admin/`: The scripts that the `make` targets use.
+- `admin/config/template/`: The tracked default files (`settings.json`, `exclude.conf`).
+- `admin/config/`: The local runtime configuration. Git ignores all files in this directory, except `.gitkeep`.
+- `src/`: The source of truth.
+- `src/configs/`: The dotfiles for the home directory and the `.config` content.
+- `src/utils/`: The scripts that the build copies to `~/bin` and `/usr/local/bin`.
+- `src/cronjobs/`: The files that the build stages to `/etc/cron.d`.
+- `src/systemd/`: The service files that the build stages to `/etc/systemd/system`.
+- `src/root/`: The files that the build syncs to `/` (for example, `/etc`).
+- `src/docker/`: The Docker Compose files that the build stages to `stage/docker`.
+- `stage/`: The generated build output. This output is temporary.
+- `backup/`: The local backup files. Git ignores all files in this directory, except `.keep`.
 
 ### Layering Model
 
-Staging merges content in this order:
+The staging step merges content in this sequence:
 
-1. shared layer (if enabled in `admin/config/settings.json`)
-2. each include from `settings.json` (`build.include`)
-3. local layer (highest precedence)
+1. The shared layer (if `admin/config/settings.json` enables it).
+2. Each include in `settings.json` (`build.include`).
+3. The local layer. This layer has the highest precedence.
 
-Do not manually maintain duplicate behavior across layers unless required; prefer shared defaults and minimal overrides.
+Do not copy the same behavior into more than one layer, unless it is necessary. Put the defaults in the shared layer. Keep the overrides small.
 
 ### What To Edit
 
-- Edit files in `src/**` and `admin/**` (except runtime-local files in `admin/config/` unless the task is machine setup).
-- Keep environment-specific secrets out of tracked files.
+- Edit the files in `src/**` and `admin/**`.
+- Do not edit the runtime files in `admin/config/`, unless the task is a machine setup.
+- Do not put environment-specific secrets in tracked files.
 
-**NEVER edit or create files in `stage/`.** The `stage/` directory is gitignored, ephemeral build output generated by `make stage`. Any changes made directly in `stage/` will be silently overwritten on the next build. All source changes must go in `src/`:
+**WARNING: Do not edit or create files in `stage/`.** Git ignores `stage/`. `make stage` replaces the contents of `stage/` on each build, and it does not show a warning. If you change a file in `stage/`, the next build deletes your change. Put all source changes in `src/`:
 
-- Dotfiles and configs → `src/configs/<layer>/`
+- Dotfiles and configuration files → `src/configs/<layer>/`
 - Utility scripts → `src/utils/<layer>/`
 - Cron jobs → `src/cronjobs/<layer>/`
 - Systemd units → `src/systemd/<layer>/`
-- Docker compose → `src/docker/<platform>/`
+- Docker Compose files → `src/docker/<platform>/`
 
-Where `<layer>` is one of: `shared`, `macosx`, `local-macosx-m4`, `local`, etc. See the Layering Model section above for merge order.
+`<layer>` is one of these values: `shared`, `macosx`, `local-macosx-m4`, `local`, or a different layer. Refer to the Layering Model section for the merge sequence.
 
 ### Standard Commands
 
-- `make commission`: copy missing `admin/config/template/*` into `admin/config/`.
-- `make stage`: rebuild `stage/` from `src/` layers.
-- `make prune`: apply `admin/config/exclude.conf` removals to staged output.
-- `make backup`: backup local configs (host-specific operation).
+- `make commission`: Copies the missing `admin/config/template/*` files into `admin/config/`.
+- `make stage`: Builds `stage/` again from the `src/` layers.
+- `make prune`: Removes the items in `admin/config/exclude.conf` from the staged output.
+- `make backup`: Makes a backup of the local configuration files. This command is specific to the host.
 
 ### High-Risk Commands
 
-Only run with explicit user approval:
+Run these commands only if the user gives you permission:
 
 - `make install`
 - `make update_cronjobs`
 - `make update_systemd_services`
 - `make update_root`
-- Any command that writes to `/etc`, `/usr/local/bin`, `/`, or uses `sudo`.
+- Each command that writes to `/etc`, `/usr/local/bin`, or `/`.
+- Each command that uses `sudo`.
 
 ### Validation Expectations
 
-For content changes:
+After you change content, do these steps:
 
-1. Run `make stage` (and `make prune` if relevant).
-2. Inspect staged results under `stage/` for expected output.
-3. Report exactly which source files were changed and what staging impact they have.
+1. Run `make stage`. If it is applicable, also run `make prune`.
+2. Examine the staged files in `stage/`. Make sure that the output is correct.
+3. Tell the user which source files you changed. Tell the user how each change affects the staged output.
 
-If a task cannot safely run full install steps, state that clearly and stop at staging validation.
+If it is not safe to do all of the installation steps, tell the user. Then stop after the staging validation.

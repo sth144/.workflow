@@ -1,3 +1,3 @@
 # CLAUDE.md
 
-See [AGENTS.md](./AGENTS.md) for repository guidance. That file is the single source of truth for both Claude Code and Codex.
+Read [AGENTS.md](./AGENTS.md) for the instructions about this repository. Claude Code and Codex both use that file as the single source of truth.

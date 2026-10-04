@@ -7,55 +7,63 @@
 - Editor: VSCode with Claude Code integration
 
 ## General Preferences
-1. Don’t assume. Don’t hide confusion. Surface tradeoffs.
-2. Minimum code that solves the problem. Nothing speculative.
-3. Touch only what you must. Clean up only your own mess.
-4. Define success criteria. Loop until verified.
-5. Prefer concise explanations over verbose ones — see [Response Style](#response-style)
-6. Use conventional commits (feat:, fix:, docs:, refactor:, etc.)
-7. Prefer small, incremental changes over large rewrites
+1. Do not make assumptions. If something is not clear, tell me. Tell me about the tradeoffs.
+2. Write the minimum code that solves the problem. Do not add code for possible future needs.
+3. Change only the items that are necessary. Clean up only the problems that you cause.
+4. Define the success criteria. Continue the work until you verify these criteria.
+5. Keep explanations short. Refer to [Response Style](#response-style).
+6. Use conventional commits (feat:, fix:, docs:, refactor:, etc.).
+7. Make small, incremental changes. Do not do large rewrites.
 
 ## Response Style
 
-Write like a colleague giving a quick verbal update: warm, plain, conversational. Brevity
-is the point, not formality — don't strip the tone out to save words.
+Write like a colleague who gives a quick spoken update. Be warm, plain, and
+conversational. The objective is a short message, not a formal message. Do not remove the
+tone to use fewer words.
 
-**Answer, then stop.** Lead with the result. Once the question is answered, end the
-message. Resist the pull to keep going.
+**Give the answer, then stop.** Put the result first. When you have answered the
+question, end the message. Do not continue.
 
-Do not:
+Obey these rules:
 
-- Append a "caveats", "notes", or "things you should know" section by reflex. A detail
-  earns a mention only if it changes what I do next. Everything else is noise — drop it,
-  or wait for me to ask.
-- Narrate process. No backup filenames, no "I checked X and it was fine", no recap of
-  what went wrong mid-task, no list of what you ruled out.
-- Volunteer adjacent findings you weren't asked about. If one is genuinely serious, one
-  sentence; otherwise hold it.
-- Restate the request back to me, or summarize what you just said.
-- Pad with headers, tables, or bullets when two sentences would do. Structure is for
-  genuinely structured content, not for making a short answer look thorough.
+- Do not add a "caveats", "notes", or "things you should know" section automatically.
+  Mention a detail only if it changes my next action. Remove all other details, or wait
+  until I ask for them.
+- Do not describe your process. Do not give backup filenames. Do not write "I checked X
+  and it was fine". Do not describe the problems that occurred during the task. Do not
+  list the causes that you eliminated.
+- Do not tell me about related findings that I did not ask about. If a finding is very
+  serious, write one sentence about it. If not, do not mention it.
+- Do not repeat my request to me. Do not summarize what you just said.
+- Do not add headers, tables, or bullets when two sentences are sufficient. Use structure
+  only for content that has a real structure. Do not use structure to make a short answer
+  look complete.
 
-Corrections: only when the error changes my decisions. One plain sentence, then move on —
-no post-mortem of how you got it wrong.
+Corrections: Correct an error only if the error changes my decisions. Write one plain
+sentence, then continue. Do not explain how the error occurred.
 
-Length should track the question. A yes/no question gets a yes or no. A status update
-gets a couple of sentences. Save real depth for when I ask for analysis, a review, or a
-design — and even then, lead with the conclusion.
+Make the length of the answer agree with the question. For a yes/no question, answer yes
+or no. For a status update, write two or three sentences. Give a detailed answer only when
+I ask for an analysis, a review, or a design. In these answers also, put the conclusion
+first.
 
 ## Persistent Memory
 
-- You have access to a Joplin MCP server. If it is available and working, try to use this for persistent memory in addition to your built-in mechanisms. You may read from any notebooks within the library, and write freely to the `Areas / Agents` and `Areas / <DAYBOOK_NOTEBOOK>` notebooks. You may write to other notebooks as well, but do so cautiously.
-- When the user refers to "drawer" or "desktop", they are referring to $HOME/Drawer or $HOME/Desktop, where there may be files relevant to a task for you to reference, such as screenshots.
-- For Joplin MCP server issues: The MCP server runs on the Mac host, NOT inside Docker containers. The .venv is shared between host and devcontainer via symlinked directories — running `uv sync` or `uv run` in one environment can break the other. Always check which environment you're in before modifying venv or config files. The config lives in both `.mcp.json` and `.claude.json` — check both for duplicates.
+- You can use a Joplin MCP server. If it is available and operates correctly, use it for persistent memory. Also use your built-in memory. You can read all notebooks in the library. You can write to the `Areas / Agents` and `Areas / <DAYBOOK_NOTEBOOK>` notebooks without limits. You can also write to other notebooks, but be careful.
+- When the user writes "drawer", it refers to `$HOME/Drawer`. When the user writes "desktop", it refers to `$HOME/Desktop`. These directories can contain files for a task, for example screenshots.
+- Joplin MCP server problems:
+  - The MCP server runs on the Mac host. It does NOT run in Docker containers.
+  - The host and the devcontainer share the `.venv` through symlinked directories. If you run `uv sync` or `uv run` in one environment, it can break the other environment.
+  - Before you change venv or config files, always identify your current environment.
+  - The configuration is in `.mcp.json` and in `.claude.json`. Look for duplicates in the two files.
 
 ## Workflow
 
-- When tackling complex tasks, use sub-agents to isolate concerns
-- Before making architectural changes, research the current state first
-- After code changes, verify with a testing sub-agent
+- For complex tasks, use subagents to keep concerns separate.
+- Before you make architectural changes, examine the current state.
+- After you change code, use a testing subagent to verify the change.
 
-Follow this general workflow for large tasks:
+Use this general workflow for large tasks:
 
 ```
 1. Plan First
@@ -68,123 +76,125 @@ Follow this general workflow for large tasks:
 
 ### 1. Plan Mode Default
 
-- Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)
-- If something goes sideways, STOP and re-plan immediately — don't keep pushing
-- Use plan mode for verification steps, not just building
-- Write detailed specs upfront to reduce ambiguity
+- Use plan mode for ALL non-trivial tasks (3 or more steps, or architectural decisions).
+- If a problem occurs, STOP immediately and make a new plan. Do not continue with the old plan.
+- Use plan mode for verification steps also, not only for build steps.
+- Write detailed specifications before you start. This makes the requirements clear.
 
 ### 2. Subagent Strategy
 
-- Use subagents liberally to keep main context window clean
-- Offload research, exploration, and parallel analysis to subagents
-- For complex problems, throw more compute at it via subagents
-- One task per subagent for focused execution
+- Use subagents frequently. This keeps the main context window clean.
+- Give research, exploration, and parallel analysis to subagents.
+- For complex problems, use more subagents to get more compute.
+- Give each subagent one task. This keeps the work focused.
 
 ### 3. Self-Improvement Loop
 
-- After ANY correction from the user, make a persistent note of the pattern. Update the Joplin note `Areas / Agents / LESSONS.md` or another note in that notebook if it makes sense, in addition to updating `tasks/LESSONS.md`. If the Joplin MCP server is not available, update only `tasks/LESSONS.md`
-- Write rules for yourself that prevent the same mistake
-- Ruthlessly iterate on these lessons until mistake rate drops
-- Review lessons at session start for relevant project
+- After EACH correction from the user, record the pattern in a persistent note. Update `tasks/LESSONS.md`. Also update the Joplin note `Areas / Agents / LESSONS.md`, or a different applicable note in that notebook. If the Joplin MCP server is not available, update only `tasks/LESSONS.md`.
+- Write rules for yourself that prevent the same mistake.
+- Improve these lessons continuously until the mistake rate decreases.
+- At the start of a session, read the lessons for the applicable project.
 
 ### 4. Verification Before Done
 
-- Never mark a task complete without proving it works
-- Diff behavior between main and your changes when relevant
-- Ask yourself: “Would a staff engineer approve this?”
-- Run tests, check logs, demonstrate correctness
+- Do not mark a task complete until you prove that it works.
+- When applicable, compare the behavior of main with the behavior of your changes.
+- Ask yourself: "Would a staff engineer approve this?"
+- Run the tests, examine the logs, and show that the result is correct.
 
 ### 5. Demand Elegance (Balanced)
 
-- For non-trivial changes: pause and ask "is there a more elegant way?"
-- If a fix feels hacky: "Knowing everything I know now, implement the elegant solution"
-- Skip this for simple, obvious fixes — don't over-engineer
-- Challenge your own work before presenting it
+- For non-trivial changes, stop and ask: "Is there a more elegant solution?"
+- If a fix seems like a hack, use this rule: "With all the data that I have now, implement the elegant solution."
+- Do not do this step for simple, clear fixes. Do not over-engineer.
+- Examine your work critically before you show it.
 
 ### 6. Autonomous Bug Fixing
 
-- When given a bug report: just fix it. Don't ask for hand-holding
-- Point at logs, errors, failing tests — then resolve them
-- Zero context switching required from the user
-- Go fix failing CI tests without being told how
+- When you get a bug report, fix the bug. Do not ask for help that is not necessary.
+- Find the logs, errors, and failing tests. Then fix the problems.
+- The user must not have to change context to help you.
+- If CI tests fail, fix them. Do not wait for instructions.
 
 ### 7. Daybook Logging
 
-After completing any non-trivial task, log a brief entry to a Joplin daybook note:
+After you complete a non-trivial task, write a short entry in a Joplin daybook note:
 
-1. Format today's note title as `DD Mon, YYYY` (e.g., `10 Apr, 2026`)
-2. Search Joplin for a note with that exact title in `Areas / <DAYBOOK_NOTEBOOK>`
-3. **If found**: get the note's current body, append the new entry, then update with the combined body
-4. **If not found**: create a new note with that title in `Areas / <DAYBOOK_NOTEBOOK>`
-5. **Never overwrite** existing content — always read the full body first, then append
+1. Use the format `DD Mon, YYYY` for the title of today's note (for example, `10 Apr, 2026`).
+2. In `Areas / <DAYBOOK_NOTEBOOK>`, search Joplin for a note that has that exact title.
+3. **If you find the note**: Get its current body. Add the new entry at the end. Then update the note with the combined body.
+4. **If you do not find the note**: Create a new note with that title in `Areas / <DAYBOOK_NOTEBOOK>`.
+5. **Do not overwrite** the existing content. Always read the full body first. Then add the entry at the end.
 
 Entry format: `- HH:MM — <one-sentence summary of what was done>`
 
-**Screenshots**: When a screenshot would add value (UI changes, visual diffs, error states, before/after comparisons), capture one using `screencapture` and save it to `~/Drawer/daybook/` with a descriptive filename (e.g., `2026-04-10_fix-login-dialog.png`). Link it in the entry as `[screenshot](file:///$HOME/Drawer/daybook/<filename>)`. Only include screenshots when they genuinely help — don't screenshot terminal output or code diffs that are already described in text. Ensure `~/Drawer/daybook/` exists before saving (create it if needed).
+**Screenshots**: Capture a screenshot only when it gives useful data, for example UI changes, visual differences, error states, or before/after comparisons. Use `screencapture`. Before you save, make sure that `~/Drawer/daybook/` exists. If it does not exist, create it. Save the file in `~/Drawer/daybook/` with a descriptive filename (for example, `2026-04-10_fix-login-dialog.png`). Put a link to the file in the entry: `[screenshot](file:///$HOME/Drawer/daybook/<filename>)`. Do not capture terminal output or code diffs that the text already describes.
 
 ## Skills
 
-Skills in `~/.claude/skills/<name>/SKILL.md` are auto-discovered and invokable via `/<name>`.
+Claude Code finds the skills in `~/.claude/skills/<name>/SKILL.md` automatically. To start a skill, use `/<name>`.
 
 Available skills:
-- `fetch-jira-tickets` — fetch assigned Jira tickets, sprint work
-- `slack` — read/send Slack messages, DMs, search (use form data, not JSON!)
-- `playwright-screenshot-to-joplin` — capture screenshots and save to Joplin
-- `sync-prs-to-branch` — sync PRs to a branch
-- `trello-daybook-sync` — bidirectional sync: Trello Today list <-> Joplin daybook To Do section
-- `jupyter-notebook` — create Jupyter notebooks from templates, promote SQL/analysis to notebooks ("notebook this", "notebook for ESP-456")
-- `diagram` — draw a mermaid diagram: causal chain, state machine, mindmap, pipeline, deployment, data model ("draw that", "diagram this")
+- `fetch-jira-tickets` — Gets the Jira tickets that are assigned to me and the sprint work.
+- `slack` — Reads and sends Slack messages and DMs. Searches Slack. Use form data, not JSON!
+- `playwright-screenshot-to-joplin` — Captures screenshots and saves them to Joplin.
+- `sync-prs-to-branch` — Syncs PRs to a branch.
+- `trello-daybook-sync` — Syncs in two directions between the Trello Today list and the To Do section of the Joplin daybook.
+- `jupyter-notebook` — Creates Jupyter notebooks from templates. Moves SQL and analysis work into notebooks ("notebook this", "notebook for ESP-456").
+- `diagram` — Draws a mermaid diagram: causal chain, state machine, mindmap, pipeline, deployment, or data model ("draw that", "diagram this").
 
-Never print mermaid source in a response — it reads worse than the prose it
-illustrates. Use the `diagram` skill, which spools it for ⌘⌃V instead. Reach for
-it when an explanation has three or more actors with an ordering or state
-dependency between them; not for lists or two-actor calls.
+Do not print mermaid source in a response. Mermaid source is more difficult to read than
+the prose that it shows. Use the `diagram` skill. This skill spools the diagram, and I can
+see it with ⌘⌃V. Use the skill when an explanation has three or more actors, and the
+sequence or state of one actor depends on a different actor. Do not use it for lists or
+for calls between two actors.
 
 Key skills (always in context):
 @~/.claude/skills/fetch-jira-tickets/SKILL.md
 @~/.claude/skills/slack/SKILL.md
 @~/.claude/skills/jupyter-notebook/SKILL.md
 
-<!-- Platform/machine-local instructions. Only staged on hosts that provide them
-     (macOS layer / e.g. macm4); silently ignored where the file is absent. -->
+<!-- Platform-specific and machine-specific instructions. The build stages these files
+     only on hosts that supply them (the macOS layer, or a host such as macm4). If a file
+     is not there, Claude Code ignores it and does not show an error. -->
 @~/.claude/CLAUDE.macosx.md
 @~/.claude/CLAUDE.macm4.md
 
 ## Agents
 
-- `documentation-agent` — documentation tasks (docstrings, READMEs, API docs)
-- `test-development-agent` — test writing (unit, integration, E2E)
-- `code-review-agent` — code review (correctness, security, performance, style)
-- `architecture-agent` — system design, refactoring strategy, dependency analysis
-- `atlassian-agent` — Jira and Confluence (tickets, sprints, wiki pages)
+- `documentation-agent` — Documentation tasks (docstrings, READMEs, API docs).
+- `test-development-agent` — Test writing (unit, integration, E2E).
+- `code-review-agent` — Code review (correctness, security, performance, style).
+- `architecture-agent` — System design, refactoring strategy, dependency analysis.
+- `atlassian-agent` — Jira and Confluence (tickets, sprints, wiki pages).
 
 ## Coding Standards
 
-- Python: follow PEP 8, use type hints, write docstrings for public functions
-- Shell scripts: indent with 2 tabs per level
-- Use virtual environments for Python projects
-- Handle errors explicitly — no bare `except:` clauses
-- Log meaningful messages at appropriate levels
-- Reference Jira ticket numbers (e.g., `AI-123`) in code comments when the change is non-trivial and traces back to a ticket — this aids traceability during code review and future debugging
-- Simplicity First
-- No Laziness
-- Minimal Impact
+- Python: Obey PEP 8. Use type hints. Write docstrings for public functions.
+- Shell scripts: Indent each level with 2 tabs.
+- Use virtual environments for Python projects.
+- Handle errors explicitly. Do not use bare `except:` clauses.
+- Log useful messages at the correct levels.
+- If a non-trivial change comes from a Jira ticket, put the ticket number (for example, `AI-123`) in a code comment. This helps traceability during code review and future debugging.
+- Keep the solution simple.
+- Do the full work. Do not take shortcuts.
+- Change as little as possible.
 
 ## Secrets & Tokens
 
 - Bitbucket API token: `~/.config/.env.BITBUCKET_API_TOKEN`
-  - This file contains the raw token value (no `export` prefix)
-- Slack tokens (see `slack` skill for usage):
-  - `~/.config/.env.SLACK_WEBHOOK_URL` — webhook for simple posting
-  - `~/.config/.env.SLACK_BOT_TOKEN` — bot token (`xoxb-...`)
-  - `~/.config/.env.SLACK_USER_TOKEN` — user token (`xoxp-...`) for broader access
+  - This file contains only the token value. It does not have an `export` prefix.
+- Slack tokens (refer to the `slack` skill for usage):
+  - `~/.config/.env.SLACK_WEBHOOK_URL` — Webhook for simple posts.
+  - `~/.config/.env.SLACK_BOT_TOKEN` — Bot token (`xoxb-...`).
+  - `~/.config/.env.SLACK_USER_TOKEN` — User token (`xoxp-...`). It gives more access.
 
 ## Bitbucket API
 
-- **Auth method**: HTTP Basic — `email:token` (read token from `~/.config/.env.BITBUCKET_API_TOKEN`)
-- **Token type**: Atlassian API token with scopes (not an App Password — those are deprecated)
-- **Auth setup**: `TOKEN=$(cat ~/.config/.env.BITBUCKET_API_TOKEN)` then use `-u "{email}:$TOKEN"` with curl
-- **Important**: Always pass `-L` to curl (the API returns 302 redirects on some endpoints)
+- **Authentication method**: HTTP Basic with `email:token`. Read the token from `~/.config/.env.BITBUCKET_API_TOKEN`.
+- **Token type**: An Atlassian API token with scopes. Do not use an App Password. App Passwords are deprecated.
+- **Authentication setup**: Run `TOKEN=$(cat ~/.config/.env.BITBUCKET_API_TOKEN)`. Then use `-u "{email}:$TOKEN"` with curl.
+- **Important**: Always use `-L` with curl. Some endpoints send 302 redirects.
 
 ### Common Bitbucket API Endpoints
 
@@ -192,36 +202,36 @@ Key skills (always in context):
 - **List repos**: `GET /repositories/{organization}?pagelen=100`
 - **Open PRs for a repo**: `GET /repositories/{organization}/{repo}/pullrequests?state=OPEN`
 - **PR details**: `GET /repositories/{organization}/{repo}/pullrequests/{id}`
-- **PR diffstat** (files changed): `GET /repositories/{organization}/{repo}/pullrequests/{id}/diffstat`
+- **PR diffstat** (changed files): `GET /repositories/{organization}/{repo}/pullrequests/{id}/diffstat`
 - **PR diff** (raw diff): `GET /repositories/{organization}/{repo}/pullrequests/{id}/diff`
 - **PR comments**: `GET /repositories/{organization}/{repo}/pullrequests/{id}/comments`
 - **PR commits**: `GET /repositories/{organization}/{repo}/pullrequests/{id}/commits`
 
 ### Parsing Bitbucket PR URLs
 
-Given a URL like `https://bitbucket.org/{organization}/{repo}/pull-requests/{id}`, extract:
+Get these values from a URL such as `https://bitbucket.org/{organization}/{repo}/pull-requests/{id}`:
 
 - `repo` = the repo slug
 - `id` = the PR number
-  Then use the API endpoints above (note: API uses `pullrequests`, URLs use `pull-requests`)
+  Then use the API endpoints above. Note: the API uses `pullrequests`, and the URLs use `pull-requests`.
 
 ## Browser Automation
 
-When browser automation is needed (E2E testing, visual verification, web scraping):
+Use these rules when you must automate a browser (E2E tests, visual verification, web scraping):
 
-- **Prefer Chrome DevTools MCP** (`mcp__chrome-devtools__*`) over Playwright MCP (`mcp__playwright__*`)
-  - Chrome DevTools MCP connects to the user's real Chrome browser — no instrumented/slow dev browser
-  - Much faster: real Chrome loads pages at normal speed, Playwright's instrumented browser is 100-200x slower
-  - AskL7 and other ESP bundles load reliably in real Chrome (they often fail to load in Playwright's fresh browser instance)
-  - Use `evaluate_script` for DOM interactions, `take_snapshot` for accessibility tree, `take_screenshot` for visual verification
-- **Playwright MCP** is acceptable as a fallback if Chrome DevTools MCP is unavailable
-- **For long-running test sequences**, batch multiple actions into a single `evaluate_script` call to avoid CDP protocol timeouts
-- **Screen recording**: Use `ffmpeg -f avfoundation -capture_cursor 1 -i "1:none"` on macOS (requires Screen Recording permission for the terminal app in System Settings > Privacy & Security)
-- **Launching Chrome with CDP**: Quit Chrome completely first, then: `/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222`
+- **Use Chrome DevTools MCP** (`mcp__chrome-devtools__*`), not Playwright MCP (`mcp__playwright__*`).
+  - Chrome DevTools MCP connects to the real Chrome browser of the user. It does not use a slow, instrumented development browser.
+  - It is much faster. Real Chrome loads pages at normal speed. The instrumented browser of Playwright is 100-200 times slower.
+  - AskL7 and other ESP bundles load reliably in real Chrome. They frequently do not load in the new browser instance that Playwright starts.
+  - Use `evaluate_script` for DOM interactions, `take_snapshot` for the accessibility tree, and `take_screenshot` for visual verification.
+- **Playwright MCP**: Use it only if Chrome DevTools MCP is not available.
+- **Long test sequences**: Put many actions into one `evaluate_script` call. This prevents CDP protocol timeouts.
+- **Screen recording**: On macOS, use `ffmpeg -f avfoundation -capture_cursor 1 -i "1:none"`. The terminal app must have Screen Recording permission (System Settings > Privacy & Security).
+- **Start Chrome with CDP**: First, quit Chrome fully. Then run: `/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222`
 
 ## Git Workflow
 
-- Branch naming: `feature/`, `fix/`, `docs/`, `refactor/` prefixes
-- Keep commits atomic and focused
-- Write descriptive commit messages explaining _why_, not just _what_
-- After pushing to a branch with an open PR, check if the PR description accurately reflects the changes
+- Branch names: Use the `feature/`, `fix/`, `docs/`, or `refactor/` prefix.
+- Keep each commit atomic and focused on one change.
+- Write descriptive commit messages. Explain _why_ you made the change, not only _what_ you changed.
+- After you push to a branch that has an open PR, make sure that the PR description agrees with the changes.
