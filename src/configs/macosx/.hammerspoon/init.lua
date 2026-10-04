@@ -363,26 +363,28 @@ end
 -- fixed title marker, so use the real process PID as a reliable toggle fallback.
 local function findAlacrittyAppByMarker(marker)
   if not string.match(marker, "^[%w_-]+$") then return nil end
-  local pattern = "^/Applications/Alacritty.app/Contents/MacOS/alacritty --title "
-    .. marker .. " "
-  local output, ok = hs.execute("/usr/bin/pgrep -f " .. string.format("%q", pattern))
+  local output, ok = hs.execute("/bin/ps ax -o pid=,command=")
   if not ok then return nil end
-  local pid = tonumber(string.match(output or "", "%d+"))
-  return pid and hs.application.get(pid) or nil
+  local mainCommand = "/Applications/Alacritty.app/Contents/MacOS/alacritty --title "
+    .. marker .. " "
+  local clonePrefix = os.getenv("HOME") .. "/Applications/[Scratchpad] "
+  local cloneNeedle = ".app/Contents/MacOS/alacritty --title " .. marker .. " "
+  for line in string.gmatch(output or "", "[^\n]+") do
+    local pid, command = string.match(line, "^%s*(%d+)%s+(.+)$")
+    local isMain = command and string.sub(command, 1, #mainCommand) == mainCommand
+    local isClone = command and string.sub(command, 1, #clonePrefix) == clonePrefix
+      and string.find(command, cloneNeedle, #clonePrefix + 1, true)
+    if isMain or isClone then
+      return hs.application.get(tonumber(pid))
+    end
+  end
+  return nil
 end
 
--- Open a detached Alacritty window titled `marker` running `command` in a login
--- shell. We launch via `open`, NOT a bare `alacritty &`: a backgrounded child of
--- hs.execute's helper shell gets SIGHUP'd and dies the moment that shell exits,
--- whereas `open` hands the process to LaunchServices so it survives. `-n` forces
--- a fresh instance (Alacritty's `msg` IPC is unreliable on macOS — BrokenPipe),
--- and findAlacrittyWindowByTitle searches every instance so the window is still
--- discoverable. dynamic_title is pinned off so the running program (tmux, ranger,
--- bc) can't rename our marker. (command must not contain a single quote — none do.)
--- Resolve a per-scratchpad wrapper .app (built by `make install`). The bundle is named
+-- Resolve a per-scratchpad Alacritty clone (built by `make install`). The bundle is named
 -- "[Scratchpad] <displayName>.app" (see install.sh update_scratchpad_apps) and that
--- filename is what macOS shows in the Dock for these exec wrappers. The launcher
--- currently ignores this value because wrapper windows are not AX-discoverable.
+-- filename is what macOS shows in the Dock. Returns nil when it is not installed,
+-- causing the launcher to fall back to the main Alacritty application.
 local function scratchApp(displayName)
   local path = os.getenv("HOME") .. "/Applications/[Scratchpad] " .. displayName .. ".app"
   if hs.fs.attributes(path, "mode") == "directory" then
@@ -391,10 +393,10 @@ local function scratchApp(displayName)
   return nil
 end
 
--- Launch a detached Alacritty window. The custom wrapper path is intentionally
--- ignored for now: a wrapper that execs Alacritty gets a Dock icon, but macOS does
--- not expose its window through Accessibility. Hammerspoon then cannot find or
--- toggle it. Launching the real Alacritty bundle preserves a usable PID/window.
+-- Launch a detached Alacritty window through its custom clone when available,
+-- giving each scratchpad its own Dock/Cmd-Tab icon. Clone-launched windows are
+-- not always exposed through Accessibility, so toggleTermScratchpad falls back to
+-- finding the underlying Alacritty process by its fixed title marker.
 -- We launch via `open`, NOT a bare `alacritty &`: a backgrounded child of
 -- hs.execute's helper shell gets SIGHUP'd and dies the moment that shell exits,
 -- whereas `open` hands the process to LaunchServices so it survives. `-n` forces
@@ -410,8 +412,8 @@ end
 local alacrittyLaunchTasks = {}
 local alacrittyLaunchPending = {}
 
-local function launchAlacritty(marker, command, _appBundle, extraOpts)
-  local app = "/Applications/Alacritty.app"
+local function launchAlacritty(marker, command, appBundle, extraOpts)
+  local app = appBundle or "/Applications/Alacritty.app"
   local args = {
     "-na", app, "--args",
     "--title", marker,
