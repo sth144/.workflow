@@ -342,13 +342,12 @@ local function positionWindow(win, config)
   win:setFrame({ x = x, y = y, w = w, h = h })
 end
 
--- Search EVERY running Alacritty instance, not just one. On macOS a bare
--- `alacritty ...` launch spawns a *separate* app instance (its own PID/Dock
--- entry), and `msg create-window` is unreliable here (BrokenPipe), so scratchpad
--- windows can end up under any of several instances. hs.application.get() only
--- returns one of them, so we must iterate applicationsForBundleID to find ours.
+-- Search every running application for the scratchpad's title marker. Plain
+-- launches register as org.alacritty, but the per-scratchpad wrapper apps use
+-- their own com.appwrap.* bundle IDs. Restricting this lookup to org.alacritty
+-- makes wrapped windows invisible and causes every toggle to launch a duplicate.
 local function findAlacrittyWindowByTitle(marker)
-  for _, app in ipairs(hs.application.applicationsForBundleID("org.alacritty")) do
+  for _, app in ipairs(hs.application.runningApplications()) do
     for _, win in ipairs(app:allWindows()) do
       local title = win:title()
       if title and string.find(title, marker, 1, true) then
@@ -359,6 +358,19 @@ local function findAlacrittyWindowByTitle(marker)
   return nil
 end
 
+-- Alacritty sometimes registers with LaunchServices but exposes no AX windows,
+-- especially when started from Hammerspoon. Its command line still contains the
+-- fixed title marker, so use the real process PID as a reliable toggle fallback.
+local function findAlacrittyAppByMarker(marker)
+  if not string.match(marker, "^[%w_-]+$") then return nil end
+  local pattern = "^/Applications/Alacritty.app/Contents/MacOS/alacritty --title "
+    .. marker .. " "
+  local output, ok = hs.execute("/usr/bin/pgrep -f " .. string.format("%q", pattern))
+  if not ok then return nil end
+  local pid = tonumber(string.match(output or "", "%d+"))
+  return pid and hs.application.get(pid) or nil
+end
+
 -- Open a detached Alacritty window titled `marker` running `command` in a login
 -- shell. We launch via `open`, NOT a bare `alacritty &`: a backgrounded child of
 -- hs.execute's helper shell gets SIGHUP'd and dies the moment that shell exits,
@@ -367,11 +379,10 @@ end
 -- and findAlacrittyWindowByTitle searches every instance so the window is still
 -- discoverable. dynamic_title is pinned off so the running program (tmux, ranger,
 -- bc) can't rename our marker. (command must not contain a single quote — none do.)
--- Resolve a per-scratchpad wrapper .app (built by `make install`) that gives the
--- window its own Dock/Cmd-Tab icon AND label. The bundle is named
+-- Resolve a per-scratchpad wrapper .app (built by `make install`). The bundle is named
 -- "[Scratchpad] <displayName>.app" (see install.sh update_scratchpad_apps) and that
--- filename is what macOS shows in the Dock for these exec wrappers. Returns the path
--- only if it exists, so callers fall back to plain Alacritty when icons aren't installed.
+-- filename is what macOS shows in the Dock for these exec wrappers. The launcher
+-- currently ignores this value because wrapper windows are not AX-discoverable.
 local function scratchApp(displayName)
   local path = os.getenv("HOME") .. "/Applications/[Scratchpad] " .. displayName .. ".app"
   if hs.fs.attributes(path, "mode") == "directory" then
@@ -380,10 +391,10 @@ local function scratchApp(displayName)
   return nil
 end
 
--- Launch a detached Alacritty window. If `appBundle` is a custom wrapper .app it is
--- used (so the window carries that wrapper's Dock icon); otherwise we fall back to
--- plain Alacritty. Either way the wrapper just exec's Alacritty, so the window stays
--- org.alacritty and findAlacrittyWindowByTitle can still see it.
+-- Launch a detached Alacritty window. The custom wrapper path is intentionally
+-- ignored for now: a wrapper that execs Alacritty gets a Dock icon, but macOS does
+-- not expose its window through Accessibility. Hammerspoon then cannot find or
+-- toggle it. Launching the real Alacritty bundle preserves a usable PID/window.
 -- We launch via `open`, NOT a bare `alacritty &`: a backgrounded child of
 -- hs.execute's helper shell gets SIGHUP'd and dies the moment that shell exits,
 -- whereas `open` hands the process to LaunchServices so it survives. `-n` forces
@@ -392,22 +403,37 @@ end
 -- discoverable. dynamic_title is pinned off so the running program (tmux, ranger,
 -- bc) can't rename our marker. (command must not contain a single quote — none do.)
 --
--- Deliberately NOT hs.execute(…, true): that variant re-wraps the whole line in
--- double quotes, so the outer shell expands any $VAR and unpicks any backslash in
--- `command` before Alacritty ever sees it — which silently mangled Codex's
--- `$skill` prompt. The plain form is a single `sh -c` layer, and `bash -lc` inside
--- Alacritty already supplies the login environment, so nothing is lost.
-local function launchAlacritty(marker, command, appBundle, extraOpts)
-  local app = appBundle or "/Applications/Alacritty.app"
-  local opts = (extraOpts and extraOpts ~= "") and (" " .. extraOpts) or ""
-  local shellCmd = string.format(
-    "/usr/bin/open -na '%s' --args "
-      .. "--title '%s' -o window.dynamic_title=false%s -e bash -lc '%s'",
-    app, marker, opts, command)
-  -- Surface a failed `open` instead of leaving the hotkey looking dead: without
-  -- this a missing/unregistered wrapper .app just silently produces no window.
-  local _, ok = hs.execute(shellCmd)
-  if not ok then
+-- Use hs.task instead of hs.execute. Alacritty instances launched by hs.execute
+-- appear in LaunchServices but have PID -1 and no Accessibility windows, making
+-- them impossible to toggle. Passing an argv array also preserves commands such
+-- as Codex's `$skill` prompt without another shell expanding them.
+local alacrittyLaunchTasks = {}
+local alacrittyLaunchPending = {}
+
+local function launchAlacritty(marker, command, _appBundle, extraOpts)
+  local app = "/Applications/Alacritty.app"
+  local args = {
+    "-na", app, "--args",
+    "--title", marker,
+    "-o", "window.dynamic_title=false",
+  }
+  for _, arg in ipairs(extraOpts or {}) do table.insert(args, arg) end
+  for _, arg in ipairs({ "-e", "bash", "-lc", command }) do table.insert(args, arg) end
+
+  local task
+  task = hs.task.new("/usr/bin/open", function(exitCode, _, stderr)
+    alacrittyLaunchTasks[marker] = nil
+    if exitCode ~= 0 then
+      alacrittyLaunchPending[marker] = nil
+      hs.alert.show("Could not launch " .. marker)
+      hs.printf("open failed for %s: %s", marker, stderr or "")
+    end
+  end, args)
+  alacrittyLaunchTasks[marker] = task
+  alacrittyLaunchPending[marker] = true
+  if not task:start() then
+    alacrittyLaunchTasks[marker] = nil
+    alacrittyLaunchPending[marker] = nil
     hs.alert.show("Could not launch " .. marker)
   end
 end
@@ -421,11 +447,14 @@ local function positionWhenReady(marker, config, attempts)
   attempts = attempts or 20
   local win = findAlacrittyWindowByTitle(marker)
   if win then
+    alacrittyLaunchPending[marker] = nil
     positionWindow(win, config)
   elseif attempts > 0 then
     hs.timer.doAfter(0.25, function()
       positionWhenReady(marker, config, attempts - 1)
     end)
+  else
+    alacrittyLaunchPending[marker] = nil
   end
 end
 
@@ -446,7 +475,20 @@ local function toggleTermScratchpad(marker, command, config, appBundle, extraOpt
       scratchWin:focus()
     end
   else
-    -- No window found - create one (in its custom-icon wrapper if available)
+    -- A real process with no AX window is still toggleable by application PID.
+    local scratchAppProcess = findAlacrittyAppByMarker(marker)
+    if scratchAppProcess then
+      if scratchAppProcess:isFrontmost() then
+        scratchAppProcess:hide()
+      else
+        scratchAppProcess:unhide()
+        scratchAppProcess:activate(true)
+      end
+      return
+    end
+
+    -- No window found - create one, unless an earlier launch is still settling.
+    if alacrittyLaunchPending[marker] then return end
     launchAlacritty(marker, command, appBundle, extraOpts)
     -- Poll until the window actually appears, then pin it to its anchor.
     positionWhenReady(marker, config)
@@ -454,7 +496,7 @@ local function toggleTermScratchpad(marker, command, config, appBundle, extraOpt
 end
 
 local function toggleTerminal()
-  -- Plain interactive login shell in the "[Scratchpad] Terminal" wrapper.
+  -- Plain interactive login shell.
   toggleTermScratchpad("HS-TERMINAL", 'exec "$SHELL"', scratchpads.terminal, scratchApp("Terminal"))
 end
 
@@ -469,6 +511,10 @@ end
 local function toggleClaudeForks()
   toggleTermScratchpad("HS-FORKS", "tmux new-session -A -s claude-forks", scratchpads.forks, scratchApp("Forks"))
 end
+
+-- Keep the exact hotkey callback callable from `hs -c` for end-to-end diagnosis.
+-- This avoids testing a lookalike launch path that may behave differently.
+_G.workflowToggleForks = toggleClaudeForks
 
 -- Tutor scratchpads (CAD Tutor, Screen Tutor) are pinnable terminals meant to sit
 -- beside the app you're working in. Cmd+Ctrl+Shift+<their key> cycles the layout:
@@ -586,7 +632,7 @@ end
 local function toggleScreenTutor()
   applyTutorAnchor("screentutor")
   toggleTermScratchpad("HS-SCREENTUTOR", tutorCommand("screentutor"),
-    scratchpads.screentutor, scratchApp("Screen Tutor"), "-o window.opacity=0.82")
+    scratchpads.screentutor, scratchApp("Screen Tutor"), { "-o", "window.opacity=0.82" })
 end
 
 -- Re-position the anchored scratchpads that are currently open so a gap change made
