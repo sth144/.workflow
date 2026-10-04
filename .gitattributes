@@ -1,0 +1,4 @@
+# git-crypt: every <layer>-vault directory under src/ is encrypted at rest.
+# .keep placeholders stay plaintext so locked checkouts keep the layout.
+src/*/*-vault/** filter=git-crypt diff=git-crypt
+src/*/*-vault/**/.keep !filter !diff
