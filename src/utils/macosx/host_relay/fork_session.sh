@@ -184,11 +184,23 @@ LAUNCHER_TAG="${SESSION:-handoff}"
 # --------------------------------------------------------------------------
 if ! $IN_CONTAINER; then
 	if tmux has-session -t "$FORKS_SESSION" 2>/dev/null; then
-		# Session exists — add a pane directly (no new Alacritty window).
+		# Session exists — join as a pane in the active window so all forks
+		# are visible together. Use split-window on the FORKS window (not
+		# some pre-existing unrelated window) and re-tile for even sizing.
 		tmux split-window -t "$FORKS_SESSION" \
 			bash -lc "$INNER_BODY" _ "${INNER_ARGS[@]}"
 		tmux select-layout -t "$FORKS_SESSION" tiled
-		echo "Added $MODE worker as new pane in '$FORKS_SESSION'."
+
+		# If no terminal is showing the session, open one. This happens when
+		# a prior Alacritty window was closed (tmux detaches but keeps the
+		# session alive).
+		if ! tmux list-clients -t "$FORKS_SESSION" 2>/dev/null | grep -q .; then
+			bash -lc "$(build_term_cmd \
+				"bash -lc 'tmux attach -t $FORKS_SESSION'" \
+				"$FORKS_MARKER" "$ALACRITTY")"
+		fi
+
+		echo "Added $MODE worker as pane in '$FORKS_SESSION'."
 		echo "Toggle: Cmd+Ctrl+F | Reattach: tmux attach -t $FORKS_SESSION"
 		exit 0
 	fi
@@ -232,11 +244,14 @@ cat > "$LAUNCHER" <<-LAUNCHER_EOF
 #!/usr/bin/env bash
 export PATH="$DOCKER_PATHS:\$PATH"
 if tmux has-session -t $FORKS_SESSION 2>/dev/null; then
-  echo "Adding pane to $FORKS_SESSION ..."
   tmux split-window -t $FORKS_SESSION \
     docker exec -it -u $ESC_USER $ESC_CONTAINER bash -lc \
     $ESC_INNER _$ESC_ARGS
   tmux select-layout -t $FORKS_SESSION tiled
+  # Re-attach if no client is showing the session
+  if ! tmux list-clients -t $FORKS_SESSION 2>/dev/null | grep -q .; then
+    $(build_term_cmd "bash -lc 'tmux attach -t $FORKS_SESSION'" "$FORKS_MARKER")
+  fi
 else
   tmux new-session -s $FORKS_SESSION \
     docker exec -it -u $ESC_USER $ESC_CONTAINER bash -lc \
