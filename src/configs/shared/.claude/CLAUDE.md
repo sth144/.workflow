@@ -28,7 +28,11 @@ Obey these rules:
 
 - Do not add a "caveats", "notes", or "things you should know" section automatically.
   Mention a detail only if it changes my next action. Remove all other details, or wait
-  until I ask for them.
+  until I ask for them. This rule covers a closing paragraph also, not only a paragraph
+  with a header. An unlabeled "one thing to flag" or "one judgment call" at the end is the
+  same error. It hides the useful content above it.
+- If you deviate from my request, put one sentence at the top. Do not put a paragraph
+  about it at the bottom.
 - Do not describe your process. Do not give backup filenames. Do not write "I checked X
   and it was fine". Do not describe the problems that occurred during the task. Do not
   list the causes that you eliminated.
