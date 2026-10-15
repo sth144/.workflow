@@ -39,6 +39,19 @@ Obey these rules:
   only for content that has a real structure. Do not use structure to make a short answer
   look complete.
 
+### Simplified Technical English
+
+Write the sentences by the rules of ASD-STE100. This applies to the sentences, not to the
+tone. Stay warm and conversational.
+
+- One idea per sentence, 20 words or less. Active voice, present tense.
+- Start an instruction with the verb: "Run the tests".
+- Use the same word for the same thing each time. Do not use synonyms for variety.
+- Use short, common words. Keep technical terms, command names, and paths exact.
+- No idioms, metaphors, or slang. Refer to the list below. Add new items to that file.
+
+@~/.claude/WORDS-TO-AVOID.md
+
 Corrections: Correct an error only if the error changes my decisions. Write one plain
 sentence, then continue. Do not explain how the error occurred.
 
