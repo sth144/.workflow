@@ -11,6 +11,34 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 mkdir -p ~/.claude/routines/logs
 
+# Print the start banner before anything that can fail, so an empty log always
+# means "launchd never started us" and never "we died on line 2". Every later
+# failure path reports through fail() below.
+echo "=== Trello → Daybook Sync - $(date) ==="
+
+# Report any unplanned exit. Without this the script died silently for months:
+# launchd recorded exit 1, nothing reached the log, and no Slack post went out,
+# so a dead sync looked exactly like a quiet day with no cards.
+STAGE="startup"
+fail() {
+	local code=$1
+	echo "FAILED during ${STAGE} (exit ${code})" >&2
+	# slack.sh may not be loaded yet if we died early — post directly in that case.
+	local text="🚨 *Morning Sync FAILED* - $(date '+%a %b %d %H:%M')
+Stage: ${STAGE} (exit ${code})
+Host: $(hostname -s)
+Log: ~/.claude/routines/logs/trello-daybook-sync.log"
+	if declare -f slack_post >/dev/null 2>&1; then
+		slack_post "$text"
+	elif [ -f "$HOME/.config/.env.SLACK_WEBHOOK_URL" ]; then
+		curl -s -X POST -H 'Content-type: application/json' \
+			--data "{\"text\": $(printf '%s' "$text" | jq -Rs .)}" \
+			"$(cat "$HOME/.config/.env.SLACK_WEBHOOK_URL")" >/dev/null || true
+	fi
+	exit "$code"
+}
+trap 'fail $?' ERR
+
 # LaunchAgents have a minimal environment — load secrets and PATH.
 #
 # source_env_files.sh runs commands that legitimately return nonzero, and it has
@@ -19,13 +47,25 @@ mkdir -p ~/.claude/routines/logs
 # output — a trailing `|| true` does not help, because errexit fires inside the
 # sourced file rather than on the `source` builtin itself. Drop errexit/nounset
 # across the call only.
+STAGE="load env files"
 set +eu
 source /usr/local/bin/os/source_env_files.sh 2>/dev/null
 set -eu
 export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 
 # Load Slack helper
+STAGE="load slack helper"
 source "$SCRIPT_DIR/lib/slack.sh"
+
+# The secrets are the whole point of sourcing the env files — check them here
+# rather than letting sync.py fail deeper in with a less obvious message.
+STAGE="check credentials"
+for var in TRELLO_API_KEY TRELLO_TOKEN JOPLIN_TOKEN; do
+	if [ -z "${!var:-}" ]; then
+		echo "missing $var (expected from ~/.config/.env.$var)" >&2
+		false
+	fi
+done
 
 PROMPT='You are my morning sync assistant. Sync my Trello "Today" list to my Joplin daybook.
 
@@ -72,34 +112,44 @@ if [ -n "$EXTRA_CONTEXT" ]; then
 $EXTRA_CONTEXT"
 fi
 
-echo "=== Trello → Daybook Sync - $(date) ==="
-
 # Prefer deterministic sync.py (it syncs BOTH directions, including
 # Joplin -> Trello) over the Claude fallback (which only pulls Trello -> Joplin).
 # The scheduled PATH resolves bare `python3` to interpreters without `requests`,
 # so explicitly pick one that has it — system python (/usr/bin/python3) ships with it.
+STAGE="find python with requests"
 SYNC_SCRIPT="$HOME/.claude/skills/trello-daybook-sync/sync.py"
 PY=""
 for cand in /usr/bin/python3 python3 python3.12 python3.11; do
-    if command -v "$cand" >/dev/null 2>&1 && "$cand" -c "import requests" 2>/dev/null; then
-        PY="$cand"
-        break
-    fi
+	if command -v "$cand" >/dev/null 2>&1 && "$cand" -c "import requests" 2>/dev/null; then
+		PY="$cand"
+		break
+	fi
 done
 
-if [ -f "$SYNC_SCRIPT" ] && [ -n "$PY" ]; then
-    OUTPUT=$("$PY" "$SYNC_SCRIPT" 2>&1)
-    echo "$OUTPUT"
-elif [ -f "$SYNC_SCRIPT" ] && command -v uv >/dev/null 2>&1; then
-    OUTPUT=$(uv run --with requests "$SYNC_SCRIPT" 2>&1)
-    echo "$OUTPUT"
+[ -f "$SYNC_SCRIPT" ] || { echo "sync.py not found at $SYNC_SCRIPT" >&2; false; }
+
+# A failing sync.py trips the ERR trap through the assignment, so every exit
+# path below is reported. The Claude fallback only pulls Trello -> Joplin, so
+# say so out loud rather than letting a half-sync look like a full one.
+HEADER="📋 *Morning Sync*"
+if [ -n "$PY" ]; then
+	STAGE="run sync.py ($PY)"
+	OUTPUT=$("$PY" "$SYNC_SCRIPT" 2>&1)
+elif command -v uv >/dev/null 2>&1; then
+	STAGE="run sync.py (uv)"
+	OUTPUT=$(uv run --with requests "$SYNC_SCRIPT" 2>&1)
 else
-    echo "sync.py unavailable (no interpreter with requests), falling back to Claude"
-    OUTPUT=$(echo "$PROMPT" | claude --print 2>&1)
-    echo "$OUTPUT"
+	STAGE="run Claude fallback"
+	HEADER="⚠️ *Morning Sync (DEGRADED — Trello → Joplin only)*"
+	echo "no interpreter with requests, falling back to Claude" >&2
+	OUTPUT=$(echo "$PROMPT" | claude --print 2>&1)
 fi
+echo "$OUTPUT"
 
 # Post to Slack
-slack_post "📋 *Morning Sync* - $(date '+%a %b %d')
+STAGE="post to slack"
+slack_post "$HEADER - $(date '+%a %b %d')
 
 $OUTPUT"
+
+echo "=== Done - $(date) ==="
