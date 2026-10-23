@@ -4,8 +4,14 @@ from __future__ import annotations
 """Bidirectional sync between Trello Today list and Joplin daybook.
 
 Phase 1  (Joplin -> Trello): Moves checked items to Done in Trello.
+Phase 1a (Joplin -> Trello): Punts ``- [>]`` items to Backlog with a due date.
 Phase 1b (Joplin -> Trello): Creates Today cards for manual unchecked items.
 Phase 2  (Trello -> Joplin): Pulls current Today cards into the daybook.
+
+Punting: mark a to-do ``- [>] Some task`` to push it out of the daybook and
+onto the Trello Backlog list with a due date PUNT_DAYS out. The line leaves
+the checklist entirely. An item that already carries a trello marker is moved
+rather than duplicated.
 
 Required env vars:
   TRELLO_API_KEY, TRELLO_TOKEN, JOPLIN_TOKEN
@@ -33,6 +39,10 @@ TRELLO_TOKEN = os.getenv("TRELLO_TOKEN", "").strip()
 DAYBOOK_NOTEBOOK_ID = "c8ed0dc13a1f4269a66fe7d0d53ea07e"
 TODAY_LIST_ID = "637bc2f8722fe72795105471"
 DONE_LIST_ID = "637bc2c4c1b37201db9e5b16"
+BACKLOG_LIST_ID = "637bc2c4c1b37201db9e5b15"
+
+# How far out a punted card is due, in days.
+PUNT_DAYS = int(os.getenv("PUNT_DAYS", "14"))
 
 TRELLO_MARKER_RE = re.compile(r"<!--\s*trello:(\w+)\s*-->")
 CHECKED_TRELLO_RE = re.compile(
@@ -42,6 +52,7 @@ UNCHECKED_TRELLO_RE = re.compile(
     r"^- \[ \]\s+(.+?)\s*<!--\s*trello:(\w+)\s*-->$"
 )
 MANUAL_UNCHECKED_RE = re.compile(r"^- \[ \]\s+(.+)$")
+PUNT_RE = re.compile(r"^- \[>\]\s+(.+)$")
 TODO_HEADING_RE = re.compile(r"^#{1,2}\s+To\s*Do")
 SECTION_HEADING_RE = re.compile(r"^#{1,2}\s+\S")
 
@@ -232,6 +243,67 @@ def phase1_push_completions(body: str) -> tuple[str, dict[str, Any]]:
             new_todo_lines.append(f"- [x] {card_name}")
         else:
             new_todo_lines.append(line)
+
+    updated_body = before + "\n# To Do ✅\n" + "\n".join(new_todo_lines) + "\n" + after
+    return updated_body, stats
+
+
+# -- Phase 1a: Punt items out of the daybook --
+
+
+def punt_due_date() -> str:
+    """Due timestamp for a punted card: end of the day PUNT_DAYS from now."""
+    target = dt.datetime.now() + dt.timedelta(days=PUNT_DAYS)
+    end_of_day = target.replace(hour=23, minute=59, second=0, microsecond=0)
+    return end_of_day.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
+def phase1a_punt_items(body: str) -> tuple[str, dict[str, Any]]:
+    """Move ``- [>]`` items to the Trello Backlog with a future due date.
+
+    An item that already carries a ``<!-- trello:CARD_ID -->`` marker is moved
+    to Backlog so the existing card keeps its history; one without a marker is
+    created there. Either way the line is dropped from the To Do section, since
+    the card on the board is now the only copy. A line whose Trello call fails
+    stays put so the next run retries it. Returns (updated_body, stats).
+    """
+    stats: dict[str, Any] = {"punted": 0, "due": None, "failed": []}
+
+    before, todo_lines, after = parse_todo_section(body)
+    if not todo_lines:
+        return body, stats
+
+    due = punt_due_date()
+    new_todo_lines: list[str] = []
+    for line in todo_lines:
+        m = PUNT_RE.match(line.strip())
+        if not m:
+            new_todo_lines.append(line)
+            continue
+
+        text = m.group(1).strip()
+        marker = TRELLO_MARKER_RE.search(text)
+        card_name = TRELLO_MARKER_RE.sub("", text).strip()
+
+        if marker:
+            ok = trello_put(
+                f"/cards/{marker.group(1)}", idList=BACKLOG_LIST_ID, due=due
+            )
+        else:
+            ok = bool(
+                trello_post(
+                    "/cards", idList=BACKLOG_LIST_ID, name=card_name, due=due
+                )
+            )
+
+        if ok:
+            stats["punted"] += 1
+        else:
+            new_todo_lines.append(line)
+            stats["failed"].append(card_name)
+
+    if stats["punted"]:
+        stats["due"] = due
 
     updated_body = before + "\n# To Do ✅\n" + "\n".join(new_todo_lines) + "\n" + after
     return updated_body, stats
@@ -445,7 +517,9 @@ def carry_forward_items() -> list[str]:
     carried: list[str] = []
     for line in todo_lines:
         stripped = line.strip()
-        if stripped.startswith("- [ ]"):
+        # Carry punts too: one marked after the morning sync has not reached
+        # Trello yet, and dropping it here would lose the item silently.
+        if stripped.startswith("- [ ]") or stripped.startswith("- [>]"):
             carried.append(stripped)
     return carried
 
@@ -474,6 +548,7 @@ def main() -> int:
     note = find_daybook_note(title)
 
     phase1_stats: dict[str, Any] = {"moved": 0, "failed": []}
+    phase1a_stats: dict[str, Any] = {"punted": 0, "due": None, "failed": []}
     phase1b_stats: dict[str, Any] = {"created": 0, "failed": []}
     created = False
 
@@ -501,6 +576,12 @@ def main() -> int:
         if phase1_stats["moved"] > 0:
             joplin_put(f"/notes/{note_id}", {"body": body})
 
+    # Phase 1a: punt marked items to Backlog. Runs before 1b so a punted item
+    # is never also created as a Today card.
+    body, phase1a_stats = phase1a_punt_items(body)
+    if phase1a_stats["punted"] > 0:
+        joplin_put(f"/notes/{note_id}", {"body": body})
+
     # Phase 1b: create Trello cards for manual unchecked items
     body, phase1b_stats = phase1b_push_new_items(body)
     if phase1b_stats["created"] > 0:
@@ -518,6 +599,7 @@ def main() -> int:
         "created": created,
         "phase0_prior_flush": flush_stats,
         "phase1": phase1_stats,
+        "phase1a_punted_to_backlog": phase1a_stats,
         "phase1b_new_to_trello": phase1b_stats,
         "phase2": phase2_stats,
     }
