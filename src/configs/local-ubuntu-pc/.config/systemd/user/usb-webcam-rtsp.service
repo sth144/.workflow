@@ -1,0 +1,16 @@
+[Unit]
+Description=USB webcam RTSP stream
+After=default.target
+
+[Service]
+Type=simple
+Environment=VIDEO_DEVICE=/dev/video0
+Environment=RTSP_PORT=8554
+Environment=RTSP_PATH=usbcam
+Environment=VIDEO_BITRATE=1200
+ExecStart=%h/bin/video/usb-webcam-rtsp.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
