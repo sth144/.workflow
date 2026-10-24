@@ -7,7 +7,12 @@ set -euo pipefail
 mkdir -p ~/.claude/routines/logs
 
 # LaunchAgents have a minimal environment — load secrets and PATH
-source /usr/local/bin/os/source_env_files.sh 2>/dev/null || true
+# Drop errexit across this call only: source_env_files.sh runs commands that
+# legitimately return nonzero, and macOS bash 3.2 fires errexit inside the
+# sourced file rather than on the `source` builtin, so `|| true` cannot catch it.
+set +eu
+source /usr/local/bin/os/source_env_files.sh 2>/dev/null
+set -eu
 export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 mkdir -p ~/Coding/Research/notebooks/sprints
 

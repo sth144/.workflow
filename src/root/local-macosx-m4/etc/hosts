@@ -25,6 +25,8 @@
 192.168.1.243 portainer
 192.168.1.243 prometheus
 192.168.1.243 homer
+192.168.1.243 trello-groomer
+192.168.1.243 trello-groomer.local
 192.168.1.245 grafana
 192.168.1.243 heimdall
 192.168.1.245 openmediavault

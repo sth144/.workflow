@@ -1,0 +1,4 @@
+interface:
+  display_name: "CAD Tutor"
+  short_description: "Interactive FreeCAD/Blender tutor: inspect the scene, screenshot the UI, highlight buttons"
+  default_prompt: "Use $cad-tutor to help me in my live CAD session — inspect the model via MCP, screenshot the app window, and highlight the relevant buttons when useful."

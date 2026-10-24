@@ -1,7 +1,16 @@
 {
   "alwaysThinkingEnabled": true,
+  "extraKnownMarketplaces": {
+    "typesafe-ai": {
+      "source": {
+        "source": "github",
+        "repo": "typesafe-ai/skills"
+      }
+    }
+  },
   "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true
+    "frontend-design@claude-plugins-official": true,
+    "typesafe@typesafe-ai": true
   },
   "hooks": {
     "Notification": [
@@ -68,6 +77,26 @@
           }
         ],
         "matcher": "*"
+      },
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/screen-tutor-consent.sh",
+            "timeout": 90,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/daybook-write-guard.sh",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "mcp__joplin__update_note"
       }
     ],
     "SessionEnd": [
@@ -85,6 +114,14 @@
         "hooks": [
           {
             "command": "$HOME/.claude/hooks/openisland-wrapper.sh --source claude",
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.claude/hooks/screen-tutor-consent.sh reset",
             "type": "command"
           }
         ]
@@ -172,5 +209,9 @@
     "command": "npx -y ccstatusline@latest",
     "padding": 0,
     "type": "command"
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
   }
 }

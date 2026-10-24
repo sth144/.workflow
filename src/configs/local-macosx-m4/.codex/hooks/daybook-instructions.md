@@ -29,4 +29,9 @@ Add under `# Worklog 📝`: `- HH:MM — <one-sentence summary>`
 Use the time from the hook message. Always read the full note body first, then append —
 never overwrite existing content.
 
+If the session produced a diagram that explains something worth keeping — a bug's
+causal chain, a design decision — embed the mermaid block in the entry, indented
+under it. Joplin renders mermaid in its markdown viewer. Read the source back with
+`/usr/local/bin/diagram/render_mermaid.py --print` rather than retyping it.
+
 Skip logging if the session was trivial (casual chat, read-only, no code/config changes).

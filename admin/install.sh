@@ -41,6 +41,28 @@ copy_utils_layer() {
 		"$1"/ "$BASE_ABS/stage/bin"/
 }
 
+# a vault layer is locked when its files still carry the git-crypt header
+vault_is_locked() {
+	local file
+	file=$(find "$BASE_ABS"/src/*/"$1" -type f ! -name .keep -print -quit 2>/dev/null)
+	[ -n "$file" ] && head -c 10 "$file" | LC_ALL=C grep -qa GITCRYPT
+}
+
+# echo each layer followed by its <layer>-vault sibling, if one exists and is unlocked
+expand_vault_layers() {
+	local layer vault
+	for layer in "$@"; do
+		echo "$layer"
+		vault="$layer-vault"
+		compgen -G "$BASE_ABS/src/*/$vault" >/dev/null || continue
+		if vault_is_locked "$vault"; then
+			echo "WARN: skipping $vault (locked; run git-crypt unlock)" >&2
+			continue
+		fi
+		echo "$vault"
+	done
+}
+
 replace_in_staged_text_files() {
 	local search="$1"
 	local replace="$2"
@@ -64,6 +86,14 @@ stage() {
 
 	EXTRA_INCLUDES=$(echo $BUILD_CONFIG | jq .include | jq -r '.[]')
 	USE_SHARED=$(echo $BUILD_CONFIG | jq .useShared)
+
+	# shared is copied before the include loops, so shared-vault leads the includes
+	if [ "$USE_SHARED" == "true" ]; then
+		EXTRA_INCLUDES=$(expand_vault_layers shared $EXTRA_INCLUDES | tail -n +2)
+	else
+		EXTRA_INCLUDES=$(expand_vault_layers $EXTRA_INCLUDES)
+	fi
+	echo "layers: $(echo $EXTRA_INCLUDES)"
 
 	if [ "$USE_SHARED" == "true" ]; then
 		copy_layer_contents "$BASE_ABS/src/configs/shared" "$BASE_ABS/stage"
@@ -274,23 +304,64 @@ update_launchagents() {
 	echo "LaunchAgents updated"
 }
 
-# Build per-scratchpad .app wrappers in ~/Applications so each Alacritty scratchpad
-# window gets its own Dock/Cmd-Tab icon. Each wrapper just exec's Alacritty, so the
-# windows stay org.alacritty (Hammerspoon's title-based discovery still works) while
-# showing the wrapper's icon. Every prerequisite is optional: if anything is missing
-# the step skips with a warning and the scratchpads fall back to plain Alacritty.
+# Install and load /Library/LaunchDaemons/com.workflow.* — the root-domain
+# counterpart to update_launchagents.
+#
+# This exists because there was previously no way to schedule anything as root:
+# update_root rsyncs the plists into place but nothing ever bootstrapped them, so
+# src/root/macosx/Library/LaunchDaemons/*.plist were dead files. The icon-cache
+# cleanup was worked around as a LaunchAgent + user crontab entry, neither of
+# which runs as root, so it silently no-op'd until the cache filled the disk.
+#
+# The plists are installed here rather than relying on update_root's rsync
+# because rsync -a preserves the repo's seanhinds:admin ownership, and launchd
+# refuses to load a daemon that is writable by anyone but root.
+update_launchdaemons() {
+	if [[ $(uname) != "Darwin" ]]; then
+		echo "Skipping LaunchDaemons (not macOS)"
+		return
+	fi
+
+	DAEMONS_SRC="$BASE_ABS/stage/root/Library/LaunchDaemons"
+	DAEMONS_DIR="/Library/LaunchDaemons"
+
+	if [ ! -d "$DAEMONS_SRC" ]; then
+		echo "Skipping LaunchDaemons (no $DAEMONS_SRC)"
+		return
+	fi
+
+	for plist in "$DAEMONS_SRC/com.workflow."*; do
+		[ -f "$plist" ] || continue
+		label=$(basename "$plist" .plist)
+		# Unload first; ignore errors for daemons not yet registered.
+		sudo launchctl bootout "system/$label" 2>/dev/null || true
+		# root:wheel 0644 is mandatory or launchd rejects the job.
+		sudo install -o root -g wheel -m 644 "$plist" "$DAEMONS_DIR/$(basename "$plist")"
+		if sudo launchctl bootstrap system "$DAEMONS_DIR/$(basename "$plist")"; then
+			echo "  loaded: $label"
+		else
+			echo "  WARN: failed to bootstrap $label"
+		fi
+	done
+
+	echo "LaunchDaemons updated"
+}
+
+# Build per-scratchpad Alacritty app bundles in ~/Applications so every scratchpad
+# gets its own Dock/Cmd-Tab identity. A shell wrapper is not sufficient: once it
+# execs Alacritty, macOS re-identifies the process as org.alacritty and replaces the
+# custom icon. Instead, clone the small Alacritty bundle, customize its metadata and
+# icon, then ad-hoc sign it. APFS clone-copy keeps the additional disk use minimal.
 update_scratchpad_apps() {
 	if [[ $(uname) != "Darwin" ]]; then
 		echo "Skipping scratchpad apps (not macOS)"
 		return 0
 	fi
 
-	local appwrap="/usr/local/bin/os/appwrap.sh"
 	local alacritty="/Applications/Alacritty.app"
 	local icons="$HOME/.config/scratchpad-icons"
 	local apps_dir="$HOME/Applications"
 
-	[ -f "$appwrap" ]    || { echo "scratchpad apps: $appwrap missing; skipping"; return 0; }
 	[ -d "$alacritty" ]  || { echo "scratchpad apps: Alacritty not installed; skipping"; return 0; }
 	[ -d "$icons" ]      || { echo "scratchpad apps: no icons at $icons; skipping"; return 0; }
 	mkdir -p "$apps_dir"
@@ -298,22 +369,34 @@ update_scratchpad_apps() {
 	# "<icns-basename>:<display name>" — wrapper is built as "[Scratchpad] <display name>.app".
 	# That bundle filename is what macOS shows in the Dock/Cmd-Tab for these exec wrappers,
 	# so it doubles as the label. Hammerspoon's scratchApp() must resolve the same name.
-	local specs=( "terminal:Terminal" "ranger:Ranger" "calc:Calculator" "forks:Forks" "claude-yolo:Claude YOLO" "daybook:Daybook" )
+	local specs=( "terminal:Terminal" "ranger:Ranger" "calc:Calculator" "forks:Forks" "claude-yolo:Claude YOLO" "daybook:Daybook" "cad-tutor:CAD Tutor" "screen-tutor:Screen Tutor" )
 	for spec in "${specs[@]}"; do
 		local name="${spec%%:*}"
 		local display="${spec##*:}"
 		local label="[Scratchpad] $display"
 		local icns="$icons/$name.icns"
+		local app="$apps_dir/$label.app"
+		local bundle_id="com.workflow.scratchpad.$name"
 		if [ ! -f "$icns" ]; then
 			echo "  skip $name (no $icns)"
 			continue
 		fi
-		if bash "$appwrap" -b "$alacritty" -t "$label" -i "$icns" \
-			--out "$apps_dir" --name "$label" --build-only >/dev/null; then
-			xattr -dr com.apple.quarantine "$apps_dir/$label.app" 2>/dev/null || true
+
+		rm -rf "$app"
+		if ! cp -cR "$alacritty" "$app" 2>/dev/null; then
+			cp -R "$alacritty" "$app" || { echo "  WARN: could not clone $label.app"; continue; }
+		fi
+		/usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $bundle_id" "$app/Contents/Info.plist"
+		/usr/libexec/PlistBuddy -c "Set :CFBundleName $label" "$app/Contents/Info.plist"
+		/usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $label" "$app/Contents/Info.plist"
+		cp "$icns" "$app/Contents/Resources/alacritty.icns"
+
+		if codesign --force --deep --sign - "$app" >/dev/null 2>&1; then
+			xattr -dr com.apple.quarantine "$app" 2>/dev/null || true
+			/usr/bin/touch "$app"
 			echo "  built $label.app"
 		else
-			echo "  WARN: failed to build $label.app (will fall back to plain Alacritty)"
+			echo "  WARN: failed to sign $label.app (will fall back to plain Alacritty)"
 		fi
 	done
 	echo "Scratchpad apps updated"
@@ -374,6 +457,11 @@ refresh() {
 	if [ -d $BASE_ABS/stage/.config/i3/config ]; then
 		i3-msg restart
 	fi
+
+	# Reload Hammerspoon config if running (macOS)
+	if command -v hs >/dev/null 2>&1; then
+		hs -c "hs.reload()" 2>/dev/null || true
+	fi
 }
 
 update_claude_mcp() {
@@ -389,7 +477,7 @@ update_claude_mcp() {
 	#
 	# An optional per-machine fragment (~/.claude/mcp.macm4.json, deployed only from
 	# the local-macosx-m4 layer) is merged last so this host can add MCP servers that
-	# make no sense elsewhere (e.g. blender/freecad, which need local GUI apps) without
+	# make no sense elsewhere (e.g. blender/freecad/qgis, which need local GUI apps) without
 	# duplicating the shared server list. Fragment wins on conflict.
 	SRC="$HOME/.claude/mcp.json"
 	FRAG="$HOME/.claude/mcp.macm4.json"

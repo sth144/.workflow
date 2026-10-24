@@ -1,8 +1,10 @@
 # Daily: Archive desktop screen recordings and screenshots
 0 0 * * * <USER> /bin/bash /usr/local/bin/cron/archive_desktop_screen_recordings.sh >> ~/.cronjob.log 2>&1
 
-# Weekly (Sunday midnight): Clear system icon cache if bloated
-0 0 * * 0 root /bin/bash /usr/local/bin/cron/clear_system_icons_cache.sh
+# NOTE: icon cache cleanup is NOT here. It needs root, and update_cronjobs strips
+# the user field before loading these into the login user's crontab, so a "root"
+# entry here silently runs unprivileged and no-ops. It lives in
+# src/root/macosx/Library/LaunchDaemons/com.workflow.clear-icons-cache.plist.
 
 # Weekly (Sunday 1am): Clean up old files in ~/Drawer
 0 1 * * 0 <USER> /bin/bash /usr/local/bin/cron/cleanup_drawer.sh

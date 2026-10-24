@@ -1,2 +1,6 @@
-/Volumes   auto_smb
+# Retired: mount_smb_shares.sh (com.workflow.mount-smb) owns every share now
+# and mounts them under ~/media/.mounts via the keychain, silently. The autofs
+# map duplicated all of them at /Volumes through NetAuth, which pops a GUI auth
+# dialog on any stale credential. Nothing depends on the /Volumes paths.
+# /Volumes   auto_smb
 # /Volumes   auto_smb -nobrowse

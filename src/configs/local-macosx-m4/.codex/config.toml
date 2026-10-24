@@ -43,6 +43,24 @@ command = "uvx"
 args = ["--python", "3.12", "freecad-mcp"]
 env = { UV_PYTHON_PREFERENCE = "only-managed" }
 
+# QGIS bridge — same socket-plugin architecture as blender-mcp (qgis-mcp is a fork of
+# it), so it also needs the GUI app running here. Not on PyPI, so pull it from a git
+# tag: v0.7.1 matches the "QGIS MCP" plugin version on plugins.qgis.org, and the two
+# halves must stay in lockstep (a newer server can send commands an older plugin has
+# no handler for) — bump both together. compound tool mode collapses ~102 granular
+# tools into ~23 groups so the tool list stays sane. Start the bridge first
+# (QGIS: QGIS MCP dock -> Start Server, listens on localhost:9876).
+[mcp_servers.qgis]
+command = "uvx"
+args = [
+	"--python",
+	"3.12",
+	"--from",
+	"git+https://github.com/nkarasiak/qgis-mcp@v0.7.1",
+	"qgis-mcp-server",
+]
+env = { UV_PYTHON_PREFERENCE = "only-managed", QGIS_MCP_TOOL_MODE = "compound" }
+
 [tui.model_availability_nux]
 "gpt-5.3-codex-spark" = 4
 

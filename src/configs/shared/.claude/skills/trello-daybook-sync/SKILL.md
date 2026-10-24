@@ -43,17 +43,17 @@ Parse the JSON response. For each card, extract:
 
 ### Step 3: Build the To Do section
 
-Generate a `## To Do` section with one checkbox per Trello card:
+Generate a `# To Do ✅` section with one checkbox per Trello card:
 
 ```markdown
-## To Do
+# To Do ✅
 
 - [ ] Card name <!-- trello:CARD_ID -->
 - [ ] Another card <!-- trello:CARD_ID -->
 ```
 
 **Rules for merging:**
-- If the daybook note already has a `## To Do` section, merge intelligently:
+- If the daybook note already has a `# To Do ✅` section, merge intelligently:
   - Keep existing checked items (`- [x] ...`) as-is
   - Keep existing unchecked items that have a `<!-- trello:ID -->` marker if that
     card is still in the Today list
@@ -61,14 +61,14 @@ Generate a `## To Do` section with one checkbox per Trello card:
   - Remove trello-marked items whose cards are no longer in the Today list
     (they were moved to another list)
   - Preserve any manually-added items (lines without `<!-- trello:... -->`)
-- If no `## To Do` section exists, create one
+- If no `# To Do ✅` section exists, create one
 
 ### Step 4: Ensure Worklog section exists
 
-If the note doesn't already have a `## Worklog` section, append one:
+If the note doesn't already have a `# Worklog 📝` section, append one:
 
 ```markdown
-## Worklog
+# Worklog 📝
 
 ```
 
@@ -77,7 +77,7 @@ The Worklog section should always be below the To Do section.
 ### Step 5: Update the Joplin note
 
 Write the updated body back to the Joplin note using the update_note tool.
-Never overwrite existing worklog entries or other content below `## Worklog`.
+Never overwrite existing worklog entries or other content below `# Worklog 📝`.
 
 ### Step 6: Report results
 

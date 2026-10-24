@@ -93,6 +93,19 @@ if [ -f ~/.bash_aliases ]; then
   . ~/.bash_aliases
 fi
 
+# Wrap claude to add -y/--yolo shorthand for --dangerously-skip-permissions
+claude() {
+  local args=()
+  for arg in "$@"; do
+    if [[ "$arg" == "-y" || "$arg" == "--yolo" ]]; then
+      args+=("--dangerously-skip-permissions")
+    else
+      args+=("$arg")
+    fi
+  done
+  command claude "${args[@]}"
+}
+
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).
@@ -115,6 +128,64 @@ parse_git_branch() {
     echo ""
   fi
 }
+
+# Directory history: `cd` records where you came from, so `popdir` walks back
+# through everywhere you've been. `pushdir` with no args marks the current
+# directory before you wander off; `dirhist` lists the stack newest-first, and
+# `popdir N` jumps straight to the Nth entry it shows.
+DIRHIST_MAX=50
+DIRHIST=()
+
+_dirhist_push() {
+  DIRHIST[${#DIRHIST[@]}]="$1"
+  while [ ${#DIRHIST[@]} -gt "$DIRHIST_MAX" ]; do
+    DIRHIST=("${DIRHIST[@]:1}")
+  done
+}
+
+cd() {
+  local prev="$PWD"
+  builtin cd "$@" || return
+  [ "$PWD" = "$prev" ] || _dirhist_push "$prev"
+}
+
+pushdir() {
+  if [ $# -gt 0 ]; then
+    cd "$@"
+  else
+    _dirhist_push "$PWD"
+  fi
+}
+
+# Moves with `builtin cd` rather than the wrapper, otherwise each pop would
+# record the directory it left and repeated pops would ping-pong.
+popdir() {
+  local count="${1:-1}" target="" last
+  while [ "$count" -gt 0 ] && [ ${#DIRHIST[@]} -gt 0 ]; do
+    last=$((${#DIRHIST[@]} - 1))
+    target="${DIRHIST[$last]}"
+    unset "DIRHIST[$last]"
+    count=$((count - 1))
+  done
+  if [ -z "$target" ]; then
+    echo "popdir: directory history is empty" >&2
+    return 1
+  fi
+  builtin cd "$target"
+}
+
+dirhist() {
+  local i
+  for ((i = ${#DIRHIST[@]} - 1; i >= 0; i--)); do
+    printf '%3d  %s\n' "$((${#DIRHIST[@]} - i))" "${DIRHIST[$i]}"
+  done
+}
+
+# Take over the muscle-memory names. The builtins are still reachable as
+# `builtin pushd` / `builtin popd` if something needs the real stack.
+alias pushd=pushdir
+alias popd=popdir
+alias dirs=dirhist
 
 # export color prompt
 # export PS1="\[\e[36m\][\[\e[m\]\[\e[33m\]\u\[\e[m\]\[\e[31m\]@\[\e[m\]\[\e[36m\]\h\[\e[m\]:\[\e[36m\]\w\[\e[m\]\[\e[36m\]]\[\e[m\]\[\e[36;36m\]\\$\[\e[m\] "
@@ -185,7 +256,7 @@ source ~/.nvm/nvm.sh
 export CDPATH=.:..:../..:$HOME:$HOME/src:$HOME/Projects:$HOME/Coding
 
 # add all utils (and scripts within .config) to PATH, pruning heavy dirs like node_modules
-export PATH="$(find ~/bin/ \( -name node_modules -o -name .git \) -prune -o -type d -printf ":%p"):$PATH"
+export PATH="$(find -L ~/bin/ \( -name node_modules -o -name .git \) -prune -o -type d -printf ":%p"):$PATH"
 #export PATH="$(find ~/.config/ \( -name node_modules -o -name .git \) -prune -o -type d -printf ":%p"):$PATH"
 export PATH=$PATH:/opt/sonar/bin
 

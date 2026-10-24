@@ -1,0 +1,4 @@
+interface:
+  display_name: "Screen Tutor"
+  short_description: "On-demand: look at what's on screen, explain it, highlight the relevant control"
+  default_prompt: "Use $screen-tutor to look at what's on my screen right now, explain it, and highlight the relevant control. Only capture when I ask."

@@ -34,6 +34,17 @@ hs.accessibilityState(true)
 -- Modifier used for all scratchpads (Cmd+Ctrl avoids conflicts with macOS/apps)
 local mod = { "cmd", "ctrl" }
 
+-- Gap (px) left between an anchored/tiled window and the screen edge, and between
+-- tiled neighbours. Persisted in hs.settings so the help panel (Cmd+Ctrl+/) can
+-- change it live; DEFAULT_GAP is only the first-run value. Centered scratchpads
+-- ignore it — they're sized by their width/height fractions instead.
+local DEFAULT_GAP = 12
+local GAP_KEY = "workflow.windowGap"
+
+local function windowGap()
+  return tonumber(hs.settings.get(GAP_KEY)) or DEFAULT_GAP
+end
+
 local function fileExists(path)
   return hs.fs.attributes(path, "mode") ~= nil
 end
@@ -83,6 +94,12 @@ local aiTerminal = aiTerminalConfig()
 -- | —       | Daybook     | Cmd+Ctrl+B   |
 -- | —       | DiffToggle  | Cmd+Ctrl+D   |
 -- | —       | ResMonitor  | Cmd+Ctrl+M   |
+-- | —       | CAD Tutor   | Cmd+Ctrl+G   |
+-- | —       | ↳ cycle nook| Cmd+Ctrl+Shift+G |
+-- | —       | ScreenTutor | Cmd+Ctrl+H   |
+-- | —       | ↳ cycle nook| Cmd+Ctrl+Shift+H |
+-- | —       | Help panel  | Cmd+Ctrl+/   |
+-- | —       | Cmd palette | Cmd+Ctrl+P   |
 
 local scratchpads = {
   -- Terminal (i3: Alt+U)
@@ -93,6 +110,29 @@ local scratchpads = {
     key      = "u",
     width    = 0.5,
     height   = 0.55,
+  },
+
+  -- CAD Tutor (FreeCAD/Blender assistant, macm4). Anchored top-right by default so
+  -- it never covers the 3D viewport in the screen center; Cmd+Ctrl+Shift+G cycles
+  -- it through the other nooks and the right dock. Custom handler via the
+  -- "[Scratchpad] CAD Tutor" wrapper so it carries its own Dock icon.
+  cadtutor = {
+    hotkey   = mod,
+    key      = "g",
+    width    = 0.32,
+    height   = 0.5,
+    anchor   = "topright",
+  },
+
+  -- Screen Tutor (generic on-screen assistant). A translucent panel that
+  -- pins to a corner (Cmd+Ctrl+H toggles; Cmd+Ctrl+Shift+H cycles corners) so it
+  -- sits beside whatever app you're using without covering the center.
+  screentutor = {
+    hotkey   = mod,
+    key      = "h",
+    width    = 0.30,
+    height   = 0.42,
+    anchor   = "topright",
   },
 
   -- Joplin notes (i3: Alt+J)
@@ -142,14 +182,14 @@ local scratchpads = {
     height   = 0.7,
   },
 
-  -- bc calculator in Alacritty (i3: Alt+F11)
+  -- qalc calculator in Alacritty, bc -l fallback (i3: Alt+F11)
   -- NOTE: This uses a custom handler, not the standard toggleScratchpad
   calculator = {
     hotkey      = mod,
     key         = "k",
     width       = 0.28,
     height      = 0.32,
-    windowTitle = "bc",
+    windowTitle = "qalc",
   },
 
   -- Chrome for research (i3: Alt+R)
@@ -280,21 +320,34 @@ local function positionWindow(win, config)
   local f = screen:frame()
   local w = f.w * config.width
   local h = f.h * config.height
-  win:setFrame({
-    x = f.x + (f.w - w) / 2,
-    y = f.y + (f.h - h) / 2,
-    w = w,
-    h = h,
-  })
+  local margin = windowGap()
+  local x, y
+  local anchor = config.anchor or "center"
+  if anchor == "topright" then
+    x, y = f.x + f.w - w - margin, f.y + margin
+  elseif anchor == "topleft" then
+    x, y = f.x + margin, f.y + margin
+  elseif anchor == "bottomright" then
+    x, y = f.x + f.w - w - margin, f.y + f.h - h - margin
+  elseif anchor == "bottomleft" then
+    x, y = f.x + margin, f.y + f.h - h - margin
+  elseif anchor == "right" then
+    -- Full-height dock on the right edge (width from config, ~30%), leaving the
+    -- rest of the screen for the app tiled beside it.
+    h = f.h - 2 * margin
+    x, y = f.x + f.w - w - margin, f.y + margin
+  else
+    x, y = f.x + (f.w - w) / 2, f.y + (f.h - h) / 2
+  end
+  win:setFrame({ x = x, y = y, w = w, h = h })
 end
 
--- Search EVERY running Alacritty instance, not just one. On macOS a bare
--- `alacritty ...` launch spawns a *separate* app instance (its own PID/Dock
--- entry), and `msg create-window` is unreliable here (BrokenPipe), so scratchpad
--- windows can end up under any of several instances. hs.application.get() only
--- returns one of them, so we must iterate applicationsForBundleID to find ours.
+-- Search every running application for the scratchpad's title marker. Plain
+-- launches register as org.alacritty, but the per-scratchpad wrapper apps use
+-- their own com.appwrap.* bundle IDs. Restricting this lookup to org.alacritty
+-- makes wrapped windows invisible and causes every toggle to launch a duplicate.
 local function findAlacrittyWindowByTitle(marker)
-  for _, app in ipairs(hs.application.applicationsForBundleID("org.alacritty")) do
+  for _, app in ipairs(hs.application.runningApplications()) do
     for _, win in ipairs(app:allWindows()) do
       local title = win:title()
       if title and string.find(title, marker, 1, true) then
@@ -305,19 +358,33 @@ local function findAlacrittyWindowByTitle(marker)
   return nil
 end
 
--- Open a detached Alacritty window titled `marker` running `command` in a login
--- shell. We launch via `open`, NOT a bare `alacritty &`: a backgrounded child of
--- hs.execute's helper shell gets SIGHUP'd and dies the moment that shell exits,
--- whereas `open` hands the process to LaunchServices so it survives. `-n` forces
--- a fresh instance (Alacritty's `msg` IPC is unreliable on macOS — BrokenPipe),
--- and findAlacrittyWindowByTitle searches every instance so the window is still
--- discoverable. dynamic_title is pinned off so the running program (tmux, ranger,
--- bc) can't rename our marker. (command must not contain a single quote — none do.)
--- Resolve a per-scratchpad wrapper .app (built by `make install`) that gives the
--- window its own Dock/Cmd-Tab icon AND label. The bundle is named
+-- Alacritty sometimes registers with LaunchServices but exposes no AX windows,
+-- especially when started from Hammerspoon. Its command line still contains the
+-- fixed title marker, so use the real process PID as a reliable toggle fallback.
+local function findAlacrittyAppByMarker(marker)
+  if not string.match(marker, "^[%w_-]+$") then return nil end
+  local output, ok = hs.execute("/bin/ps ax -o pid=,command=")
+  if not ok then return nil end
+  local mainCommand = "/Applications/Alacritty.app/Contents/MacOS/alacritty --title "
+    .. marker .. " "
+  local clonePrefix = os.getenv("HOME") .. "/Applications/[Scratchpad] "
+  local cloneNeedle = ".app/Contents/MacOS/alacritty --title " .. marker .. " "
+  for line in string.gmatch(output or "", "[^\n]+") do
+    local pid, command = string.match(line, "^%s*(%d+)%s+(.+)$")
+    local isMain = command and string.sub(command, 1, #mainCommand) == mainCommand
+    local isClone = command and string.sub(command, 1, #clonePrefix) == clonePrefix
+      and string.find(command, cloneNeedle, #clonePrefix + 1, true)
+    if isMain or isClone then
+      return hs.application.get(tonumber(pid))
+    end
+  end
+  return nil
+end
+
+-- Resolve a per-scratchpad Alacritty clone (built by `make install`). The bundle is named
 -- "[Scratchpad] <displayName>.app" (see install.sh update_scratchpad_apps) and that
--- filename is what macOS shows in the Dock for these exec wrappers. Returns the path
--- only if it exists, so callers fall back to plain Alacritty when icons aren't installed.
+-- filename is what macOS shows in the Dock. Returns nil when it is not installed,
+-- causing the launcher to fall back to the main Alacritty application.
 local function scratchApp(displayName)
   local path = os.getenv("HOME") .. "/Applications/[Scratchpad] " .. displayName .. ".app"
   if hs.fs.attributes(path, "mode") == "directory" then
@@ -326,10 +393,10 @@ local function scratchApp(displayName)
   return nil
 end
 
--- Launch a detached Alacritty window. If `appBundle` is a custom wrapper .app it is
--- used (so the window carries that wrapper's Dock icon); otherwise we fall back to
--- plain Alacritty. Either way the wrapper just exec's Alacritty, so the window stays
--- org.alacritty and findAlacrittyWindowByTitle can still see it.
+-- Launch a detached Alacritty window through its custom clone when available,
+-- giving each scratchpad its own Dock/Cmd-Tab icon. Clone-launched windows are
+-- not always exposed through Accessibility, so toggleTermScratchpad falls back to
+-- finding the underlying Alacritty process by its fixed title marker.
 -- We launch via `open`, NOT a bare `alacritty &`: a backgrounded child of
 -- hs.execute's helper shell gets SIGHUP'd and dies the moment that shell exits,
 -- whereas `open` hands the process to LaunchServices so it survives. `-n` forces
@@ -337,16 +404,63 @@ end
 -- and findAlacrittyWindowByTitle searches every instance so the window is still
 -- discoverable. dynamic_title is pinned off so the running program (tmux, ranger,
 -- bc) can't rename our marker. (command must not contain a single quote — none do.)
-local function launchAlacritty(marker, command, appBundle)
+--
+-- Use hs.task instead of hs.execute. Alacritty instances launched by hs.execute
+-- appear in LaunchServices but have PID -1 and no Accessibility windows, making
+-- them impossible to toggle. Passing an argv array also preserves commands such
+-- as Codex's `$skill` prompt without another shell expanding them.
+local alacrittyLaunchTasks = {}
+local alacrittyLaunchPending = {}
+
+local function launchAlacritty(marker, command, appBundle, extraOpts)
   local app = appBundle or "/Applications/Alacritty.app"
-  local shellCmd = string.format(
-    "open -na '%s' --args "
-      .. "--title '%s' -o window.dynamic_title=false -e bash -lc '%s'",
-    app, marker, command)
-  hs.execute(shellCmd, true)  -- `true` => run via login shell
+  local args = {
+    "-na", app, "--args",
+    "--title", marker,
+    "-o", "window.dynamic_title=false",
+  }
+  for _, arg in ipairs(extraOpts or {}) do table.insert(args, arg) end
+  for _, arg in ipairs({ "-e", "bash", "-lc", command }) do table.insert(args, arg) end
+
+  local task
+  task = hs.task.new("/usr/bin/open", function(exitCode, _, stderr)
+    alacrittyLaunchTasks[marker] = nil
+    if exitCode ~= 0 then
+      alacrittyLaunchPending[marker] = nil
+      hs.alert.show("Could not launch " .. marker)
+      hs.printf("open failed for %s: %s", marker, stderr or "")
+    end
+  end, args)
+  alacrittyLaunchTasks[marker] = task
+  alacrittyLaunchPending[marker] = true
+  if not task:start() then
+    alacrittyLaunchTasks[marker] = nil
+    alacrittyLaunchPending[marker] = nil
+    hs.alert.show("Could not launch " .. marker)
+  end
 end
 
-local function toggleTermScratchpad(marker, command, config, appBundle)
+-- Poll for a freshly-launched window and position it the moment it appears. A
+-- single fixed delay is unreliable: a cold LaunchServices start (custom wrapper
+-- .app, or a harness like claude booting inside) can take longer than any one
+-- guess, so the timer fires before the window exists and it stays wherever
+-- Alacritty first drew it (screen center). Retry until it shows, then pin it.
+local function positionWhenReady(marker, config, attempts)
+  attempts = attempts or 20
+  local win = findAlacrittyWindowByTitle(marker)
+  if win then
+    alacrittyLaunchPending[marker] = nil
+    positionWindow(win, config)
+  elseif attempts > 0 then
+    hs.timer.doAfter(0.25, function()
+      positionWhenReady(marker, config, attempts - 1)
+    end)
+  else
+    alacrittyLaunchPending[marker] = nil
+  end
+end
+
+local function toggleTermScratchpad(marker, command, config, appBundle, extraOpts)
   local scratchWin = findAlacrittyWindowByTitle(marker)
 
   if scratchWin then
@@ -363,21 +477,28 @@ local function toggleTermScratchpad(marker, command, config, appBundle)
       scratchWin:focus()
     end
   else
-    -- No window found - create one (in its custom-icon wrapper if available)
-    launchAlacritty(marker, command, appBundle)
-
-    -- Position after delay
-    hs.timer.doAfter(0.5, function()
-      local win = findAlacrittyWindowByTitle(marker)
-      if win then
-        positionWindow(win, config)
+    -- A real process with no AX window is still toggleable by application PID.
+    local scratchAppProcess = findAlacrittyAppByMarker(marker)
+    if scratchAppProcess then
+      if scratchAppProcess:isFrontmost() then
+        scratchAppProcess:hide()
+      else
+        scratchAppProcess:unhide()
+        scratchAppProcess:activate(true)
       end
-    end)
+      return
+    end
+
+    -- No window found - create one, unless an earlier launch is still settling.
+    if alacrittyLaunchPending[marker] then return end
+    launchAlacritty(marker, command, appBundle, extraOpts)
+    -- Poll until the window actually appears, then pin it to its anchor.
+    positionWhenReady(marker, config)
   end
 end
 
 local function toggleTerminal()
-  -- Plain interactive login shell in the "[Scratchpad] Terminal" wrapper.
+  -- Plain interactive login shell.
   toggleTermScratchpad("HS-TERMINAL", 'exec "$SHELL"', scratchpads.terminal, scratchApp("Terminal"))
 end
 
@@ -386,11 +507,151 @@ local function toggleRanger()
 end
 
 local function toggleBcCalc()
-  toggleTermScratchpad("HS-CALC", "bc ~/.bcrc -l", scratchpads.calculator, scratchApp("Calculator"))
+  toggleTermScratchpad("HS-CALC", "if [ -x /Users/seanhinds/bin/qalc ]; then /Users/seanhinds/bin/qalc; else bc -l ~/.bcrc; fi", scratchpads.calculator, scratchApp("Calculator"))
 end
 
 local function toggleClaudeForks()
   toggleTermScratchpad("HS-FORKS", "tmux new-session -A -s claude-forks", scratchpads.forks, scratchApp("Forks"))
+end
+
+-- Keep the exact hotkey callback callable from `hs -c` for end-to-end diagnosis.
+-- This avoids testing a lookalike launch path that may behave differently.
+_G.workflowToggleForks = toggleClaudeForks
+
+-- Tutor scratchpads (CAD Tutor, Screen Tutor) are pinnable terminals meant to sit
+-- beside the app you're working in. Cmd+Ctrl+Shift+<their key> cycles the layout:
+-- besides the four corner nooks there's a "right" full-height dock where the pad
+-- claims its own column (its configured width) and the app beside it is tiled into
+-- the rest, so both are usable side by side — a CAD/QGIS + tutor workflow.
+local TUTOR_ANCHORS = { "topright", "right", "bottomright", "bottomleft", "topleft" }
+local TUTOR_ANCHOR_LABELS = { right = "right dock (full height)" }
+local tutorAnchorIdx = { cadtutor = 1, screentutor = 1 }
+
+-- Which agent harness the tutor pads boot into. Persisted in hs.settings so the
+-- help panel (Cmd+Ctrl+/) can flip it live; an already-open pad keeps the harness
+-- it started with, so a flip lands the next time that pad is opened.
+local TUTOR_HARNESS_KEY = "workflow.tutorHarness"
+local DEFAULT_TUTOR_HARNESS = "claude"
+
+-- The command each pad runs, per harness. Two constraints on these strings:
+-- launchAlacritty wraps the command in single quotes, so none may appear here; and
+-- Codex takes its skill as `$name` inside the prompt, which the `bash -lc` layer
+-- would expand as a variable, hence the backslash.
+--
+-- SCREEN_TUTOR_SESSION=1 activates the screen-tutor-consent.sh PreToolUse hook:
+-- normal tool calls run un-prompted (global Bash(*) allow), but the first screen
+-- capture per 30-min window asks for consent — no blanket yolo, no per-call nagging.
+-- Sonnet for the screen pad: faster than Opus for a glance-and-explain widget, and
+-- the token-heavy visual reasoning is rare (AX/OCR handle the common cases).
+local TUTOR_COMMANDS = {
+  claude = {
+    screentutor = "SCREEN_TUTOR_SESSION=1 claude --model sonnet /screen-tutor",
+    cadtutor    = "claude /cad-tutor",
+  },
+  codex = {
+    screentutor = "SCREEN_TUTOR_SESSION=1 codex \"\\$screen-tutor\"",
+    cadtutor    = "codex \"\\$cad-tutor\"",
+  },
+}
+
+-- Assigned once the help panel exists, so flipping the harness elsewhere repaints
+-- an open panel.
+local syncHelpTutorHarness = nil
+
+local function tutorHarness()
+  local saved = hs.settings.get(TUTOR_HARNESS_KEY)
+  return TUTOR_COMMANDS[saved] and saved or DEFAULT_TUTOR_HARNESS
+end
+
+-- Drop to a login shell once the harness exits so the window persists and stays
+-- toggle-able rather than vanishing.
+local function tutorCommand(name)
+  return TUTOR_COMMANDS[tutorHarness()][name] .. '; exec "$SHELL"'
+end
+
+local function setTutorHarness(harness)
+  if not TUTOR_COMMANDS[harness] then return end
+  hs.settings.set(TUTOR_HARNESS_KEY, harness)
+  hs.alert.show("Tutor harness → " .. harness .. " (next pad you open)")
+  if syncHelpTutorHarness then syncHelpTutorHarness() end
+end
+
+-- Tile the app sitting behind a right-docked tutor pad into the left column so it
+-- stays fully visible next to the dock. Best-effort: picks the frontmost standard,
+-- non-Alacritty window (the tutor pads are Alacritty, so they're skipped).
+local function tileAppLeftOfDock(dockWidth)
+  local f = hs.screen.mainScreen():frame()
+  local margin = windowGap()
+  for _, win in ipairs(hs.window.orderedWindows()) do
+    local app = win:application()
+    local bid = app and app:bundleID() or ""
+    if win:isStandard() and bid ~= "org.alacritty" then
+      win:setFrame({
+        x = f.x + margin,
+        y = f.y + margin,
+        w = f.w * (1 - dockWidth) - 2 * margin,
+        h = f.h - 2 * margin,
+      })
+      return
+    end
+  end
+end
+
+-- Move a tutor pad to its remembered anchor and, in right-dock mode, tile the app
+-- beside it once the pad window has settled into place.
+local function applyTutorAnchor(name)
+  local config = scratchpads[name]
+  config.anchor = TUTOR_ANCHORS[tutorAnchorIdx[name]]
+  if config.anchor == "right" then
+    hs.timer.doAfter(0.5, function() tileAppLeftOfDock(config.width) end)
+  end
+end
+
+-- Cycle one tutor pad through the anchors. Applies immediately when the pad is
+-- open; otherwise the new anchor takes effect the next time it's toggled on.
+local function cycleTutorAnchor(name, marker, label)
+  local config = scratchpads[name]
+  tutorAnchorIdx[name] = (tutorAnchorIdx[name] % #TUTOR_ANCHORS) + 1
+  local anchor = TUTOR_ANCHORS[tutorAnchorIdx[name]]
+  config.anchor = anchor
+  local win = findAlacrittyWindowByTitle(marker)
+  if win then
+    if anchor == "right" then tileAppLeftOfDock(config.width) end
+    positionWindow(win, config)
+    win:raise()
+  end
+  hs.alert.show(label .. " → " .. (TUTOR_ANCHOR_LABELS[anchor] or anchor))
+end
+
+-- Dedicated terminal beside the CAD app, booted straight into the `cad-tutor`
+-- skill on whichever harness is selected (see TUTOR_COMMANDS).
+local function toggleCadTutor()
+  applyTutorAnchor("cadtutor")
+  toggleTermScratchpad("HS-CADTUTOR", tutorCommand("cadtutor"),
+    scratchpads.cadtutor, scratchApp("CAD Tutor"))
+end
+
+local function toggleScreenTutor()
+  applyTutorAnchor("screentutor")
+  toggleTermScratchpad("HS-SCREENTUTOR", tutorCommand("screentutor"),
+    scratchpads.screentutor, scratchApp("Screen Tutor"), { "-o", "window.opacity=0.82" })
+end
+
+-- Re-position the anchored scratchpads that are currently open so a gap change made
+-- from the help panel shows up right away instead of on the next toggle. Only the
+-- edge-anchored pads care about the gap; centered ones are unaffected.
+local function reapplyWindowGap()
+  local anchored = {
+    { marker = "HS-SCREENTUTOR", config = scratchpads.screentutor },
+    { marker = "HS-CADTUTOR",    config = scratchpads.cadtutor },
+  }
+  for _, pad in ipairs(anchored) do
+    local win = findAlacrittyWindowByTitle(pad.marker)
+    if win then
+      if pad.config.anchor == "right" then tileAppLeftOfDock(pad.config.width) end
+      positionWindow(win, pad.config)
+    end
+  end
 end
 
 local function toggleAiYolo()
@@ -440,6 +701,10 @@ for name, config in pairs(scratchpads) do
   -- Custom handlers for terminal-based scratchpads
   if name == "terminal" then
     hs.hotkey.bind(config.hotkey, config.key, toggleTerminal)
+  elseif name == "cadtutor" then
+    hs.hotkey.bind(config.hotkey, config.key, toggleCadTutor)
+  elseif name == "screentutor" then
+    hs.hotkey.bind(config.hotkey, config.key, toggleScreenTutor)
   elseif name == "ranger" then
     hs.hotkey.bind(config.hotkey, config.key, toggleRanger)
   elseif name == "calculator" then
@@ -532,19 +797,672 @@ end
 
 hs.hotkey.bind(mod, "m", toggleResmon)
 
+-- Claude Code's hook opens each edit as a VS Code diff tab; the presence of this
+-- flag file disables it. Shared by the Cmd+Ctrl+D hotkey and the help panel's
+-- toggle so both read and write one piece of state.
+local DIFF_TAB_FLAG = os.getenv("HOME") .. "/.claude/hooks/diff-tab.disabled"
+
+-- Assigned once the help panel exists, so a hotkey press repaints an open panel.
+local syncHelpDiffToggle = nil
+
+local function diffTabsEnabled()
+  return not fileExists(DIFF_TAB_FLAG)
+end
+
+local function setDiffTabs(enabled)
+  if enabled then
+    os.remove(DIFF_TAB_FLAG)
+  else
+    local f = io.open(DIFF_TAB_FLAG, "w")
+    if f then f:close() end
+  end
+  hs.notify.new({
+    title = "Claude Code",
+    informativeText = "Diff tabs " .. (enabled and "ON" or "OFF"),
+  }):send()
+  if syncHelpDiffToggle then syncHelpDiffToggle() end
+end
+
 -- Toggle Claude Code diff tab hook (Cmd+Ctrl+D)
 hs.hotkey.bind(mod, "d", function()
-  local flag = os.getenv("HOME") .. "/.claude/hooks/diff-tab.disabled"
-  local f = io.open(flag, "r")
-  if f then
-    f:close()
-    os.remove(flag)
-    hs.notify.new({ title = "Claude Code", informativeText = "Diff tabs ON" }):send()
-  else
-    f = io.open(flag, "w")
-    if f then f:close() end
-    hs.notify.new({ title = "Claude Code", informativeText = "Diff tabs OFF" }):send()
+  setDiffTabs(not diffTabsEnabled())
+end)
+
+-- Diagram viewer (Cmd+Ctrl+V)
+-- Shows the newest diagram an agent spooled. Agents keep mermaid source out of
+-- the chat and spool it instead, so this key is the only place a diagram costs
+-- anything to look at.
+--
+-- Viewing is a native image window, not a browser: mermaid is turned into an
+-- SVG once, in a hidden webview, and cached next to the .mmd. Every view after
+-- the first is just an NSImage in a canvas.
+--
+-- While it is up: ⌘C copies the diagram as an image, ⌘⇧C copies the mermaid
+-- source, escape or ⌘⌃V dismisses it.
+local diagramCanvas = nil
+local diagramImage = nil
+local diagramModal = nil
+local diagramVisible = false
+local DIAGRAM_PAD = 24
+
+-- Rasterises in WebKit rather than handing the SVG to macOS: mermaid scopes its
+-- styling to an id selector in an embedded <style>, and NSImage's SVG renderer
+-- ignores that, so a serialised SVG comes out in default black-on-white. A PNG
+-- is also what you actually want on the clipboard.
+--
+-- Fixes the size to the drawn content and bakes in the background first, so the
+-- copy matches the window instead of pasting as a transparent sliver. The image
+-- decode is asynchronous, so the result is stashed on window and picked up by a
+-- later poll.
+local DIAGRAM_RASTER_JS = [[
+(function () {
+  if (window.__diagramPng) { return window.__diagramPng; }
+  if (window.__diagramStarted) { return ''; }
+  var svg = document.querySelector('svg');
+  if (!svg || !svg.getBBox) { return ''; }
+  var box;
+  try { box = svg.getBBox(); } catch (e) { return ''; }
+  if (!box || box.width < 1) { return ''; }
+  window.__diagramStarted = true;
+
+  var pad = 20;
+  var w = Math.ceil(box.width + pad * 2), h = Math.ceil(box.height + pad * 2);
+  svg.setAttribute('width', w);
+  svg.setAttribute('height', h);
+  svg.setAttribute('viewBox',
+    (box.x - pad) + ' ' + (box.y - pad) + ' ' + w + ' ' + h);
+  svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  if (!svg.querySelector('.diagram-bg')) {
+    var bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bg.setAttribute('class', 'diagram-bg');
+    bg.setAttribute('x', box.x - pad); bg.setAttribute('y', box.y - pad);
+    bg.setAttribute('width', w); bg.setAttribute('height', h);
+    bg.setAttribute('fill', '#14161a');
+    svg.insertBefore(bg, svg.firstChild);
+  }
+
+  var data = new XMLSerializer().serializeToString(svg);
+  var img = new Image();
+  img.onload = function () {
+    var scale = 2;  // retina, and gives room to paste at a readable size
+    var canvas = document.createElement('canvas');
+    canvas.width = w * scale;
+    canvas.height = h * scale;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0, w, h);
+    window.__diagramPng = canvas.toDataURL('image/png').split(',')[1];
+  };
+  img.src = 'data:image/svg+xml;base64,' +
+    btoa(unescape(encodeURIComponent(data)));
+  return '';
+})()
+]]
+
+local function diagramScript()
+  local installed = "/usr/local/bin/diagram/render_mermaid.py"
+  if fileExists(installed) then
+    return installed
+  end
+  return "/usr/local/src/workflow-macos-1095/src/utils/macosx/diagram/render_mermaid.py"
+end
+
+local function diagramRun(args)
+  local out = hs.execute("/usr/bin/python3 " .. diagramScript() .. " " .. args .. " 2>/dev/null")
+  return (out or ""):gsub("%s+$", "")
+end
+
+local function newestDiagram()
+  return diagramRun("--list"):match("^[^\n]*") or ""
+end
+
+-- Renders the spooled mermaid to a PNG in a hidden webview, once. The webview is
+-- kept on screen but fully transparent: WebKit skips layout for windows parked
+-- off screen, and getBBox needs a real layout to measure.
+local function renderDiagramPng(pngPath, done)
+  local htmlPath = diagramRun("")
+  if htmlPath == "" or not fileExists(htmlPath) then
+    done(nil)
+    return
+  end
+
+  local wv = hs.webview.new({ x = 0, y = 0, w = 1600, h = 1200 })
+  wv:alpha(0.01)
+  wv:url("file://" .. htmlPath)
+  wv:show()
+
+  local tries, finished, timer = 0, false, nil
+  local function finish(result)
+    if finished then return end
+    finished = true
+    if timer then timer:stop() end
+    wv:delete()
+    done(result)
+  end
+
+  timer = hs.timer.doEvery(0.25, function()
+    tries = tries + 1
+    if tries > 24 then
+      finish(nil)
+      return
+    end
+    wv:evaluateJavaScript(DIAGRAM_RASTER_JS, function(res)
+      if finished or not res or res == "" then return end
+      local fh = io.open(pngPath, "wb")
+      if not fh then
+        finish(nil)
+        return
+      end
+      fh:write(hs.base64.decode(res))
+      fh:close()
+      finish(pngPath)
+    end)
+  end)
+end
+
+local function copyDiagramImage()
+  if not diagramImage then return end
+  hs.pasteboard.writeObjects(diagramImage)
+  hs.alert.show("Diagram copied as image")
+end
+
+local function copyDiagramText()
+  local source = diagramRun("--print")
+  if source == "" then return end
+  hs.pasteboard.setContents(source)
+  hs.alert.show("Diagram source copied")
+end
+
+local function hideDiagram()
+  if diagramCanvas then
+    diagramCanvas:delete()
+    diagramCanvas = nil
+  end
+  if diagramModal then diagramModal:exit() end
+  diagramVisible = false
+end
+
+-- Buttons carry their own shortcut in the label, so the keyboard route is
+-- discoverable without a separate hint line.
+local DIAGRAM_BUTTONS = {
+  { id = "copyImage", label = "⌘C  Copy image", width = 116 },
+  { id = "copySource", label = "⌘⇧C  Copy source", width = 132 },
+  { id = "close", label = "esc  Close", width = 88 },
+}
+local DIAGRAM_BUTTON_H = 24
+local DIAGRAM_BUTTON_GAP = 10
+local DIAGRAM_BAR_H = 44
+
+-- Appends a row of buttons across the bottom of the canvas. Both the plate and
+-- its label track the mouse, since a click on the text is still a click on the
+-- button.
+local function appendDiagramButtons(canvas, width, top)
+  local total = -DIAGRAM_BUTTON_GAP
+  for _, button in ipairs(DIAGRAM_BUTTONS) do
+    total = total + button.width + DIAGRAM_BUTTON_GAP
+  end
+
+  local x = (width - total) / 2
+  for _, button in ipairs(DIAGRAM_BUTTONS) do
+    canvas:appendElements({
+      type = "rectangle", action = "fill", id = button.id,
+      fillColor = { hex = "#232733", alpha = 1 },
+      roundedRectRadii = { xRadius = 5, yRadius = 5 },
+      frame = { x = x, y = top, w = button.width, h = DIAGRAM_BUTTON_H },
+      trackMouseDown = true,
+    }, {
+      type = "text", text = button.label, id = button.id,
+      textColor = { hex = "#c8ccd4" }, textSize = 11,
+      textAlignment = "center",
+      frame = { x = x, y = top + 5, w = button.width, h = DIAGRAM_BUTTON_H },
+      trackMouseDown = true,
+    })
+    x = x + button.width + DIAGRAM_BUTTON_GAP
+  end
+end
+
+local function showDiagram(pngPath)
+  local img = hs.image.imageFromPath(pngPath)
+  if not img then
+    hs.alert.show("Could not load diagram")
+    return
+  end
+  diagramImage = img
+
+  -- The PNG is rasterised at 2x, so its pixel size is twice the size it should
+  -- occupy on screen.
+  local size = img:size()
+  local imgW, imgH = size.w / 2, size.h / 2
+  local f = hs.screen.mainScreen():frame()
+  local scale = math.min(1, (f.w - 160) / imgW, (f.h - 160 - DIAGRAM_BAR_H) / imgH)
+  local w = math.max(imgW * scale + DIAGRAM_PAD * 2, 380)
+  local h = imgH * scale + DIAGRAM_PAD * 2 + DIAGRAM_BAR_H
+
+  diagramCanvas = hs.canvas.new(
+    { x = f.x + (f.w - w) / 2, y = f.y + (f.h - h) / 2, w = w, h = h }
+  )
+  diagramCanvas:level(hs.canvas.windowLevels.floating)
+  diagramCanvas:appendElements(
+    {
+      type = "rectangle", action = "fill", id = "close",
+      fillColor = { hex = "#14161a", alpha = 0.98 },
+      roundedRectRadii = { xRadius = 10, yRadius = 10 },
+      trackMouseDown = true,
+    },
+    {
+      type = "image", image = img, imageScaling = "scaleProportionally", id = "close",
+      frame = { x = DIAGRAM_PAD, y = DIAGRAM_PAD, w = w - DIAGRAM_PAD * 2, h = imgH * scale },
+      trackMouseDown = true,
+    }
+  )
+  appendDiagramButtons(diagramCanvas, w, h - DIAGRAM_BAR_H + 10)
+
+  -- Clicking the diagram itself dismisses too: the window floats over
+  -- everything, so getting rid of it should not require aiming at anything.
+  diagramCanvas:mouseCallback(function(_, message, id)
+    if message ~= "mouseDown" then return end
+    if id == "copyImage" then
+      copyDiagramImage()
+    elseif id == "copySource" then
+      copyDiagramText()
+    else
+      hideDiagram()
+    end
+  end)
+  diagramCanvas:canvasMouseEvents(true, false, false, false)
+  diagramCanvas:show()
+  diagramVisible = true
+  if diagramModal then diagramModal:enter() end
+end
+
+local function toggleDiagram()
+  if diagramVisible then
+    hideDiagram()
+    return
+  end
+
+  local mmd = newestDiagram()
+  if mmd == "" then
+    hs.alert.show("No diagram drawn yet")
+    return
+  end
+
+  local pngPath = mmd:gsub("%.mmd$", ".png")
+  if fileExists(pngPath) then
+    showDiagram(pngPath)
+    return
+  end
+
+  renderDiagramPng(pngPath, function(result)
+    if result then
+      showDiagram(result)
+    else
+      hs.alert.show("Could not render diagram")
+    end
+  end)
+end
+
+diagramModal = hs.hotkey.modal.new()
+diagramModal:bind({ "cmd" }, "c", copyDiagramImage)
+diagramModal:bind({ "cmd", "shift" }, "c", copyDiagramText)
+diagramModal:bind({}, "escape", hideDiagram)
+
+hs.hotkey.bind(mod, "v", toggleDiagram)
+
+-- Exposed for the Hammerspoon console (`diagram.toggle()`), which is also the
+-- only way to exercise this without a physical keypress: synthetic events do
+-- not trigger Hammerspoon's own hotkeys.
+diagram = {
+  toggle = toggleDiagram,
+  copyImage = copyDiagramImage,
+  copyText = copyDiagramText,
+}
+
+-- Cycle the tutor pads around the screen nooks / right dock (Cmd+Ctrl+Shift+key).
+hs.hotkey.bind({ "cmd", "ctrl", "shift" }, "g", function()
+  cycleTutorAnchor("cadtutor", "HS-CADTUTOR", "CAD Tutor")
+end)
+hs.hotkey.bind({ "cmd", "ctrl", "shift" }, "h", function()
+  cycleTutorAnchor("screentutor", "HS-SCREENTUTOR", "Screen Tutor")
+end)
+
+--------------------------------------------------------------------------------
+-- Help panel (Cmd+Ctrl+/) and command palette (Cmd+Ctrl+P)
+--------------------------------------------------------------------------------
+
+-- Human-readable names for the scratchpad hotkeys, keyed by scratchpad name so
+-- the scratchpads table above stays untouched. Standalone (non-scratchpad)
+-- utility hotkeys live in EXTRA_SHORTCUTS.
+local SCRATCHPAD_LABELS = {
+  terminal = "Terminal", cadtutor = "CAD Tutor", screentutor = "Screen Tutor",
+  joplin = "Joplin", calendar = "Calendar", ranger = "Ranger (files)",
+  trello = "Trello", claude = "Claude", calculator = "Calculator (qalc)",
+  browser = "Chrome (research)", draw = "LibreOffice Draw", slack = "Slack",
+  editor = "VS Code", forks = "Claude forks (tmux)", aiyolo = "AI YOLO",
+  daybook = "Daybook",
+}
+
+local EXTRA_SHORTCUTS = {
+  { keys = "⌘⌃M", label = "Resource Monitor" },
+  { keys = "⌘⌃D", label = "Toggle Claude Code diff tabs" },
+  { keys = "⌘⌃V", label = "Diagram viewer (newest agent diagram)" },
+  { keys = "⌘⌃⇧G", label = "Cycle CAD Tutor corner" },
+  { keys = "⌘⌃⇧H", label = "Cycle Screen Tutor corner" },
+  { keys = "⌘⌃/", label = "This help panel" },
+  { keys = "⌘⌃P", label = "Command palette — search shortcuts & utilities" },
+}
+
+-- Every bound hotkey as { keys, label }, sorted for display. Scratchpad rows are
+-- generated from the live config, so new scratchpads appear here automatically.
+local function shortcutRows()
+  local rows = {}
+  for name, cfg in pairs(scratchpads) do
+    local label = SCRATCHPAD_LABELS[name]
+    if label then
+      table.insert(rows, { keys = "⌘⌃" .. string.upper(cfg.key), label = label })
+    end
+  end
+  for _, e in ipairs(EXTRA_SHORTCUTS) do
+    table.insert(rows, e)
+  end
+  table.sort(rows, function(a, b) return a.keys < b.keys end)
+  return rows
+end
+
+-- Where this repo's utility scripts are installed. ~/bin is the flattened,
+-- machine-relevant merge of src/utils/<layer>/**, organised into category
+-- subdirs (video, fs, os, git, …); prefer it over /usr/local/bin.
+local function utilsRoot()
+  local home = os.getenv("HOME")
+  for _, p in ipairs({ home .. "/bin", "/usr/local/bin" }) do
+    if hs.fs.attributes(p, "mode") == "directory" then return p end
+  end
+  return nil
+end
+
+-- First real comment line of a script, used as its one-line description.
+local function firstCommentLine(path)
+  local f = io.open(path, "r")
+  if not f then return "" end
+  local desc, n = "", 0
+  for line in f:lines() do
+    n = n + 1
+    if n > 15 then break end
+    local body = line:match("^%s*#+%s*(.+)$")
+      or line:match("^%s*%-%-+%s*(.+)$")
+      or line:match("^%s*//+%s*(.+)$")
+    if body and body:sub(1, 1) ~= "!" and #body > 2 then
+      desc = body
+      break
+    end
+  end
+  f:close()
+  if #desc > 90 then desc = desc:sub(1, 88) .. "…" end
+  return desc
+end
+
+local UTIL_SKIP = {
+  ["__init__.py"] = true, ["README.md"] = true, [".keep"] = true,
+  ["package.json"] = true, ["github-markdown.css"] = true,
+}
+local UTIL_EXT = { sh = true, py = true, js = true }
+
+-- Recursively collect scripts under a category dir (depth-capped at 2).
+local function collectUtils(dir, category, out, depth)
+  if depth > 2 then return end
+  for file in hs.fs.dir(dir) do
+    local full = dir .. "/" .. file
+    local mode = hs.fs.attributes(full, "mode")
+    if file:sub(1, 1) ~= "." then
+      if mode == "directory" then
+        collectUtils(full, category or file, out, depth + 1)
+      elseif mode == "file" and not UTIL_SKIP[file]
+          and UTIL_EXT[file:match("%.([%w]+)$") or ""] then
+        table.insert(out, {
+          category = category or "general", name = file,
+          path = full, desc = firstCommentLine(full),
+        })
+      end
+    end
+  end
+end
+
+-- Scan (once, cached) the installed utility scripts, grouped by category.
+local utilCache = nil
+local function scanUtilities()
+  if utilCache then return utilCache end
+  local root, out = utilsRoot(), {}
+  if root then
+    for entry in hs.fs.dir(root) do
+      local full = root .. "/" .. entry
+      if entry:sub(1, 1) ~= "." and hs.fs.attributes(full, "mode") == "directory" then
+        collectUtils(full, entry, out, 1)
+      end
+    end
+  end
+  table.sort(out, function(a, b)
+    if a.category == b.category then return a.name < b.name end
+    return a.category < b.category
+  end)
+  utilCache = out
+  return out
+end
+
+local function htmlEscape(s)
+  return (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"))
+end
+
+local function buildHelpHtml()
+  local p = {}
+  table.insert(p, [[<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    body{font-family:-apple-system,Menlo,monospace;background:#1e1e2e;color:#cdd6f4;margin:0;padding:24px;font-size:14px}
+    h1{font-size:18px;margin:0 0 4px;color:#89b4fa}
+    h2{font-size:14px;margin:22px 0 8px;color:#f9e2af;border-bottom:1px solid #45475a;padding-bottom:4px}
+    h3{font-size:11px;margin:14px 0 4px;color:#a6e3a1;text-transform:uppercase;letter-spacing:.06em}
+    .sc{display:grid;grid-template-columns:repeat(2,1fr);gap:5px 24px}
+    .row{display:flex;gap:10px;align-items:baseline}
+    kbd{background:#313244;border:1px solid #45475a;border-radius:4px;padding:1px 7px;font-size:12px;min-width:52px;text-align:center;color:#f5c2e7;flex:none}
+    .util{font-size:12px;margin:2px 0}
+    .un{color:#89dceb}
+    .ud{color:#7f849c}
+    .set{display:flex;gap:8px;align-items:center}
+    .set button{background:#313244;border:1px solid #45475a;border-radius:4px;color:#f5c2e7;
+      font-size:14px;width:26px;height:24px;cursor:pointer}
+    .set button:hover{background:#45475a}
+    .set input{background:#181825;border:1px solid #45475a;border-radius:4px;color:#cdd6f4;
+      font:inherit;font-size:13px;width:56px;text-align:center;padding:2px 4px}
+    .set + .set{margin-top:8px}
+    .set button.tog{width:auto;min-width:46px;padding:2px 10px;font-size:12px}
+    .set button.on{color:#a6e3a1}
+    .set button.off{color:#6c7086}
+    .hint{color:#6c7086;font-size:11px;margin-top:22px;text-align:center}
+  </style></head><body>]])
+  table.insert(p, "<h1>⌨︎ Workstation Help</h1>")
+  -- Live window-gap stepper. Posts to the hsHelp user-content handler, which writes
+  -- hs.settings and re-positions the open anchored pads (see helpBridge below).
+  table.insert(p, "<h2>Settings</h2><div class='set'><span>Window gap</span>"
+    .. "<button onclick='bump(-2)'>−</button>"
+    .. "<input id='gapv' type='number' min='0' max='64' step='1' value='" .. windowGap()
+    .. "' onchange='sendGap(this.value)'>"
+    .. "<button onclick='bump(2)'>+</button><span class='ud'>px — edge gap for"
+    .. " anchored/tiled windows</span></div>"
+    .. [[<script>
+      function sendGap(v){window.webkit.messageHandlers.hsHelp.postMessage(
+        {action:'setGap', value:Number(v)});}
+      function bump(d){sendGap(Number(document.getElementById('gapv').value)+d);}
+      window.setGapDisplay=function(v){document.getElementById('gapv').value=v;};
+    </script>]])
+  -- VS Code diff-tab toggle, same state as Cmd+Ctrl+D. Rendered from the flag file
+  -- on every open, and repainted in place by syncHelpDiffToggle when the hotkey
+  -- flips it while this panel is showing.
+  local diffOn = diffTabsEnabled()
+  table.insert(p, "<div class='set'><span>VS Code diff tabs</span>"
+    .. "<button id='difft' class='tog " .. (diffOn and "on" or "off")
+    .. "' onclick='sendDiff()'>" .. (diffOn and "ON" or "OFF") .. "</button>"
+    .. "<span class='ud'>— Claude Code opens each edit as a diff tab (⌘⌃D)</span></div>"
+    .. [[<script>
+      function sendDiff(){window.webkit.messageHandlers.hsHelp.postMessage(
+        {action:'setDiffTabs', value:document.getElementById('difft').textContent!=='ON'});}
+      window.setDiffDisplay=function(on){var b=document.getElementById('difft');
+        if(!b){return;} b.textContent=on?'ON':'OFF'; b.className='tog '+(on?'on':'off');};
+    </script>]])
+  -- Which harness the two tutor pads boot into. A pad that's already open keeps the
+  -- harness it started with, so the flip shows up the next time you open one.
+  table.insert(p, "<div class='set'><span>Tutor harness</span>"
+    .. "<button id='harn' class='tog on' onclick='sendHarness()'>"
+    .. string.upper(tutorHarness()) .. "</button>"
+    .. "<span class='ud'>— agent booted by Screen Tutor (⌘⌃H) and CAD Tutor (⌘⌃G);"
+    .. " applies to the next pad you open</span></div>"
+    .. [[<script>
+      function sendHarness(){window.webkit.messageHandlers.hsHelp.postMessage(
+        {action:'setTutorHarness',
+         value:document.getElementById('harn').textContent==='CLAUDE'?'codex':'claude'});}
+      window.setHarnessDisplay=function(v){var b=document.getElementById('harn');
+        if(!b){return;} b.textContent=v.toUpperCase();};
+    </script>]])
+  table.insert(p, "<h2>Keyboard shortcuts</h2><div class='sc'>")
+  for _, r in ipairs(shortcutRows()) do
+    table.insert(p, string.format(
+      "<div class='row'><kbd>%s</kbd><span>%s</span></div>",
+      htmlEscape(r.keys), htmlEscape(r.label)))
+  end
+  table.insert(p, "</div>")
+  table.insert(p, "<h2>Utilities <span class='ud'>(~/bin — search &amp; open with ⌘⌃P)</span></h2>")
+  local lastCat = nil
+  for _, u in ipairs(scanUtilities()) do
+    if u.category ~= lastCat then
+      table.insert(p, "<h3>" .. htmlEscape(u.category) .. "</h3>")
+      lastCat = u.category
+    end
+    local line = "<span class='un'>" .. htmlEscape(u.name) .. "</span>"
+    if u.desc ~= "" then
+      line = line .. " <span class='ud'>— " .. htmlEscape(u.desc) .. "</span>"
+    end
+    table.insert(p, "<div class='util'>" .. line .. "</div>")
+  end
+  table.insert(p, "<div class='hint'>⌘⌃/ to dismiss · ⌘⌃P to search &amp; open a utility</div>")
+  table.insert(p, "</body></html>")
+  return table.concat(p, "\n")
+end
+
+local helpWebview, helpVisible = nil, false
+
+-- Fills in the forward declaration above: repaint the diff-tab button so the panel
+-- keeps up when Cmd+Ctrl+D flips the state behind its back.
+syncHelpDiffToggle = function()
+  if not helpWebview then return end
+  helpWebview:evaluateJavaScript("window.setDiffDisplay && window.setDiffDisplay("
+    .. tostring(diffTabsEnabled()) .. ")")
+end
+
+-- Same idea for the tutor-harness button.
+syncHelpTutorHarness = function()
+  if not helpWebview then return end
+  helpWebview:evaluateJavaScript("window.setHarnessDisplay && window.setHarnessDisplay('"
+    .. tutorHarness() .. "')")
+end
+
+local function applyGapFromHelp(value)
+  local gap = tonumber(value)
+  if not gap then return end
+  gap = math.max(0, math.min(64, math.floor(gap)))
+  hs.settings.set(GAP_KEY, gap)
+  reapplyWindowGap()
+  if helpWebview then
+    -- Echo the clamped value back so the stepper can't drift out of range.
+    helpWebview:evaluateJavaScript("window.setGapDisplay && window.setGapDisplay(" .. gap .. ")")
+  end
+end
+
+-- Bridge for the help panel's interactive controls. The page posts {action=…} objects
+-- to window.webkit.messageHandlers.hsHelp; anything unrecognised is ignored.
+local helpBridge = hs.webview.usercontent.new("hsHelp")
+helpBridge:setCallback(function(message)
+  local body = message.body
+  if type(body) ~= "table" then return end
+  if body.action == "setGap" then
+    applyGapFromHelp(body.value)
+  elseif body.action == "setDiffTabs" then
+    -- setDiffTabs echoes back through syncHelpDiffToggle, so the button can't
+    -- disagree with the flag file if the write fails.
+    setDiffTabs(body.value == true)
+  elseif body.action == "setTutorHarness" then
+    setTutorHarness(body.value)
   end
 end)
+
+local function toggleHelp()
+  if helpVisible and helpWebview then
+    helpWebview:hide()
+    helpVisible = false
+    return
+  end
+  if not helpWebview then
+    local f = hs.screen.mainScreen():frame()
+    local w = 920
+    local h = math.min(f.h - 80, 1040)
+    helpWebview = hs.webview.new(
+      { x = f.x + (f.w - w) / 2, y = f.y + (f.h - h) / 2, w = w, h = h }, {}, helpBridge
+    )
+    helpWebview:windowStyle({ "borderless", "closable", "resizable" })
+    helpWebview:level(hs.drawing.windowLevels.floating)
+    helpWebview:alpha(0.96)
+    helpWebview:allowTextEntry(true)
+    helpWebview:windowCallback(function(action)
+      if action == "closing" then
+        helpVisible = false
+        helpWebview = nil
+      end
+    end)
+  end
+  helpWebview:html(buildHelpHtml())
+  helpWebview:show()
+  helpWebview:bringToFront()
+  helpVisible = true
+end
+
+local function openUtility(path)
+  hs.execute("open -a 'Visual Studio Code' '" .. path .. "'", true)
+end
+
+local function paletteChoices()
+  local choices = {}
+  for _, r in ipairs(shortcutRows()) do
+    table.insert(choices, { text = r.label, subText = "shortcut · " .. r.keys, kind = "shortcut" })
+  end
+  for _, u in ipairs(scanUtilities()) do
+    local sub = u.category
+    if u.desc ~= "" then sub = sub .. " · " .. u.desc end
+    table.insert(choices, { text = u.name, subText = sub, kind = "util", path = u.path })
+  end
+  return choices
+end
+
+local paletteChooser = nil
+
+local function showPalette()
+  if not paletteChooser then
+    paletteChooser = hs.chooser.new(function(choice)
+      if not choice then return end
+      if choice.kind == "util" and choice.path then
+        openUtility(choice.path)
+      elseif choice.kind == "shortcut" then
+        hs.alert.show(choice.text .. "  ·  " .. (choice.subText or ""))
+      end
+    end)
+    paletteChooser:placeholderText("Search shortcuts & utilities…")
+    paletteChooser:searchSubText(true)
+  end
+  paletteChooser:choices(paletteChoices())
+  paletteChooser:show()
+end
+
+hs.hotkey.bind(mod, "/", toggleHelp)
+hs.hotkey.bind(mod, "p", showPalette)
+
+-- Optional Hammerspoon extensions (the screen-tutor highlight overlay, staged
+-- from the macOS layer). Absent on machines without the file; pcall keeps init
+-- robust either way.
+pcall(dofile, os.getenv("HOME") .. "/.hammerspoon/screen_tutor.lua")
 
 hs.alert.show("Hammerspoon config loaded")

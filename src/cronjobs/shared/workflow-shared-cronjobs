@@ -7,11 +7,11 @@ PATH=/usr/local/bin:/usr/bin:/bin:/home/<USER>/bin
 * * * * * <USER> flock -n /tmp/workflow-promtail-service-discovery.lock /home/<USER>/bin/promtail/service_discovery.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
 # bucket files into date-based directories every Monday and Thursday at 1am
 0 1 * * 1,4 <USER> /usr/local/bin/cron/bucket_files_by_date_targets.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
-0 2 * * * <USER> docker system prune -af
+0 2 1 * * <USER> flock -n /tmp/workflow-docker-system-prune.lock /usr/local/bin/cron/run_heavy_job.sh docker system prune -af >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
 # removes all the contents of `~/tmp/` every Monday at 4am
 0 4 * * 1 <USER> rm -r ~/tmp/* >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
 # run disk report every Monday at 5am
-0 5 * * 1 <USER> echo "Disk report $(date)" >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1 && ncdu -o /home/<USER>/tmp/disk_report.txt / >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
+0 5 * * 1 <USER> echo "Disk report $(date)" >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1 && flock -n /tmp/workflow-disk-report.lock /usr/local/bin/cron/run_heavy_job.sh timeout 45m ncdu -x -q --exclude '/srv' --exclude '/srv/*' --exclude 'srv' --exclude 'srv/*' -o /home/<USER>/tmp/disk_report.txt / >/dev/null 2>> /home/<USER>/.cache/.workflow/cronjob.log
 # disk cleanup Monday at 3am
-0 3 * * 1 root echo "Disk cleanup $(date)" >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1 && /usr/local/bin/cron/disk_cleanup.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
+0 3 * * 1 root echo "Disk cleanup $(date)" >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1 && flock -n /tmp/workflow-disk-cleanup.lock /usr/local/bin/cron/run_heavy_job.sh /usr/local/bin/cron/disk_cleanup.sh >> /home/<USER>/.cache/.workflow/cronjob.log 2>&1
 # EOF

@@ -122,19 +122,45 @@ cp "$snapshot" "$labeled" 2>/dev/null || true
 # what the diff tab now references.
 rm -f "$snapshot"
 
-# The diff tab steals focus from the integrated terminal. Send Ctrl+`
-# after a short delay to refocus the terminal panel in VSCode.
+# The diff tab steals focus from the integrated terminal, so send a keystroke
+# after a short delay to put focus back on the terminal panel.
+#
+# NOT Ctrl+` — that's `workbench.action.terminal.toggleTerminal`, which *hides*
+# the panel whenever the terminal already has focus. Any edit that didn't
+# actually steal focus (reused diff tab, VSCode not frontmost) turned the
+# keystroke into a "hide the terminal", and a burst of edits flipped it on and
+# off. Instead we send a chord bound to `workbench.action.terminal.focus`,
+# which only ever focuses — pressing it twice is a no-op.
+#
+# Requires this entry in VSCode's keybindings.json:
+#   { "key": "ctrl+alt+cmd+t", "command": "workbench.action.terminal.focus" }
+# Without it the chord does nothing, which is a harmless no-op.
+#
 # Works natively on macOS (osascript) or in Docker via host-relay.
 if [ -n "${VSCODE_GIT_ASKPASS_NODE:-}" ]; then
-  REFOCUS_SCRIPT='tell application "System Events" to tell process "Code" to keystroke "`" using control down'
-  (
-    sleep 0.5
-    if [ "$(uname)" = "Darwin" ]; then
-      osascript -e "$REFOCUS_SCRIPT" 2>/dev/null
-    elif [ -f "/.dockerenv" ] && [ -x "/usr/local/bin/os/host_relay_client.sh" ]; then
-      /usr/local/bin/os/host_relay_client.sh notify "$REFOCUS_SCRIPT" 2>/dev/null
-    fi
-  ) &
+  # Only act when VSCode is frontmost; System Events sends keystrokes to
+  # whatever app is in front, so an unguarded chord lands in another app if
+  # the user tabbed away.
+  REFOCUS_SCRIPT='tell application "System Events"
+  if (name of first application process whose frontmost is true) is not "Code" then return
+  tell process "Code" to keystroke "t" using {control down, option down, command down}
+end tell'
+  # Single-flight: a burst of edits should produce one refocus, not one per
+  # file. mkdir is atomic, so whoever wins the lock owns the pending keystroke.
+  refocus_lock="$SNAPSHOT_DIR/.refocus.lock"
+  # Reclaim a lock orphaned by a killed hook, or refocus stops for good.
+  find "$refocus_lock" -maxdepth 0 -mmin +1 -exec rmdir {} \; 2>/dev/null || true
+  if mkdir "$refocus_lock" 2>/dev/null; then
+    (
+      sleep 0.5
+      if [ "$(uname)" = "Darwin" ]; then
+        osascript -e "$REFOCUS_SCRIPT" 2>/dev/null
+      elif [ -f "/.dockerenv" ] && [ -x "/usr/local/bin/os/host_relay_client.sh" ]; then
+        /usr/local/bin/os/host_relay_client.sh notify "$REFOCUS_SCRIPT" 2>/dev/null
+      fi
+      rmdir "$refocus_lock" 2>/dev/null || true
+    ) &
+  fi
 fi
 
 exit 0
