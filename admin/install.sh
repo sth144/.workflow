@@ -366,6 +366,12 @@ update_scratchpad_apps() {
 	[ -d "$icons" ]      || { echo "scratchpad apps: no icons at $icons; skipping"; return 0; }
 	mkdir -p "$apps_dir"
 
+	# Sign with a stable self-signed identity when it exists in the login keychain. Ad-hoc
+	# signatures change on every rebuild, so macOS forgets Local Network and Automation grants.
+	local sign_id="-"
+	local stable_id="workflow-macm4 Code Signing"
+	security find-certificate -c "$stable_id" >/dev/null 2>&1 && sign_id="$stable_id"
+
 	# "<icns-basename>:<display name>" — wrapper is built as "[Scratchpad] <display name>.app".
 	# That bundle filename is what macOS shows in the Dock/Cmd-Tab for these exec wrappers,
 	# so it doubles as the label. Hammerspoon's scratchApp() must resolve the same name.
@@ -390,8 +396,10 @@ update_scratchpad_apps() {
 		/usr/libexec/PlistBuddy -c "Set :CFBundleName $label" "$app/Contents/Info.plist"
 		/usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $label" "$app/Contents/Info.plist"
 		cp "$icns" "$app/Contents/Resources/alacritty.icns"
+		"$(dirname "$0")/macho_set_uuid.py" "$app/Contents/MacOS/alacritty" "$bundle_id" \
+			|| echo "  WARN: could not set a unique binary UUID for $label.app"
 
-		if codesign --force --deep --sign - "$app" >/dev/null 2>&1; then
+		if codesign --force --deep --sign "$sign_id" "$app" >/dev/null 2>&1; then
 			xattr -dr com.apple.quarantine "$app" 2>/dev/null || true
 			/usr/bin/touch "$app"
 			echo "  built $label.app"
