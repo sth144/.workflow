@@ -67,6 +67,11 @@ Then Read `p3.png`. Recurring faults to look for:
 - **A label colliding with the box it points at.** Markers scale with `stroke-width`, so
   the arrow tip sits further along than `x2` suggests. Leave 8–10 units of clearance.
 - **A caption wider than its box.** Shorten it.
+- **A long connector cutting through a box or a caption it has nothing to do with.**
+  Route it through a gap between boxes, or above the whole row. Check where the gaps
+  actually are before picking the x coordinate.
+- **A caption that repeats a label already on the diagram.** Delete one. Duplicated text
+  is what forces connectors into collisions in the first place.
 
 **3. Check for personal pronouns.**
 
@@ -117,7 +122,9 @@ Pick the form from the content, not for variety.
 | Order of events, delivery sequence | Horizontal SVG timeline, dots on a rule |
 | How components connect | SVG box-and-arrow. Put the shared layer on a bus or spine; put the exception outside the frame, boxed and dashed |
 | Real flow of material or data | Thick arrow in the flow colour, labelled with what moves |
-| **What a user actually does** | **Step chain — see below** |
+| What a user actually does | Step chain — see below |
+| **The layout of a file format** | **File anatomy — see below** |
+| **How records chain across tables** | **Box-and-arrow keyed on the identifier that joins them. Put the row and column counts in each box; they show where the volume is** |
 | Two things easily confused | Side-by-side contrast cards, different top-border colours |
 | Repeating facts across N items | Card grid, same field labels in each card |
 | Lookup material, glossary | Plain table |
@@ -144,6 +151,22 @@ actually do, and where does each step happen."
 
 Repeat that legend under each page of step chains. A reader should be able to see, at a
 glance, how much of a workflow actually runs in the product.
+
+### File anatomy
+
+When the topic involves a data format someone has to parse, draw the file as a vertical
+stack of bands — header, preamble, section marker, column header, data rows — at roughly
+a third of the page width, with annotation callouts arrowed in from the right.
+
+Give every band the fill that matches what it is, and reserve the caution colour for the
+part that breaks naive parsers. State the parse rule as a sentence in the annotation, not
+just a colour. Readers reach for this page when their importer has silently eaten
+something it should have stopped at.
+
+Derive the structure by script rather than by reading one file — section names, column
+counts and row counts across the whole set. Put the counts in the diagram. Never put
+sample values, record identifiers, or anything from a free-text field into the output;
+those carry names and customer data.
 
 Draw SVG by hand. Do not pull in Mermaid or a chart library — a CDN fetch fails in
 headless Chrome with no network and the PDF renders empty.
