@@ -162,10 +162,21 @@ questions" is a good note.
 If Joplin is unreachable, keep writing the note in the conversation and tell him
 once. Do not retry every round.
 
-## Step 7 — Cheat sheet PDF, on request
+## Step 7 — Visual output, on request
 
-Sean can ask for a visual version — charts, diagrams, tables, drawings. Same
-content as the note. Do not add or soften anything.
+Sean can ask for a visual version of the understanding note. Two formats are
+available. He picks one (or both). Offer them once the map is settled. Never
+generate either on every interview round.
+
+**Nothing from the topic goes in this skill.** Worked examples, sample output,
+real identifiers, customer names, hostnames, staff names — none of it. The skill
+is generic; the output lives in `~/Drawer/understanding/` and the note lives in
+Joplin. This repo syncs to a remote.
+
+### Option A — Cheat sheet PDF (infographic)
+
+A static, printable reference. Charts, diagrams, tables, drawings. Same content
+as the note. Do not add or soften anything.
 
 **It is a standalone cheat sheet, not a record of the session.** No first or
 second person, no name, no trace of the conversation. "What I had wrong" becomes
@@ -181,11 +192,6 @@ Read `references/infographic.md` before writing any HTML. It carries the render
 command, the required CSS, the palette, the full visual vocabulary, and the
 failure modes.
 
-**Nothing from the topic goes in this skill.** Worked examples, sample output,
-real identifiers, customer names, hostnames, staff names — none of it. The skill
-is generic; the output lives in `~/Drawer/understanding/` and the note lives in
-Joplin. This repo syncs to a remote.
-
 Two scripts ship with this skill, both taking the HTML path as an argument:
 
 - `measure.py` — reports every page's height against the A4 limit. Run it before
@@ -199,7 +205,23 @@ holding a diagram and Read the PNG, then grep for pronouns. SVG errors do not
 throw — they render as clipped text and arrows crossing their own captions. Do
 not use `mdls` for the page count; it reads a stale Spotlight index.
 
-Offer this once the map is settled. Never generate it on every interview round.
+### Option B — Interactive applet
+
+A self-contained HTML+JS+CSS learning tool for active recall and exploration.
+Same source content as the note, transformed into interactive components:
+flashcard decks, explorable concept maps, animated step-throughs, and quizzes.
+
+The applet serves a different purpose than the infographic. The infographic is a
+reference to pin up. The applet is a study session to work through.
+
+Read `references/applet.md` before writing any HTML. It defines the component
+library, the interaction patterns, the data structure, the CSS baseline, the
+palette, and the verification steps.
+
+The applet works best when there are at least 6 flashcard-worthy items or a
+workflow with 4+ steps. For thin topics, the infographic is the better format.
+
+Output goes to `~/Drawer/understanding/<topic-slug>-applet.html`.
 
 ## Step 8 — Close
 
