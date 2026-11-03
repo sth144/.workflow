@@ -366,6 +366,14 @@ update_scratchpad_apps() {
 	[ -d "$icons" ]      || { echo "scratchpad apps: no icons at $icons; skipping"; return 0; }
 	mkdir -p "$apps_dir"
 
+	# Each clone is its own TCC identity (unique bundle id, ad-hoc signature), so Full
+	# Disk Access has to be granted to it by hand. Re-signing changes the signature and
+	# drops that grant, which brings back the "Data Access Blocked" notifications. Stamp
+	# every clone with a hash of its inputs and rebuild only when an input changed.
+	local src_hash
+	src_hash="$(/usr/bin/shasum -a 256 "$alacritty/Contents/MacOS/alacritty" | cut -d' ' -f1)"
+	local rebuilt=0
+
 	# "<icns-basename>:<display name>" — wrapper is built as "[Scratchpad] <display name>.app".
 	# That bundle filename is what macOS shows in the Dock/Cmd-Tab for these exec wrappers,
 	# so it doubles as the label. Hammerspoon's scratchApp() must resolve the same name.
@@ -382,6 +390,14 @@ update_scratchpad_apps() {
 			continue
 		fi
 
+		local stamp current
+		stamp="$src_hash:$(/usr/bin/shasum -a 256 "$icns" | cut -d' ' -f1)"
+		current="$(/usr/libexec/PlistBuddy -c "Print :WorkflowScratchpadStamp" "$app/Contents/Info.plist" 2>/dev/null || true)"
+		if [ "$current" = "$stamp" ] && codesign --verify "$app" >/dev/null 2>&1; then
+			echo "  keep $label.app (unchanged)"
+			continue
+		fi
+
 		rm -rf "$app"
 		if ! cp -cR "$alacritty" "$app" 2>/dev/null; then
 			cp -R "$alacritty" "$app" || { echo "  WARN: could not clone $label.app"; continue; }
@@ -390,16 +406,22 @@ update_scratchpad_apps() {
 		/usr/libexec/PlistBuddy -c "Set :CFBundleName $label" "$app/Contents/Info.plist"
 		/usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $label" "$app/Contents/Info.plist"
 		cp "$icns" "$app/Contents/Resources/alacritty.icns"
+		/usr/libexec/PlistBuddy -c "Add :WorkflowScratchpadStamp string $stamp" "$app/Contents/Info.plist"
 
 		if codesign --force --deep --sign - "$app" >/dev/null 2>&1; then
 			xattr -dr com.apple.quarantine "$app" 2>/dev/null || true
 			/usr/bin/touch "$app"
+			rebuilt=1
 			echo "  built $label.app"
 		else
 			echo "  WARN: failed to sign $label.app (will fall back to plain Alacritty)"
 		fi
 	done
 	echo "Scratchpad apps updated"
+	if [ "$rebuilt" = 1 ]; then
+		echo "  NOTE: rebuilt bundles lose Full Disk Access. Re-add them under"
+		echo "        System Settings > Privacy & Security > Full Disk Access."
+	fi
 }
 
 update_workflow_apps() {
