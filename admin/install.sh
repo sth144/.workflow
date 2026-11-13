@@ -351,6 +351,62 @@ update_launchdaemons() {
 	echo "LaunchDaemons updated"
 }
 
+SCRATCHPAD_KEYCHAIN="$HOME/Library/Keychains/workflow-signing.keychain-db"
+SCRATCHPAD_SIGN_CN="Workflow Scratchpad Signing"
+SCRATCHPAD_SIGN_PASS="$HOME/.config/.workflow-signing-keychain-pass"
+
+# Make the self-signed code-signing certificate the scratchpad bundles are signed
+# with. TCC stores the signature in each grant: for an ad-hoc signature that is the
+# cdhash, which changes on every rebuild, so Full Disk Access and the Downloads /
+# Desktop / Screen Recording approvals die and macOS asks for them again. A
+# certificate gives the bundle the designated requirement
+#   identifier "com.workflow.scratchpad.X" and certificate leaf = H"<cert>"
+# which does not change when the bundle is rebuilt, so the grants survive.
+# The certificate lives in its own keychain with a random password on disk, so no
+# step here needs the login keychain or can block on a GUI prompt.
+create_scratchpad_identity() {
+	local pw tmp legacy=()
+	command -v openssl >/dev/null 2>&1 || return 1
+	openssl version | grep -q '^OpenSSL 3' && legacy=(-legacy -macalg sha1)
+
+	pw="$(openssl rand -hex 24)"
+	tmp="$(mktemp -d)" || return 1
+	mkdir -p "$(dirname "$SCRATCHPAD_SIGN_PASS")"
+	(umask 077 && printf '%s' "$pw" >"$SCRATCHPAD_SIGN_PASS") || return 1
+
+	security create-keychain -p "$pw" "$SCRATCHPAD_KEYCHAIN" || return 1
+	security set-keychain-settings "$SCRATCHPAD_KEYCHAIN"  # no auto-lock
+	security unlock-keychain -p "$pw" "$SCRATCHPAD_KEYCHAIN" || return 1
+
+	openssl req -x509 -newkey rsa:2048 -nodes -days 7300 \
+		-keyout "$tmp/key.pem" -out "$tmp/cert.pem" -subj "/CN=$SCRATCHPAD_SIGN_CN" \
+		-addext "basicConstraints=critical,CA:false" \
+		-addext "keyUsage=critical,digitalSignature" \
+		-addext "extendedKeyUsage=critical,codeSigning" >/dev/null 2>&1 &&
+		# Apple's importer rejects the OpenSSL 3 defaults, hence the legacy flags.
+		openssl pkcs12 -export "${legacy[@]}" -inkey "$tmp/key.pem" -in "$tmp/cert.pem" \
+			-out "$tmp/id.p12" -passout pass:"$pw" -name "$SCRATCHPAD_SIGN_CN" >/dev/null 2>&1 &&
+		security import "$tmp/id.p12" -k "$SCRATCHPAD_KEYCHAIN" -P "$pw" -T /usr/bin/codesign >/dev/null 2>&1 &&
+		# Let codesign use the key without a keychain password prompt on every run.
+		security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$pw" \
+			"$SCRATCHPAD_KEYCHAIN" >/dev/null 2>&1
+	local rc=$?
+
+	rm -rf "$tmp"
+	return $rc
+}
+
+# Echo the SHA-1 of the signing identity, creating it on first run. Empty output
+# means no identity was available and the caller should fall back to ad-hoc.
+scratchpad_identity_hash() {
+	if [ ! -f "$SCRATCHPAD_KEYCHAIN" ] || [ ! -f "$SCRATCHPAD_SIGN_PASS" ]; then
+		create_scratchpad_identity >&2 || return 1
+	fi
+	security unlock-keychain -p "$(cat "$SCRATCHPAD_SIGN_PASS")" "$SCRATCHPAD_KEYCHAIN" 2>/dev/null || return 1
+	security find-identity "$SCRATCHPAD_KEYCHAIN" |
+		awk -v cn="$SCRATCHPAD_SIGN_CN" 'index($0, cn) { print $2; exit }'
+}
+
 # Build per-scratchpad Alacritty app bundles in ~/Applications so every scratchpad
 # gets its own Dock/Cmd-Tab identity. A shell wrapper is not sufficient: once it
 # execs Alacritty, macOS re-identifies the process as org.alacritty and replaces the
@@ -370,12 +426,19 @@ update_scratchpad_apps() {
 	[ -d "$icons" ]      || { echo "scratchpad apps: no icons at $icons; skipping"; return 0; }
 	mkdir -p "$apps_dir"
 
-	# Each clone is its own TCC identity (unique bundle id, ad-hoc signature), so Full
-	# Disk Access has to be granted to it by hand. Re-signing changes the signature and
-	# drops that grant, which brings back the "Data Access Blocked" notifications. Stamp
-	# every clone with a hash of its inputs and rebuild only when an input changed.
-	local src_hash
+	# Each clone is its own TCC identity (unique bundle id), so Full Disk Access and the
+	# per-folder approvals have to be granted to it by hand. Stamp every clone with a
+	# hash of its inputs and rebuild only when an input changed, and sign with the
+	# certificate from scratchpad_identity_hash so a rebuild keeps those grants.
+	local src_hash sign_id sign_args
 	src_hash="$(/usr/bin/shasum -a 256 "$alacritty/Contents/MacOS/alacritty" | cut -d' ' -f1)"
+	sign_id="$(scratchpad_identity_hash)"
+	if [ -n "$sign_id" ]; then
+		sign_args=(--sign "$sign_id" --keychain "$SCRATCHPAD_KEYCHAIN")
+	else
+		echo "  WARN: no stable signing identity; signing ad-hoc (TCC grants will not survive a rebuild)"
+		sign_args=(--sign -)
+	fi
 	local rebuilt=0
 
 	# "<icns-basename>:<display name>" — wrapper is built as "[Scratchpad] <display name>.app".
@@ -394,13 +457,17 @@ update_scratchpad_apps() {
 			continue
 		fi
 
-		local stamp current
-		stamp="$src_hash:$(/usr/bin/shasum -a 256 "$icns" | cut -d' ' -f1)"
+		local stamp current was_adhoc=0
+		stamp="$src_hash:$(/usr/bin/shasum -a 256 "$icns" | cut -d' ' -f1):${sign_id:-adhoc}"
 		current="$(/usr/libexec/PlistBuddy -c "Print :WorkflowScratchpadStamp" "$app/Contents/Info.plist" 2>/dev/null || true)"
 		if [ "$current" = "$stamp" ] && codesign --verify "$app" >/dev/null 2>&1; then
 			echo "  keep $label.app (unchanged)"
 			continue
 		fi
+
+		# An ad-hoc predecessor left TCC entries keyed to a cdhash this build cannot
+		# match. Clear them so the bundle starts from one clean set of prompts.
+		codesign -d --verbose=2 "$app" 2>&1 | grep -q 'Signature=adhoc' && was_adhoc=1
 
 		rm -rf "$app"
 		if ! cp -cR "$alacritty" "$app" 2>/dev/null; then
@@ -412,9 +479,10 @@ update_scratchpad_apps() {
 		cp "$icns" "$app/Contents/Resources/alacritty.icns"
 		/usr/libexec/PlistBuddy -c "Add :WorkflowScratchpadStamp string $stamp" "$app/Contents/Info.plist"
 
-		if codesign --force --deep --sign - "$app" >/dev/null 2>&1; then
+		if codesign --force --deep "${sign_args[@]}" "$app" >/dev/null 2>&1; then
 			xattr -dr com.apple.quarantine "$app" 2>/dev/null || true
 			/usr/bin/touch "$app"
+			[ "$was_adhoc" = 1 ] && [ -n "$sign_id" ] && tccutil reset All "$bundle_id" >/dev/null 2>&1
 			rebuilt=1
 			echo "  built $label.app"
 		else
@@ -422,9 +490,12 @@ update_scratchpad_apps() {
 		fi
 	done
 	echo "Scratchpad apps updated"
-	if [ "$rebuilt" = 1 ]; then
-		echo "  NOTE: rebuilt bundles lose Full Disk Access. Re-add them under"
-		echo "        System Settings > Privacy & Security > Full Disk Access."
+	if [ "$rebuilt" = 1 ] && [ -z "$sign_id" ]; then
+		echo "  NOTE: ad-hoc bundles lose Full Disk Access on every rebuild. Re-add them"
+		echo "        under System Settings > Privacy & Security > Full Disk Access."
+	elif [ "$rebuilt" = 1 ]; then
+		echo "  NOTE: a bundle that moved off its old ad-hoc signature asks for its"
+		echo "        permissions once more. Later rebuilds keep what you grant now."
 	fi
 }
 
