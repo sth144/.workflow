@@ -20,14 +20,32 @@ echo "=== Trello → Daybook Sync - $(date) ==="
 # launchd recorded exit 1, nothing reached the log, and no Slack post went out,
 # so a dead sync looked exactly like a quiet day with no cards.
 STAGE="startup"
+# Holds whatever the failing stage printed. sync.py reports the real cause on
+# stdout ({"status":"error",...}), but it is captured into a variable, so a
+# failure tripped the trap before anything echoed it and the log recorded only
+# "exit 1". Stages that capture output put it here so fail() can report it.
+STAGE_OUTPUT=""
+
+# requests puts the full request URL in its exception text, so a Joplin or Trello
+# error carries the API token with it. Strip every token before the text reaches
+# the log file or Slack.
+redact() {
+	sed -E 's/((token|key)=)[A-Za-z0-9._-]+/\1REDACTED/g'
+}
+
 fail() {
 	local code=$1
 	echo "FAILED during ${STAGE} (exit ${code})" >&2
+	[ -n "$STAGE_OUTPUT" ] && printf '%s\n' "$STAGE_OUTPUT" | redact >&2
 	# slack.sh may not be loaded yet if we died early — post directly in that case.
 	local text="🚨 *Morning Sync FAILED* - $(date '+%a %b %d %H:%M')
 Stage: ${STAGE} (exit ${code})
 Host: $(hostname -s)
-Log: ~/.claude/routines/logs/trello-daybook-sync.log"
+Log: ~/.claude/routines/logs/trello-daybook-sync.log${STAGE_OUTPUT:+
+
+\`\`\`
+$(printf '%s' "$STAGE_OUTPUT" | redact | tail -c 1500)
+\`\`\`}"
 	if declare -f slack_post >/dev/null 2>&1; then
 		slack_post "$text"
 	elif [ -f "$HOME/.config/.env.SLACK_WEBHOOK_URL" ]; then
@@ -128,22 +146,55 @@ done
 
 [ -f "$SYNC_SCRIPT" ] || { echo "sync.py not found at $SYNC_SCRIPT" >&2; false; }
 
+# The Mac is asleep at 07:00, so launchd starts this job the moment it wakes.
+# Joplin has not re-bound its clipper port by then, sync.py gets "connection
+# refused" about a second in, and the run dies. Wait for the port to answer.
+STAGE="wait for Joplin clipper"
+JOPLIN_PING="${JOPLIN_BASE_URL:-http://127.0.0.1:41184}/ping"
+JOPLIN_WAIT_SECS="${JOPLIN_WAIT_SECS:-600}"
+joplin_ready() {
+	[ "$(curl -fsS --max-time 5 "$JOPLIN_PING" 2>/dev/null)" = "JoplinClipperServer" ]
+}
+waited=0
+until joplin_ready; do
+	if [ "$waited" -ge "$JOPLIN_WAIT_SECS" ]; then
+		echo "Joplin clipper did not answer at $JOPLIN_PING after ${waited}s" >&2
+		false
+	fi
+	sleep 10
+	waited=$((waited + 10))
+done
+[ "$waited" -gt 0 ] && echo "Joplin clipper answered after ${waited}s"
+
 # A failing sync.py trips the ERR trap through the assignment, so every exit
 # path below is reported. The Claude fallback only pulls Trello -> Joplin, so
 # say so out loud rather than letting a half-sync look like a full one.
 HEADER="📋 *Morning Sync*"
+# Capture first and check the status separately. `OUTPUT=$(cmd)` under errexit
+# fires the trap on the assignment, so the stage has to hand its output to
+# STAGE_OUTPUT before the non-zero status is allowed to propagate.
+run_stage() {
+	set +e
+	STAGE_OUTPUT="$("$@" 2>&1)"
+	local code=$?
+	set -e
+	OUTPUT="$STAGE_OUTPUT"
+	return $code
+}
+
 if [ -n "$PY" ]; then
 	STAGE="run sync.py ($PY)"
-	OUTPUT=$("$PY" "$SYNC_SCRIPT" 2>&1)
+	run_stage "$PY" "$SYNC_SCRIPT"
 elif command -v uv >/dev/null 2>&1; then
 	STAGE="run sync.py (uv)"
-	OUTPUT=$(uv run --with requests "$SYNC_SCRIPT" 2>&1)
+	run_stage uv run --with requests "$SYNC_SCRIPT"
 else
 	STAGE="run Claude fallback"
 	HEADER="⚠️ *Morning Sync (DEGRADED — Trello → Joplin only)*"
 	echo "no interpreter with requests, falling back to Claude" >&2
-	OUTPUT=$(echo "$PROMPT" | claude --print 2>&1)
+	run_stage bash -c 'printf "%s" "$1" | claude --print' _ "$PROMPT"
 fi
+STAGE_OUTPUT=""
 echo "$OUTPUT"
 
 # Post to Slack
