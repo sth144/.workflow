@@ -41,19 +41,7 @@
         "type": "session-usage",
         "color": "green",
         "metadata": {
-          "display": "progress-short"
-        }
-      },
-      {
-        "id": "11",
-        "type": "separator"
-      },
-      {
-        "id": "12",
-        "type": "weekly-usage",
-        "color": "blue",
-        "metadata": {
-          "display": "progress-short"
+          "display": "slider"
         }
       }
     ],
