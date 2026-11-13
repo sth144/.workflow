@@ -17,7 +17,7 @@ stage: clean
 	./admin/install.sh stage
 
 .PHONY: install
-install: update_cronjobs update_launchagents update_systemd_services copy_staged_to_home update_scratchpad_apps update_workflow_apps update_claude_mcp enable_utils update_bashrc update_root update_launchdaemons refresh
+install: update_cronjobs update_launchagents update_systemd_services copy_staged_to_home update_scratchpad_apps update_workflow_apps update_claude_mcp enable_utils update_root update_launchdaemons refresh
 	@echo "installing configs and utils"
 
 update_workflow_apps:
@@ -70,12 +70,6 @@ enable_utils:
 	@echo "enabling utils in ~/bin"
 	find ~/bin -type f -iname "*.sh" -exec chmod +x {} \;
 	find ~/bin -type f -iname "*.py" -exec chmod +x {} \;
-
-# some commands (like "export WORKFLOW_BASE=...") cannot be hardcoded into conf/shared/.bashrc
-# this makefile target will append them to ~/.bashrc
-update_bashrc:
-	@echo "appending ~/.bashrc"
-	./admin/update_bashrc.sh
 
 # restart i3
 refresh:

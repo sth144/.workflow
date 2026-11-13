@@ -265,8 +265,8 @@ export PATH=$PATH:/opt/faceswap
 
 #~/.config/i3/sh/xrandr-layout.sh
 
-export WORKFLOW_BASE=/mnt/D/Coding/Projects/Personal/.workflow
-export PYTHONPATH="${PYTHONPATH}:/mnt/D/Coding/Projects/Personal/.workflow"
+export WORKFLOW_BASE=<WORKFLOW_BASE>
+export PYTHONPATH="${PYTHONPATH}:<WORKFLOW_BASE>"
 
 if [ -f /usr/local/src/alacritty/extra/completions/alacritty.bash ]; then
   source /usr/local/src/alacritty/extra/completions/alacritty.bash

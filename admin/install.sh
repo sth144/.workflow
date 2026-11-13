@@ -178,6 +178,10 @@ stage() {
 
 	replace_in_staged_text_files "<USER>" "$USER"
 
+	# change <WORKFLOW_BASE> tag to this machine's checkout path, so the staged
+	# .bashrc exports a WORKFLOW_BASE that exists on the machine being installed to
+	replace_in_staged_text_files "<WORKFLOW_BASE>" "$BASE_ABS"
+
 	# change <DAYBOOK_NOTEBOOK> tag to the per-machine Joplin daybook notebook
 	# name (e.g. "Journal" on m4, "Daybook" on m2-work). Defaults to "Journal".
 	DAYBOOK_NOTEBOOK=$(echo "$BUILD_CONFIG" | jq -r '.daybookNotebook // "Journal"')

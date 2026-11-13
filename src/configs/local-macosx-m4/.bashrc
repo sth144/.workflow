@@ -314,7 +314,7 @@ export PATH="$(find -L "$HOME/bin" \( -name node_modules -o -name .git \) -prune
 export PATH=$PATH:/opt/sonar/bin
 
 #~/.config/i3/sh/xrandr-layout.sh
-export WORKFLOW_BASE=/Users/sthinds/src/workflow-macm4
+export WORKFLOW_BASE=<WORKFLOW_BASE>
 
 if [ -f /usr/local/src/alacritty/extra/completions/alacritty.bash ]; then
   source /usr/local/src/alacritty/extra/completions/alacritty.bash
@@ -359,4 +359,4 @@ bind '"\eOB": next-history'
 
 source $HOME/.env.global
 
-export PYTHONPATH="${PYTHONPATH}:/Users/sthinds/src/workflow-macm4"
+export PYTHONPATH="${PYTHONPATH}:<WORKFLOW_BASE>"

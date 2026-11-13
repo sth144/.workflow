@@ -118,7 +118,6 @@ Note: to some extent, these are all optional, as local configs/utils can be used
 * need to work out a good dev workflow where you can modify src/*/shared and continuously update local versions automatically.
     * new Makefile target
 * is there really a need for stage/*? Not necessary to figure that out just yet
-* is update_bashrc necessary?
 * packaging scheme for dependencies
     * feh
     * xdotool
