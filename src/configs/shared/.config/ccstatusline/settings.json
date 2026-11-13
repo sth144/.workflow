@@ -33,9 +33,11 @@
         "id": "7",
         "type": "git-changes",
         "color": "yellow"
-      }
-    ],
-    [
+      },
+      {
+        "id": "8",
+        "type": "separator"
+      },
       {
         "id": "10",
         "type": "session-usage",
@@ -45,6 +47,7 @@
         }
       }
     ],
+    [],
     []
   ],
   "flexMode": "full-minus-40",
