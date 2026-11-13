@@ -39,7 +39,10 @@
       {
         "id": "10",
         "type": "session-usage",
-        "color": "green"
+        "color": "green",
+        "metadata": {
+          "display": "progress-short"
+        }
       },
       {
         "id": "11",
@@ -47,26 +50,11 @@
       },
       {
         "id": "12",
-        "type": "block-timer",
-        "color": "brightBlack"
-      },
-      {
-        "id": "13",
-        "type": "separator"
-      },
-      {
-        "id": "14",
         "type": "weekly-usage",
-        "color": "blue"
-      },
-      {
-        "id": "15",
-        "type": "separator"
-      },
-      {
-        "id": "16",
-        "type": "weekly-opus-usage",
-        "color": "magenta"
+        "color": "blue",
+        "metadata": {
+          "display": "progress-short"
+        }
       }
     ],
     []
