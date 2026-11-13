@@ -159,6 +159,7 @@ Available skills:
 - `trello-daybook-sync` — Syncs in two directions between the Trello Today list and the To Do section of the Joplin daybook.
 - `jupyter-notebook` — Creates Jupyter notebooks from templates. Moves SQL and analysis work into notebooks ("notebook this", "notebook for ESP-456").
 - `diagram` — Draws a mermaid diagram: causal chain, state machine, mindmap, pipeline, deployment, or data model ("draw that", "diagram this").
+- `explain-pr` — Turns a Bitbucket or GitHub PR URL into an infographic PDF or an interactive HTML walkthrough. For a bug fix it shows the broken behaviour next to the fixed behaviour ("explain this PR").
 
 Do not print mermaid source in a response. Mermaid source is more difficult to read than
 the prose that it shows. Use the `diagram` skill. This skill spools the diagram, and I can
