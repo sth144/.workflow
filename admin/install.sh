@@ -250,10 +250,14 @@ update_home() {
 }
 
 update_root() {
+	# -rl, not -a: -a copies the stage dirs' owner/perms onto / and /etc themselves
+	# (a user-owned / makes systemd-tmpfiles refuse to create /run/*), so new files
+	# land root-owned and existing ones keep theirs. Layer placeholders stay out of /.
+	local opts=(-rlvh --exclude='.gitkeep' --exclude='.keep')
 	if [[ $(uname) == "Darwin" ]]; then
-		sudo rsync -avh ./stage/root/etc/ /private/etc/
+		sudo rsync "${opts[@]}" ./stage/root/etc/ /private/etc/
 	fi
-	sudo rsync -avh ./stage/root/ /
+	sudo rsync "${opts[@]}" ./stage/root/ /
 	echo ""
 }
 
