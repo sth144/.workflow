@@ -47,8 +47,8 @@ if ! output="$(docker run --rm \
 fi
 
 # Ticks that changed nothing are the common case; stay silent so the log holds
-# only real events.
-if grep -qE '^ +(crop|fill) |^pruned ' <<<"$output"; then
+# only real events. A skipped file prints '  ! name: ...' and counts as one.
+if grep -qE '^ +(crop|fill|!) |^pruned ' <<<"$output"; then
   echo "--- $(date '+%F %T') ---"
   echo "$output"
 fi

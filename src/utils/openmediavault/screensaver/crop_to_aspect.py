@@ -81,6 +81,15 @@ FACE_DETECT_MAX_SIDE = 1024
 # the source is too low-resolution to fill the panel honestly.
 LOWRES_RATIO = 0.75
 
+# Museum scans run past a gigapixel, well over Pillow's decompression-bomb
+# guard. These are paintings we put in the directory ourselves, so lift the
+# limit and keep the decode bounded with draft() instead.
+Image.MAX_IMAGE_PIXELS = None
+
+# Decode a JPEG no smaller than this multiple of the output size. The cropper
+# never needs more: it crops, then resizes down to the panel.
+DRAFT_OVERSAMPLE = 2
+
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".tif", ".tiff", ".bmp",
                   ".heic", ".heif"}
 
@@ -337,8 +346,11 @@ def keep_fraction(size: tuple[int, int], aspect: float) -> float:
     return aspect / source_aspect if source_aspect > aspect else source_aspect / aspect
 
 
-def load_image(path: Path) -> Image.Image:
+def load_image(path: Path, size: tuple[int, int]) -> Image.Image:
     image = Image.open(path)
+    # JPEG-only and a no-op elsewhere: picks a DCT scale that still covers the
+    # requested size, so a gigapixel scan decodes at 1/8 instead of in full.
+    image.draft("RGB", (size[0] * DRAFT_OVERSAMPLE, size[1] * DRAFT_OVERSAMPLE))
     image = ImageOps.exif_transpose(image)
     return image.convert("RGB")
 
@@ -375,7 +387,7 @@ def describe(mode: str, keep: float, scale: float, faces: list) -> str:
 
 def process(source: Path, target: Path, size: tuple[int, int], max_crop: float,
             detector, quality: int) -> Result:
-    image = load_image(source)
+    image = load_image(source, size)
     output, mode, keep, scale, faces = render(image, size, max_crop, detector)
     output.save(target, "JPEG", quality=quality, optimize=True, progressive=True)
     return Result(source.name, mode, describe(mode, keep, scale, faces))
@@ -447,8 +459,8 @@ def main(argv: list[str] | None = None) -> int:
         try:
             results.append(process(source, output_path(source, dst), args.size,
                                    args.max_crop, detector, args.quality))
-        except (OSError, ValueError) as exc:
-            print(f"  ! {source.name}: {exc}", file=sys.stderr)
+        except Exception as exc:  # one unreadable file must not stop the batch
+            print(f"  ! {source.name}: {type(exc).__name__}: {exc}", file=sys.stderr)
 
     for result in results:
         print(f"  {result.mode:<5} {result.name:<58} {result.detail}")
