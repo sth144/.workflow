@@ -18,8 +18,9 @@
 # Alacritty window with Cmd+Ctrl+F (Hammerspoon).
 #
 # Works in two environments:
-#   1. MACOS HOST (no /.dockerenv) — adds a pane via `tmux split-window` if the
-#      session exists, else creates it inside a new Alacritty window via the CLI.
+#   1. MACOS HOST (no /.dockerenv) — creates the session detached if needed,
+#      adds the worker via `tmux split-window`, opens an Alacritty window if no
+#      client is attached, then verifies the pane runs claude (exit 1 if not).
 #   2. DEVCONTAINER (/.dockerenv exists) — writes a host-shared .command launcher
 #      and asks the host to run it via the host_relay bridge; the launcher adds a
 #      pane or creates the session, running claude inside this container.
@@ -110,7 +111,6 @@ if [ -f /.dockerenv ]; then
 	LAUNCHER_DIR="/usr/local/src/workflow-macos-1095/cache/claude-fork"
 else
 	IN_CONTAINER=false
-	LAUNCHER_DIR="${TMPDIR:-/tmp}/claude-fork"
 fi
 
 # ---- Fork mode: resume is project-scoped, so cd into the session's own cwd ----
@@ -182,44 +182,60 @@ LAUNCHER_TAG="${SESSION:-handoff}"
 # --------------------------------------------------------------------------
 # HOST PATH — direct tmux access, no relay needed
 # --------------------------------------------------------------------------
+pane_count() { tmux list-panes -a 2>/dev/null | wc -l | tr -d ' '; }
+
+# Make sure the forks session exists before a worker is added. On a cold tmux
+# server (for example after a reboot), tmux-continuum restores the saved
+# sessions just after the server starts. That restore replaced a new
+# claude-forks session and silently lost the worker in it. So start the session
+# with a plain shell, then wait until the pane count is stable for 3 s.
+ensure_forks_session() {
+	tmux has-session -t "$FORKS_SESSION" 2>/dev/null && return 0
+	tmux new-session -d -s "$FORKS_SESSION"
+	local last=-1 now stable=0 i
+	for i in $(seq 1 20); do
+		sleep 1
+		now=$(pane_count)
+		if [ "$now" = "$last" ]; then stable=$((stable + 1)); else stable=0; fi
+		[ "$stable" -ge 3 ] && break
+		last="$now"
+	done
+	tmux has-session -t "$FORKS_SESSION" 2>/dev/null \
+		|| die "tmux session '$FORKS_SESSION' is missing after start-up"
+}
+
+# Wait until pane $1 runs claude. Fail if the pane exits or claude does not start.
+verify_worker_pane() {
+	local pane="$1" cmd i
+	for i in $(seq 1 15); do
+		sleep 1
+		cmd=$(tmux display-message -p -t "$pane" '#{pane_current_command}' 2>/dev/null) || return 1
+		case "$cmd" in claude*) return 0 ;; esac
+	done
+	return 1
+}
+
 if ! $IN_CONTAINER; then
-	if tmux has-session -t "$FORKS_SESSION" 2>/dev/null; then
-		# Session exists — join as a pane in the active window so all forks
-		# are visible together. Use split-window on the FORKS window (not
-		# some pre-existing unrelated window) and re-tile for even sizing.
-		tmux split-window -t "$FORKS_SESSION" \
-			bash -lc "$INNER_BODY" _ "${INNER_ARGS[@]}"
-		tmux select-layout -t "$FORKS_SESSION" tiled
+	ensure_forks_session
 
-		# If no terminal is showing the session, open one. This happens when
-		# a prior Alacritty window was closed (tmux detaches but keeps the
-		# session alive).
-		if ! tmux list-clients -t "$FORKS_SESSION" 2>/dev/null | grep -q .; then
-			bash -lc "$(build_term_cmd \
-				"bash -lc 'tmux attach -t $FORKS_SESSION'" \
-				"$FORKS_MARKER" "$ALACRITTY")"
-		fi
+	# Join as a pane in the forks window so all workers are visible together,
+	# and re-tile for even sizing. -P prints the new pane id for verification.
+	PANE=$(tmux split-window -P -F '#{pane_id}' -t "$FORKS_SESSION" \
+		bash -lc "$INNER_BODY" _ "${INNER_ARGS[@]}")
+	tmux select-layout -t "$FORKS_SESSION" tiled
 
-		echo "Added $MODE worker as pane in '$FORKS_SESSION'."
-		echo "Toggle: Cmd+Ctrl+F | Reattach: tmux attach -t $FORKS_SESSION"
-		exit 0
+	# If no terminal shows the session (new session, or a prior Alacritty
+	# window was closed), open one attached to it.
+	if ! tmux list-clients -t "$FORKS_SESSION" 2>/dev/null | grep -q .; then
+		bash -lc "$(build_term_cmd \
+			"bash -lc 'tmux attach -t $FORKS_SESSION'" \
+			"$FORKS_MARKER" "$ALACRITTY")"
 	fi
 
-	# First worker — create the forks session inside a new Alacritty window.
-	mkdir -p "$LAUNCHER_DIR"
-	LAUNCHER="$LAUNCHER_DIR/fork-${LAUNCHER_TAG}-$$.command"
-	cat > "$LAUNCHER" <<-LAUNCHER_EOF
-	#!/usr/bin/env bash
-	export PATH="$DOCKER_PATHS:\$PATH"
-	tmux new-session -s $FORKS_SESSION \
-	  bash -lc $ESC_INNER _$ESC_ARGS
-	rm -f "\$0"
-	LAUNCHER_EOF
-	chmod +x "$LAUNCHER"
+	verify_worker_pane "$PANE" \
+		|| die "FAILED: pane $PANE in '$FORKS_SESSION' is not running claude after 15 s (it exited or did not start). The worker did NOT start."
 
-	bash -lc "$(build_term_cmd "$LAUNCHER" "$FORKS_MARKER" "$ALACRITTY")"
-
-	echo "Created '$FORKS_SESSION' session in a new Alacritty window ($MODE worker)."
+	echo "Started $MODE worker in pane $PANE of '$FORKS_SESSION' (verified: claude is running)."
 	echo "Toggle: Cmd+Ctrl+F | Reattach: tmux attach -t $FORKS_SESSION"
 	exit 0
 fi
@@ -264,5 +280,5 @@ chmod +x "$LAUNCHER"
 # Ask the host to open the Alacritty window via the relay's `shell` command.
 bash "$RELAY_CLIENT" shell "$(build_term_cmd "$LAUNCHER" "$FORKS_MARKER")" </dev/null
 
-echo "$MODE worker dispatched to '$FORKS_SESSION' session on host."
+echo "$MODE worker dispatched to '$FORKS_SESSION' session on host (NOT verified: this container cannot see host tmux; ask the user to confirm the pane runs claude)."
 echo "Toggle: Cmd+Ctrl+F | Reattach: tmux attach -t $FORKS_SESSION"

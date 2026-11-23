@@ -18,10 +18,13 @@ closing and can be reattached.
 
 The helper auto-detects its environment:
 
-- **macOS host** (no `/.dockerenv`): if `claude-forks` already exists, it adds a
-  pane via `tmux split-window` (no new window). On the first fork it opens the
-  session in a new Alacritty window via the `alacritty` CLI (`msg create-window`,
-  falling back to a fresh instance).
+- **macOS host** (no `/.dockerenv`): if `claude-forks` does not exist, it creates
+  it detached and waits until the pane count is stable for 3 s. On a cold tmux
+  server, tmux-continuum restores saved sessions after start-up, and that restore
+  used to replace the new session and lose the worker. It then adds the worker
+  via `tmux split-window`. If no client is attached, it opens an Alacritty window
+  via the `alacritty` CLI (`msg create-window`, falling back to a fresh
+  instance). Last, it checks that the new pane runs `claude`.
 - **Devcontainer** (`/.dockerenv` exists): it writes a `.command` launcher to a
   host-shared path (`/usr/local/src/...`) and asks the host to run it via the
   `host_relay` bridge (`shell` key on `host.docker.internal:7899`).
@@ -89,11 +92,24 @@ through the inherited history; in handoff mode the brief is all it has.
      "Context: <condensed summary>. Task: <what to do>. Done when: <criteria>."
    ```
 
-2. Report the result to the user:
-   - On success: relay whether a pane was added or the `claude-forks` session was
-     created in a new window, the **Cmd+Ctrl+F** toggle, and the
-     `tmux attach -t claude-forks` reattach hint the helper printed. This session
-     is unchanged.
+2. Verify before you report. Do not tell the user the worker started unless you
+   have proof. On the host, the helper waits up to 15 s and prints
+   `Started ... in pane %N ... (verified: claude is running)` only when that pane
+   runs `claude`. Otherwise it prints `FAILED: ...` and exits 1. Then confirm the
+   worker took the task:
+
+   ```bash
+   tmux capture-pane -p -t %N | grep -v '^\s*$' | tail -8
+   ```
+
+   In a devcontainer the helper cannot see host tmux and says `NOT verified`.
+   Tell the user that, and ask them to confirm the pane.
+
+3. Report the result to the user:
+   - On verified success: give the pane id, the **Cmd+Ctrl+F** toggle, and the
+     `tmux attach -t claude-forks` reattach hint. This session is unchanged.
+   - On `FAILED` or a non-zero exit: say the worker did not start, show the
+     error, and retry once. Never report a failed or unverified fork as started.
    - If the helper printed the **relay-unreachable fallback** (container only),
      relay the paste-able `claude --resume <id> --fork-session` command and ask
      the user to run it in a terminal themselves.
