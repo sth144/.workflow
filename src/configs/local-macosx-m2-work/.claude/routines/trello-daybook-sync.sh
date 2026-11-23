@@ -182,6 +182,23 @@ run_stage() {
 	return $code
 }
 
+# Starred Gmail -> To Do. Runs before sync.py, so phase 1b turns the new items
+# into Trello cards in this same run. Gmail must not hold up the Trello sync, so
+# a failure here is logged and flagged in the Slack post but is never fatal.
+STARS_SCRIPT="$SCRIPT_DIR/../skills/gmail-stars/stars.py"
+STARS_NOTE=""
+if [ -n "$PY" ] && [ -f "$STARS_SCRIPT" ]; then
+	STAGE="run stars.py ($PY)"
+	if run_stage "$PY" "$STARS_SCRIPT"; then
+		echo "$OUTPUT"
+	else
+		echo "gmail-stars failed, continuing without it:" >&2
+		printf '%s\n' "$OUTPUT" | redact >&2
+		STARS_NOTE="⚠️ Gmail stars import failed - see the log"
+	fi
+	STAGE_OUTPUT=""
+fi
+
 if [ -n "$PY" ]; then
 	STAGE="run sync.py ($PY)"
 	run_stage "$PY" "$SYNC_SCRIPT"
@@ -201,6 +218,8 @@ echo "$OUTPUT"
 STAGE="post to slack"
 slack_post "$HEADER - $(date '+%a %b %d')
 
-$OUTPUT"
+$OUTPUT${STARS_NOTE:+
+
+$STARS_NOTE}"
 
 echo "=== Done - $(date) ==="
