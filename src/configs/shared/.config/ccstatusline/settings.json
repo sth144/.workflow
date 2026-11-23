@@ -21,6 +21,18 @@
         "type": "separator"
       },
       {
+        "id": "11",
+        "type": "current-working-dir",
+        "color": "blue",
+        "metadata": {
+          "abbreviateHome": "true"
+        }
+      },
+      {
+        "id": "12",
+        "type": "separator"
+      },
+      {
         "id": "5",
         "type": "git-branch",
         "color": "magenta"
