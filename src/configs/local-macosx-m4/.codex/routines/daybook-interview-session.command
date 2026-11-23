@@ -17,6 +17,13 @@ PROMPT_FILE="$ROUTINES_DIR/daybook-interview-prompt.md"
 if [ -f /usr/local/bin/os/source_env_files.sh ]; then
 		source /usr/local/bin/os/source_env_files.sh
 fi
+# Load nvm so binaries resolve to the nvm-managed install. launchd's PATH
+# does not include nvm, and /usr/local/bin installs are not maintained.
+if [ -d "$HOME/.nvm" ]; then
+		export NVM_DIR="$HOME/.nvm"
+		# shellcheck source=/dev/null
+		source "$NVM_DIR/nvm.sh"
+fi
 export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 
 pause_and_exit() {
