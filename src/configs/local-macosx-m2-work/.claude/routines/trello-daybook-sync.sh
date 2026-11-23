@@ -94,7 +94,7 @@ PROMPT='You are my morning sync assistant. Sync my Trello "Today" list to my Jop
 
 2. Find or create today'"'"'s Joplin daybook note:
    - Title format: DD Mon, YYYY (e.g., 20 Apr, 2026)
-   - Search in Areas / <DAYBOOK_NOTEBOOK> (notebook ID: c8ed0dc13a1f4269a66fe7d0d53ea07e)
+   - Search in Areas / Daybook (notebook ID: c8ed0dc13a1f4269a66fe7d0d53ea07e)
    - If it does not exist, find the most recent daybook entry and carry forward
      any incomplete checklist items (- [ ] ...)
 
@@ -165,6 +165,27 @@ until joplin_ready; do
 	waited=$((waited + 10))
 done
 [ "$waited" -gt 0 ] && echo "Joplin clipper answered after ${waited}s"
+
+# Wait for the Trello API too — the Mac may have network but DNS/TLS to
+# external hosts can lag after wake. Without this check, sync.py burns its
+# timeout on the first Trello call and dies.
+STAGE="wait for Trello API"
+TRELLO_WAIT_SECS="${TRELLO_WAIT_SECS:-120}"
+trello_ready() {
+	curl -fsS --max-time 10 \
+		"https://api.trello.com/1/members/me?key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}&fields=id" \
+		>/dev/null 2>&1
+}
+waited=0
+until trello_ready; do
+	if [ "$waited" -ge "$TRELLO_WAIT_SECS" ]; then
+		echo "Trello API did not answer after ${waited}s" >&2
+		false
+	fi
+	sleep 10
+	waited=$((waited + 10))
+done
+[ "$waited" -gt 0 ] && echo "Trello API answered after ${waited}s"
 
 # A failing sync.py trips the ERR trap through the assignment, so every exit
 # path below is reported. The Claude fallback only pulls Trello -> Joplin, so

@@ -25,6 +25,7 @@ import json
 import os
 import re
 import sys
+import time
 from typing import Any
 
 import requests
@@ -91,34 +92,46 @@ def joplin_post(path: str, payload: dict[str, Any]) -> Any:
 
 # -- Trello API helpers --
 
+TRELLO_MAX_RETRIES = 3
+TRELLO_RETRY_DELAY = 15  # seconds between retries (multiplied by attempt number)
 
-def trello_get(path: str, **params: Any) -> Any:
+
+def _trello_request(method: str, path: str, **params: Any) -> requests.Response:
+    """Make a Trello API request with retry on timeout/connection errors.
+
+    Retries up to TRELLO_MAX_RETRIES times with linear backoff. This handles
+    the case where the Mac just woke from sleep and external network is not
+    yet fully established.
+    """
     params["key"] = TRELLO_API_KEY
     params["token"] = TRELLO_TOKEN
-    resp = requests.get(
-        f"https://api.trello.com/1{path}", params=params, timeout=30
-    )
+    url = f"https://api.trello.com/1{path}"
+    last_exc: Exception | None = None
+    for attempt in range(TRELLO_MAX_RETRIES):
+        try:
+            return requests.request(method, url, params=params, timeout=45)
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as exc:
+            last_exc = exc
+            if attempt < TRELLO_MAX_RETRIES - 1:
+                time.sleep(TRELLO_RETRY_DELAY * (attempt + 1))
+    raise last_exc  # type: ignore[misc]
+
+
+def trello_get(path: str, **params: Any) -> Any:
+    resp = _trello_request("GET", path, **params)
     resp.raise_for_status()
     return resp.json()
 
 
 def trello_put(path: str, **params: Any) -> bool:
     """Returns True on success."""
-    params["key"] = TRELLO_API_KEY
-    params["token"] = TRELLO_TOKEN
-    resp = requests.put(
-        f"https://api.trello.com/1{path}", params=params, timeout=30
-    )
+    resp = _trello_request("PUT", path, **params)
     return resp.status_code == 200
 
 
 def trello_post(path: str, **params: Any) -> dict[str, Any] | None:
     """Create a Trello resource. Returns the JSON response, or None on failure."""
-    params["key"] = TRELLO_API_KEY
-    params["token"] = TRELLO_TOKEN
-    resp = requests.post(
-        f"https://api.trello.com/1{path}", params=params, timeout=30
-    )
+    resp = _trello_request("POST", path, **params)
     if resp.status_code in (200, 201):
         return resp.json()
     return None
